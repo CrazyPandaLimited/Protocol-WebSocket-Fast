@@ -1,0 +1,13 @@
+TYPEMAP
+
+Server*    XT_PWS_SERVER
+
+######################################################################
+OUTPUT
+
+XT_PWS_SERVER    : T_OEXT(basetype=Server*, refcnt, backref)
+
+######################################################################
+INPUT
+
+XT_PWS_SERVER   : T_OEXT(basetype=Server*, refcnt, backref)
