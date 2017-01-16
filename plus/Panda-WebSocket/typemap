@@ -1,13 +1,17 @@
 TYPEMAP
 
-Server*    XT_PWS_SERVER
+panda::websocket::Parser*       XT_PWS_PARSER
+panda::websocket::ServerParser* XT_PWS_PARSER
+panda::websocket::ClientParser* XT_PWS_PARSER
 
 ######################################################################
 OUTPUT
 
-XT_PWS_SERVER    : T_OEXT(basetype=Server*, refcnt, backref)
+XT_PWS_PARSER : T_OEXT(basetype=panda::websocket::Parser*)
+
+
 
 ######################################################################
 INPUT
 
-XT_PWS_SERVER   : T_OEXT(basetype=Server*, refcnt, backref)
+XT_PWS_PARSER : T_OEXT(basetype=panda::websocket::Parser*)

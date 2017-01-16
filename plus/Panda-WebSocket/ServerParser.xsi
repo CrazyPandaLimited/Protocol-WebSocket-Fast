@@ -1,0 +1,33 @@
+MODULE = Panda::WebSocket                PACKAGE = Panda::WebSocket::ServerParser
+PROTOTYPES: DISABLE
+
+BOOT {
+    xs::register_package("Panda::WebSocket::ServerParser", "Panda::WebSocket");
+    xs::inherit_package("Panda::WebSocket::ServerParser", "Panda::WebSocket::Parser");
+}
+
+panda::websocket::ServerParser* panda::websocket::ServerParser::new () {
+    RETVAL = new ServerParser();
+}
+
+HV* panda::websocket::ServerParser::accept () {
+    shared_ptr<AcceptRequest> req;
+    PXS_TRY({ req = THIS->accept(); });
+    if (!req) XSRETURN_UNDEF;
+    
+    RETVAL = newHV();
+    if (req->error) {
+        hv_store(RETVAL, "error", 5, newSVpv(req->error.data(), req->error.length()), 0);
+    } else {
+        if (req->uri) {
+            SV* urisv = typemap_outcast<URIx*>(req->uri);
+            hv_store(RETVAL, "uri", 3, urisv, 0);
+        }
+        
+        auto headers = newHV();
+        hv_store(RETVAL, "headers", 7, newRV_noinc((SV*)headers), 0);
+        for (const auto& elem : req->headers) {
+            hv_store(headers, elem.first.data(), elem.first.length(), newSVpvn(elem.second.data(), elem.second.length()), 0);
+        }
+    }
+}

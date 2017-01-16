@@ -1,6 +1,6 @@
 =head1 NAME
 
-Panda::WebSocket - WebSocket library and server written in C.
+Panda::WebSocket - WebSocket server/client parser library written in C.
 
 =cut
 

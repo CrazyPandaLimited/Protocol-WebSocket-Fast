@@ -1,0 +1,14 @@
+MODULE = Panda::WebSocket                PACKAGE = Panda::WebSocket::Parser
+PROTOTYPES: DISABLE
+
+BOOT {
+    xs::register_package("Panda::WebSocket::Parser", "Panda::WebSocket");
+}
+
+bool panda::websocket::Parser::add_buffer (SV* datasv) {
+    RETVAL = THIS->add_buffer(sv2string(aTHX_ datasv));
+}
+
+void panda::websocket::Parser::reset ()
+
+void panda::websocket::Parser::DESTROY () {}

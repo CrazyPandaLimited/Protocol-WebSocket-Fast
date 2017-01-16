@@ -5,15 +5,12 @@ write_makefile(
     NAME          => 'Panda::WebSocket',
     VERSION_FROM  => 'lib/Panda/WebSocket.pm',
     ABSTRACT_FROM => 'lib/Panda/WebSocket.pod',
-    PREREQ_PM     => {'Panda::Event' => 0},
     CPLUS         => 1,
-    DEFINE        => $ENV{DEBUG} ? '-DDEBUG' : '',
-    TEST_REQUIRES => {'Net::SSLeay' => 0},
-    BIN_DEPS      => ['Panda::Event'],
+    CCFLAGS       => '-std=c++11',
+    BIN_DEPS      => ['Panda::Lib', 'Panda::Export', 'CPP::Range', 'Panda::URI', 'Panda::Encode::Base2N'],
     SRC           => 'src',
     INC           => '-Isrc',
     TYPEMAPS      => 'typemap',
-    LIBS      => ['-lpthread -lssl -lrt', '-lpthread -lssl'],
     #BIN_SHARE => {
     #    INCLUDE  => {
     #        'src'           => '/',
@@ -21,7 +18,5 @@ write_makefile(
     #    },
     #    TYPEMAPS => {'typemap' => ''},
     #},
-    #OPTIMIZE => '-O2 -g',
-    #CC => 'clang++',
-    CCFLAGS => '-std=c++11 -frtti',
+    OPTIMIZE => '-O2 -g',
 );
