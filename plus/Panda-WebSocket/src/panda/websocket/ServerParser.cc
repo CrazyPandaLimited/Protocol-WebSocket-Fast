@@ -1,174 +1,114 @@
 #include <panda/websocket/ServerParser.h>
 #include <panda/ranges/Joiner.h>
-#include <panda/encode/base64.h>
 #include <cctype>
 #include <iostream>
 #include <exception>
+#include <stdlib.h>
 
 namespace panda { namespace websocket {
 
 using std::cout;
 using std::endl;
 
-static const int MAX_URI          = 16*1024;
-static const int MAX_HEADER_NAME  = 256;
-static const int MAX_HEADER_VALUE = 8*1024;
-
-ServerParser::ServerParser () : Parser(), accept_finder_next_buf(0), accept_finder(fndr) {
+ServerParser::ServerParser () : Parser(), max_accept_size(0), _accepted(false) {
 }
 
-shared_ptr<AcceptRequest> ServerParser::accept () {
-    if (established) throw std::logic_error("can't accept - already established");
+ConnectRequestSP ServerParser::accept (string& buf) {
+    if (_established || (connect_request && connect_request->parsed())) throw std::logic_error("ServerParser[accept] already parsed accept");
 
-    AcceptRequest* req = NULL;
-    for (; accept_finder_next_buf < bufs.size(); ++accept_finder_next_buf) {
-        const string& s = bufs[accept_finder_next_buf];
-        auto end = accept_finder.find(s);
-        if (end == s.cbegin()) continue;
-
-        if (end != s.cend()) { // have data in buffer after http packet
-            string rest = s.substr(end - s.cbegin());
-            bufs[accept_finder_next_buf].resize(end - s.cbegin());
-            req = parse_accept(bufs.cbegin(), bufs.cbegin() + accept_finder_next_buf + 1);
-            bufs.erase(bufs.cbegin(), bufs.cbegin() + accept_finder_next_buf);
-            bufs[0] = rest;
-        } else {
-            req = parse_accept(bufs.cbegin(), bufs.cbegin() + accept_finder_next_buf + 1);
-            bufs.erase(bufs.cbegin(), bufs.cbegin() + accept_finder_next_buf + 1);
-        }
-        break;
+    if (!connect_request) {
+        connect_request = new ConnectRequest();
+        connect_request->max_headers_size = max_accept_size;
     }
 
-//    cout << "rest in buf after accept: '";
-//    for (auto& s : bufs) {
-//        cout << s;
-//    }
-//    cout << "'" << endl;
+    if (!connect_request->parse(buf)) return NULL;
 
-    if (req && !req->error) {
-        //cout << "established!!";
-        established = true;
+    if (!connect_request->error) {
+        if (buf) connect_request->error = "garbage found after http request";
+        else _accepted = true;
     }
 
-    return req;
+    return connect_request;
 }
 
-AcceptRequest* ServerParser::parse_accept (Bufs::const_iterator buf_begin, Bufs::const_iterator buf_end) {
-    //cout << "ServerParser[parse_http]\n";
-    auto range = panda::ranges::joiner(buf_begin, buf_end);
-    auto cur   = std::begin(range);
-    auto end   = std::end(range);
-    auto req   = new AcceptRequest();
+string ServerParser::accept_error () {
+    if (_established || !connect_request || !connect_request->parsed()) throw std::logic_error("ServerParser[accept_error] accept not parsed yet");
+    if (!connect_request->error) throw std::logic_error("ServerParser[accept_error] no errors found");
 
-    bool ok = true;
+    HTTPResponse res;
+    res.headers.emplace("Content-Type", "text/plain");
 
-    // check "GET "
-    const char  _lead[] = "GET ";
-    const char* lead = _lead;
-    for (int i = 0; i < sizeof(_lead)-1; ++i) {
-        if (cur == end || *cur++ != *lead++) { ok = false; break; }
-    }
-    if (!ok) {req->error = "http error: only GET requests are supported"; return req; }
-    //cout << "GET ok\n";
+    if (!connect_request->ws_version_supported()) {
+        res.code    = 426;
+        res.message = "Upgrade Required";
+        res.body.push_back("426 Upgrade Required");
 
-    // find URI
-    char  uristr[MAX_URI+1];
-    char* uriptr = uristr;
-    for (; cur != end; ++cur) {
-        char c = *cur;
-        if (c == '\r' || c == '\n'|| (uriptr-uristr) == MAX_URI) { ok = false; break; }
-        if (c == ' ') break;
-        *uriptr++ = c;
-    }
-    if (!ok || *cur++ != ' ')  {req->error = "http error: couldn't find uri"; return req; }
-    uriptr = 0;
-    req->uri = new URI(string(uristr, uriptr-uristr));
-    //cout << "URI ok\n";
-
-    // skip till next line
-    for (; cur != end && *cur != '\n'; ++cur) {}
-    if (*cur++ != '\n')  {req->error = "http error: cannot find end of request line"; return req; }
-
-    // parse headers
-    ok = false;
-    HTTPHeaders& headers = req->headers;
-    char keyacc[MAX_HEADER_NAME];
-    char valacc[MAX_HEADER_VALUE];
-    enum { PARSE_MODE_KEY, PARSE_MODE_VAL } mode = PARSE_MODE_KEY;
-    size_t keylen;
-    char* curacc = keyacc;
-
-    for (; cur != end; ++cur) {
-        char c = *cur;
-        if (mode == PARSE_MODE_KEY) {
-            if (curacc - keyacc == MAX_HEADER_NAME) {req->error = "http error: max header name length reached"; return req; }
+        string svers(50);
+        for (int v : supported_ws_versions) {
+            svers += panda::lib::itoa(v);
+            svers += ", ";
         }
-        else {
-            if (curacc - valacc == MAX_HEADER_VALUE) {req->error = "http error: max header value length reached"; return req; }
-        }
-
-        if (c == ':' && mode == 0) {
-            mode = PARSE_MODE_VAL;
-            keylen = curacc - keyacc;
-            curacc = valacc;
-        }
-        else if (c == '\n') {
-            if (mode == PARSE_MODE_KEY) {
-                if (curacc == keyacc || (curacc == keyacc + 1 && *keyacc == '\r')) { ok = true; break; } // headers end (empty line)
-                else {req->error = "http error: header without value found"; return req; };
-            }
-
-            string key;
-            if (keylen) key.assign(keyacc, keylen, string::COPY);
-
-            string value;
-            const char* valptr = valacc;
-            if (curacc != valptr && *valptr == ' ') valptr++;
-            if (curacc != valptr && *(curacc-1) == '\r') curacc--;
-            if (curacc != valptr) value.assign(valptr, curacc - valptr, string::COPY);
-
-            headers.insert(std::pair<string,string>(key, value));
-            //cout << "found key='" << key << "' value='" << value << "'\n";
-
-            mode = PARSE_MODE_KEY;
-            curacc = keyacc;
-        }
-        else *curacc++ = c;
+        if (svers) svers.resize(svers.length()-2);
+        res.headers.emplace("Sec-WebSocket-Version", svers);
     }
-    if (!ok)  {req->error = "http error: headers did not end with empty line"; return req; }
-
-    auto it = headers.find("Connection");
-    if (it == headers.end() || it->second.find("Upgrade", 0, 7) == string::npos) {
-        req->error = "http error: Connection must be 'Upgrade'";
-        return req;
+    else {
+        res.code    = 400;
+        res.message = "Bad Request";
+        res.body.push_back("400 Bad Request\n");
+        res.body.push_back(connect_request->error);
     }
 
-    it = headers.find("Upgrade");
-    if (it == headers.end() || it->second.find("websocket", 0, 9) == string::npos) {
-        req->error = "http error: Upgrade must be 'websocket'";
-        return req;
+    reset();
+    return res.to_string();
+}
+
+string ServerParser::accept_error (HTTPResponse* res) {
+    if (_established || !connect_request || !connect_request->parsed()) throw std::logic_error("ServerParser[accept_error] accept not parsed yet");
+    if (connect_request->error) return accept_error();
+
+    if (!res->code) {
+        res->code = 400;
+        res->message = "Bad Request";
+    }
+    else if (!res->message) res->message = "Unknown";
+
+    if (!res->body.size()) {
+        res->body.push_back(string() + panda::lib::itoa(res->code) + ' ' + res->message);
     }
 
-    ok = false;
-    it = headers.find("Sec-WebSocket-Key");
-    if (it != headers.end()) {
-        const string& b64key = it->second;
-        key = panda::encode::decode_base64(it->second);
-        if (key.length() == 16) ok = true;
-    }
-    if (!ok) {req->error = "http error: Sec-WebSocket-Key missing or invalid"; return req; }
+    if (res->headers.find("Content-Type") == res->headers.end()) res->headers.emplace("Content-Type", "text/plain");
 
-    return req;
+    reset();
+    return res->to_string();
+}
+
+string ServerParser::accept_response (ConnectResponse* res) {
+    if (!_accepted) throw std::logic_error("ServerParser[accept_response] client not accepted");
+
+    res->_ws_key = connect_request->ws_key;
+    if (!res->ws_protocol) res->ws_protocol = connect_request->ws_protocol;
+    if (!res->ws_extensions_set()) res->ws_extensions(connect_request->ws_extensions());
+
+    const auto& exts = res->ws_extensions();
+
+    if (exts.size()) {
+        // filter extensions
+        res->ws_extensions(HTTPPacket::HeaderValues()); // for now no extensions supported
+    }
+
+    _established = true;
+    connect_request = NULL;
+    return res->to_string();
 }
 
 void ServerParser::reset () {
-    accept_finder_next_buf = 0;
-    accept_finder.reset();
+    connect_request = NULL;
+    _accepted = false;
     Parser::reset();
 }
 
 ServerParser::~ServerParser () {
-    cout << "~ServerParser\n";
+
 }
 
 }}

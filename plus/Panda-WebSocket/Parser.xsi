@@ -5,8 +5,26 @@ BOOT {
     xs::register_package("Panda::WebSocket::Parser", "Panda::WebSocket");
 }
 
-bool panda::websocket::Parser::add_buffer (SV* datasv) {
-    RETVAL = THIS->add_buffer(sv2string(aTHX_ datasv));
+size_t panda::websocket::Parser::max_frame_size (SV* newval = NULL) {
+    if (newval) THIS->max_frame_size = SvUV(newval);
+    RETVAL = THIS->max_frame_size;
+}
+
+bool panda::websocket::Parser::established ()
+
+AV* panda::websocket::Parser::get_frames (SV* bufsv) {
+    string buf = sv2string(aTHX_ bufsv);
+    PXS_TRY({
+        auto frames = THIS->get_frames(buf);
+        if (frames.begin() == frames.end()) XSRETURN_UNDEF;
+        RETVAL = newAV();
+        sv_2mortal((SV*)RETVAL); // iterator over frames is a lazy-parser and may throw exceptions, so AV could leak if we didn't make sv2mortal
+        for (auto frame : frames) {
+            auto frame_sv = typemap_outcast<panda::websocket::Frame*, const char* CLASS>(frame, "Panda::WebSocket::Frame");
+            av_push(RETVAL, frame_sv);
+        }
+    });
+    SvREFCNT_inc(RETVAL); // remove mortality
 }
 
 void panda::websocket::Parser::reset ()

@@ -8,6 +8,7 @@ write_makefile(
     CPLUS         => 1,
     CCFLAGS       => '-std=c++11',
     BIN_DEPS      => ['Panda::Lib', 'Panda::Export', 'CPP::Range', 'Panda::URI', 'Panda::Encode::Base2N'],
+    LIBS          => '-lssl',
     SRC           => 'src',
     INC           => '-Isrc',
     TYPEMAPS      => 'typemap',

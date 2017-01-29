@@ -26,6 +26,7 @@ my @data = (
     'Cookie: _ga=GA1.2.1700804447.1456741171',
     'Sec-WebSocket-Key: UCBGOTpHEtVI5XYRBb5lDg==',
     'Sec-WebSocket-Extensions: permessage-deflate; client_max_window_bits',
+    'Sec-WebSocket-Protocol: chat',
     "\r\n"#."allo",
     #"hello",
     #"world",
@@ -49,10 +50,17 @@ else {
 my $ret = $ws->accept();
 say "after accept in perl";
 say "RET=".Dumper($ret);
-say $ret->{uri};
 
-#timethis(-1, sub { $ws->accept() });
+die "Error: ".$ret->error unless $ws->established;
 
+my $str = $ws->accept_error(404, "get the fuck out of here");
+
+my $str = $ws->accept_response({
+    headers => {jopa => 1, popa => 2},
+    code    => 
+});
+
+exit;
 timethis(-1, sub {
     $ws->reset();
     $ws->add_buffer($str);

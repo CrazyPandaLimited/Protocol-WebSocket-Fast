@@ -1,41 +1,62 @@
 #pragma once
 #include <deque>
-#include <map>
-#include <unordered_map>
+#include <iterator>
+#include <panda/refcnt.h>
 #include <panda/string.h>
+#include <panda/iterator.h>
+#include <panda/websocket/Frame.h>
 
 namespace panda { namespace websocket {
 
 using panda::string;
-
-typedef std::multimap<const string, const string> HTTPHeaders;
+using panda::shared_ptr;
 
 class Parser {
 public:
-    size_t max_buffers_size;
+    class FrameIterator : public std::iterator<std::input_iterator_tag, FrameSP> {
+    public:
+        FrameIterator (Parser* parser, const FrameSP& start_frame) : parser(parser), cur(start_frame) {}
+        FrameIterator (const FrameIterator& oth)                   : parser(oth.parser), cur(oth.cur) {}
+
+        FrameIterator& operator++ ()                               { cur = parser->_get_frame(); return *this; }
+        FrameIterator  operator++ (int)                            { FrameIterator tmp(*this); operator++(); return tmp; }
+        bool           operator== (const FrameIterator& rhs) const { return parser == rhs.parser && cur.get() == rhs.cur.get(); }
+        bool           operator!= (const FrameIterator& rhs) const { return parser != rhs.parser || cur.get() != rhs.cur.get();}
+        FrameSP        operator*  ()                               { return cur; }
+        FrameSP        operator-> ()                               { return cur; }
+    private:
+        Parser* parser;
+        FrameSP cur;
+    };
+
+    typedef panda::IteratorPair<FrameIterator> FrameIteratorPair;
+
+    size_t max_frame_size;
     size_t max_message_size;
 
-    bool add_buffer (const char* data, size_t len) { return add_buffer(string(data, len, string::COPY)); }
-    bool add_buffer (const string& buf);
+    bool established () const { return _established; }
 
-    //void parse (const char* data, size_t len) { parse(string(data, len, string::COPY)); }
-    //void parse (string data);
+    FrameIteratorPair get_frames (string& buf);
 
     virtual void reset ();
 
-    virtual ~Parser ();
+    virtual ~Parser () {}
 
 protected:
-    typedef std::deque<string> Bufs;
+    bool _established;
 
-    size_t bufs_bytes;
-    Bufs   bufs;
-    bool   established;
-    string key;
-
-    Parser ();
+    Parser () : _established(false), max_frame_size(0), max_message_size(0) {}
 
 private:
+    string  _buffer;
+    FrameSP _frame;
+
+    FrameSP _get_frame ();
+
+public:
+
+
+
 
 };
 

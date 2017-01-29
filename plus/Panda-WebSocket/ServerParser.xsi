@@ -10,24 +10,38 @@ panda::websocket::ServerParser* panda::websocket::ServerParser::new () {
     RETVAL = new ServerParser();
 }
 
-HV* panda::websocket::ServerParser::accept () {
-    shared_ptr<AcceptRequest> req;
-    PXS_TRY({ req = THIS->accept(); });
-    if (!req) XSRETURN_UNDEF;
-    
-    RETVAL = newHV();
-    if (req->error) {
-        hv_store(RETVAL, "error", 5, newSVpv(req->error.data(), req->error.length()), 0);
-    } else {
-        if (req->uri) {
-            SV* urisv = typemap_outcast<URIx*>(req->uri);
-            hv_store(RETVAL, "uri", 3, urisv, 0);
+size_t panda::websocket::ServerParser::max_accept_size (SV* newval = NULL) {
+    if (newval) THIS->max_accept_size = SvUV(newval);
+    RETVAL = THIS->max_accept_size;
+}
+
+bool panda::websocket::ServerParser::accepted ()
+
+panda::websocket::ConnectRequest* panda::websocket::ServerParser::accept (SV* bufsv) {
+    const char* CLASS = "Panda::WebSocket::ConnectRequest";
+    string buf = sv2string(aTHX_ bufsv);
+    PXS_TRY({ RETVAL = THIS->accept(buf); });
+    if (!RETVAL) XSRETURN_UNDEF;
+}
+
+string panda::websocket::ServerParser::accept_error (SV* res_sv = NULL) {
+    PXS_TRY({
+        if      (!res_sv)             RETVAL = THIS->accept_error();
+        else if (sv_isobject(res_sv)) RETVAL = THIS->accept_error(typemap_incast<panda::websocket::HTTPResponse*>(res_sv));
+        else { // from hash params
+            SV* res_obj = xs::call_method_scalar(http_response_class, "new", 3, &res_sv, 1);
+            RETVAL = THIS->accept_error(typemap_incast<panda::websocket::HTTPResponse*>(res_obj));
         }
-        
-        auto headers = newHV();
-        hv_store(RETVAL, "headers", 7, newRV_noinc((SV*)headers), 0);
-        for (const auto& elem : req->headers) {
-            hv_store(headers, elem.first.data(), elem.first.length(), newSVpvn(elem.second.data(), elem.second.length()), 0);
+    });
+}
+
+string panda::websocket::ServerParser::accept_response (SV* res_sv = NULL) {
+    PXS_TRY({
+        if      (!res_sv)             RETVAL = THIS->accept_response();
+        else if (sv_isobject(res_sv)) RETVAL = THIS->accept_response(typemap_incast<panda::websocket::ConnectResponse*>(res_sv));
+        else { // from hash params
+            SV* res_obj = xs::call_method_scalar(connect_response_class, "new", 3, &res_sv, 1);
+            RETVAL = THIS->accept_response(typemap_incast<panda::websocket::ConnectResponse*>(res_obj));
         }
-    }
+    });
 }

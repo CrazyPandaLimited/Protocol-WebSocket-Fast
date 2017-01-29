@@ -4,14 +4,28 @@ panda::websocket::Parser*       XT_PWS_PARSER
 panda::websocket::ServerParser* XT_PWS_PARSER
 panda::websocket::ClientParser* XT_PWS_PARSER
 
+panda::websocket::HTTPPacket*      XT_PWS_HTTP_PACKET
+panda::websocket::HTTPRequest*     XT_PWS_HTTP_PACKET
+panda::websocket::HTTPResponse*    XT_PWS_HTTP_PACKET
+panda::websocket::ConnectRequest*  XT_PWS_HTTP_PACKET
+panda::websocket::ConnectResponse* XT_PWS_HTTP_PACKET
+
+panda::websocket::Frame* XT_PWS_FRAME
+
 ######################################################################
 OUTPUT
 
 XT_PWS_PARSER : T_OEXT(basetype=panda::websocket::Parser*)
 
+XT_PWS_HTTP_PACKET : T_OEXT(basetype=panda::websocket::HTTPPacket*, refcnt)
 
+XT_PWS_FRAME : T_OEXT(basetype=panda::websocket::Frame*, refcnt)
 
 ######################################################################
 INPUT
 
 XT_PWS_PARSER : T_OEXT(basetype=panda::websocket::Parser*)
+
+XT_PWS_HTTP_PACKET : T_OEXT(basetype=panda::websocket::HTTPPacket*, refcnt)
+
+XT_PWS_FRAME : T_OEXT(basetype=panda::websocket::Frame*, refcnt)

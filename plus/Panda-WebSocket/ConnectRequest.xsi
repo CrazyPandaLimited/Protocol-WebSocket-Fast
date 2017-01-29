@@ -1,0 +1,49 @@
+MODULE = Panda::WebSocket                PACKAGE = Panda::WebSocket::ConnectRequest
+PROTOTYPES: DISABLE
+
+BOOT {
+    xs::register_package("Panda::WebSocket::ConnectRequest", "Panda::WebSocket");
+    xs::inherit_package("Panda::WebSocket::ConnectRequest", "Panda::WebSocket::HTTPRequest");
+}
+
+panda::websocket::ConnectRequest* panda::websocket::ConnectRequest::new () {
+    RETVAL = new ConnectRequest();
+}
+
+string panda::websocket::ConnectRequest::ws_key (SV* newval = NULL) {
+    if (newval) {
+        THIS->ws_key = sv2string(aTHX_ newval);
+        XSRETURN_UNDEF;
+    }
+    RETVAL = THIS->ws_key;
+}
+
+int panda::websocket::ConnectRequest::ws_version (SV* newval = NULL) {
+    if (newval) {
+        THIS->ws_version = SvIV(newval);
+        XSRETURN_UNDEF;
+    }
+    RETVAL = THIS->ws_version;
+}
+
+AV* panda::websocket::ConnectRequest::ws_extensions (AV* exts_av = NULL) {
+    if (exts_av) {
+        HTTPPacket::HeaderValues exts;
+        av_to_header_values(aTHX_ exts_av, &exts);
+        THIS->ws_extensions(exts);
+        XSRETURN_UNDEF;
+    }
+    
+    RETVAL = header_values_to_av(aTHX_ THIS->ws_extensions());
+    if (!RETVAL) XSRETURN_UNDEF;
+}
+
+string panda::websocket::ConnectRequest::ws_protocol (SV* newval = NULL) {
+    if (newval) {
+        THIS->ws_protocol = sv2string(aTHX_ newval);
+        XSRETURN_UNDEF;
+    }
+    RETVAL = THIS->ws_protocol;
+}
+
+bool panda::websocket::ConnectRequest::ws_version_supported ()

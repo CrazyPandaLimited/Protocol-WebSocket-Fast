@@ -1,0 +1,28 @@
+MODULE = Panda::WebSocket                PACKAGE = Panda::WebSocket::HTTPRequest
+PROTOTYPES: DISABLE
+
+BOOT {
+    xs::register_package("Panda::WebSocket::HTTPRequest", "Panda::WebSocket");
+    xs::inherit_package("Panda::WebSocket::HTTPRequest", "Panda::WebSocket::HTTPPacket");
+}
+
+panda::websocket::HTTPRequest* panda::websocket::HTTPRequest::new () {
+    RETVAL = new HTTPRequest();
+}
+
+string panda::websocket::HTTPRequest::method (SV* newval = NULL) {
+    if (newval) {
+        THIS->method = sv2string(aTHX_ newval);
+        XSRETURN_UNDEF;
+    }
+    RETVAL = THIS->method;
+}
+
+panda::uri::URI* panda::websocket::HTTPRequest::uri (panda::uri::URI* newval = NULL) {
+    if (newval) {
+        THIS->uri = newval;
+        XSRETURN_UNDEF;
+    }
+    const char* CLASS = "Panda::URI";
+    RETVAL = THIS->uri;
+}

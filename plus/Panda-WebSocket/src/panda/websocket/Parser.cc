@@ -1,33 +1,36 @@
 #include <panda/websocket/Parser.h>
 #include <iostream>
+#include <assert.h>
 
 namespace panda { namespace websocket {
 
 using std::cout;
 using std::endl;
 
-Parser::Parser () : established(false), max_buffers_size(0), max_message_size(0), bufs_bytes(0) {
-    cout << "Parser[ctor]\n";
-}
-
-bool Parser::add_buffer (const string& buf) {
-    //cout << "Parser[add_buffer]: " << buf << endl;
-    if (max_buffers_size && (bufs_bytes + buf.length() > max_buffers_size)) return false;
-    if (buf.length()) {
-        bufs.push_back(buf);
-        bufs_bytes += buf.length();
-    }
-    return true;
-}
-
 void Parser::reset () {
-    bufs.clear();
-    bufs_bytes = 0;
-    established = false;
+    _established = false;
+    _buffer.clear();
+    _frame = NULL;
 }
 
-Parser::~Parser () {
-    cout << "~Parser\n";
+Parser::FrameIteratorPair Parser::get_frames (string& buf) {
+    if (_buffer) _buffer += buf; // really not good situation, that means that user has not iterated previous call to get_frame till the end
+    else         _buffer = buf;
+    return FrameIteratorPair(FrameIterator(this, _get_frame()), FrameIterator(this, NULL));
+}
+
+FrameSP Parser::_get_frame () {
+    if (!_buffer) return NULL;
+    if (!_frame) _frame = new Frame(max_frame_size);
+
+    if (!_frame->parse(_buffer)) {
+        _buffer.clear();
+        return NULL;
+    }
+
+    FrameSP ret(_frame);
+    _frame = NULL;
+    return ret;
 }
 
 }}

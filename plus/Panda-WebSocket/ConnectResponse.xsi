@@ -1,0 +1,48 @@
+MODULE = Panda::WebSocket                PACKAGE = Panda::WebSocket::ConnectResponse
+PROTOTYPES: DISABLE
+
+BOOT {
+    xs::register_package("Panda::WebSocket::ConnectResponse", "Panda::WebSocket");
+    xs::inherit_package("Panda::WebSocket::ConnectResponse", "Panda::WebSocket::HTTPResponse");
+}
+
+SV* panda::websocket::ConnectResponse::new (HV* params = NULL) {
+    auto res = new ConnectResponse();
+    RETVAL = typemap_outcast<panda::websocket::ConnectResponse*, const char* CLASS>(res, CLASS);
+    if (params) xs::call_method_void(RETVAL, "init", 4, &ST(1), 1);
+}
+
+void panda::websocket::ConnectResponse::init (HV* params) {
+    SV** ref;
+    
+    if ((ref = hv_fetchs(params, "ws_extensions", 0))) {
+        HTTPPacket::HeaderValues exts;
+        av_to_header_values(aTHX_ typemap_incast<AV*>(*ref), &exts);
+        THIS->ws_extensions(exts);
+    }
+    
+    if ((ref = hv_fetchs(params, "ws_protocol", 0))) THIS->ws_protocol = sv2string(aTHX_ *ref);
+    
+    xs::call_super(cv, &ST(0), items);
+}
+
+
+AV* panda::websocket::ConnectResponse::ws_extensions (AV* exts_av = NULL) {
+    if (exts_av) {
+        HTTPPacket::HeaderValues exts;
+        av_to_header_values(aTHX_ exts_av, &exts);
+        THIS->ws_extensions(exts);
+        XSRETURN_UNDEF;
+    }
+    
+    RETVAL = header_values_to_av(aTHX_ THIS->ws_extensions());
+    if (!RETVAL) XSRETURN_UNDEF;
+}
+
+string panda::websocket::ConnectResponse::ws_protocol (SV* newval = NULL) {
+    if (newval) {
+        THIS->ws_protocol = sv2string(aTHX_ newval);
+        XSRETURN_UNDEF;
+    }
+    RETVAL = THIS->ws_protocol;
+}

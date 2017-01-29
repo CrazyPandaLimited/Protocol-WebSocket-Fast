@@ -1,0 +1,29 @@
+MODULE = Panda::WebSocket                PACKAGE = Panda::WebSocket::Frame
+PROTOTYPES: DISABLE
+
+BOOT {
+    xs::register_package("Panda::WebSocket::Frame", "Panda::WebSocket");
+}
+
+string panda::websocket::Frame::error () {
+    RETVAL = THIS->error;
+}
+
+int panda::websocket::Frame::opcode ()
+
+SV* panda::websocket::Frame::payload () {
+    size_t len = 0;
+    for (const auto& s : THIS->payload) len += s.length();
+    if (!len) XSRETURN_UNDEF;
+    
+    RETVAL = newSV(len+1);
+    SvPOK_on(RETVAL);
+    char* dest = SvPVX(RETVAL);
+    for (const auto& s : THIS->payload) {
+        memcpy(dest, s.data(), s.length());
+        dest += s.length();
+    }
+    SvCUR_set(RETVAL, len);
+}
+
+void panda::websocket::Frame::DESTROY () {}
