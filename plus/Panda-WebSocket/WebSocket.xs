@@ -37,6 +37,20 @@ BOOT {
         {"OPCODE_CLOSE",    Frame::CLOSE},
         {"OPCODE_PING",     Frame::PING},
         {"OPCODE_PONG",     Frame::PONG},
+
+        {"CLOSE_NORMAL",           Frame::CLOSE_NORMAL},
+        {"CLOSE_AWAY",             Frame::CLOSE_AWAY},
+        {"CLOSE_PROTOCOL_ERROR",   Frame::CLOSE_PROTOCOL_ERROR},
+        {"CLOSE_INVALID_DATA",     Frame::CLOSE_INVALID_DATA},
+        {"CLOSE_UNKNOWN",          Frame::CLOSE_UNKNOWN},
+        {"CLOSE_ABNORMALLY",       Frame::CLOSE_ABNORMALLY},
+        {"CLOSE_INVALID_TEXT",     Frame::CLOSE_INVALID_TEXT},
+        {"CLOSE_BAD_REQUEST",      Frame::CLOSE_BAD_REQUEST},
+        {"CLOSE_MAX_SIZE",         Frame::CLOSE_MAX_SIZE},
+        {"CLOSE_EXTENSION_NEEDED", Frame::CLOSE_EXTENSION_NEEDED},
+        {"CLOSE_INTERNAL_ERROR",   Frame::CLOSE_INTERNAL_ERROR},
+        {"CLOSE_TLS",              Frame::CLOSE_TLS},
+
         {NULL}
     };
     HV* stash = gv_stashpvs("Panda::WebSocket", GV_ADD);

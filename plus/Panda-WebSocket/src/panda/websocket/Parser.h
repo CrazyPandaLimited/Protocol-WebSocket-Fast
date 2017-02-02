@@ -47,16 +47,11 @@ protected:
 
     Parser () : _established(false), max_frame_size(0), max_message_size(0) {}
 
+    virtual FrameSP _get_frame ();
+
 private:
     string  _buffer;
     FrameSP _frame;
-
-    FrameSP _get_frame ();
-
-public:
-
-
-
 
 };
 

@@ -20,6 +20,8 @@ sub import {
         is cmp_deeply ok done_testing skip isnt pass fail cmp_ok like isa_ok unlike ignore code all any noneof methods
         Dumper
         OPCODE_CONTINUE OPCODE_TEXT OPCODE_BINARY OPCODE_CLOSE OPCODE_PING OPCODE_PONG
+        CLOSE_NORMAL CLOSE_AWAY CLOSE_PROTOCOL_ERROR CLOSE_INVALID_DATA CLOSE_UNKNOWN CLOSE_ABNORMALLY CLOSE_INVALID_TEXT
+        CLOSE_BAD_REQUEST CLOSE_MAX_SIZE CLOSE_EXTENSION_NEEDED CLOSE_INTERNAL_ERROR CLOSE_TLS
     /) {
         no strict 'refs';
         *{"${caller}::$sym_name"} = *$sym_name;
@@ -82,35 +84,52 @@ sub get_established_server {
     return $p;
 }
 
+sub reset_established_server {
+	my $p = shift;
+	$p->reset;
+	die "should not happen" if $p->established;
+	$p->accept(scalar accept_packet()) or die "should not happen";
+    $p->accept_response;
+    die "should not happen" unless $p->established;
+}
+
 sub gen_frame {
     my $params = shift;
-    my $hdrval = 0;
+    
+    my $first  = 0;
+    my $second = 0;
     
     foreach my $p (qw/fin rsv1 rsv2 rsv3/) {
-        $hdrval |= ($params->{$p} ? 1 : 0);
-        $hdrval <<= 1;
+        $first |= ($params->{$p} ? 1 : 0);
+        $first <<= 1;
     }
-    $hdrval <<= 3;
-    $hdrval |= ($params->{opcode} & 15);
+    $first <<= 3;
+    $first |= ($params->{opcode} & 15);
+    $first = pack("C", $first);
     
-    $hdrval <<= 1;
-    $hdrval |= ($params->{mask} ? 1 : 0);
+    $second |= ($params->{mask} ? 1 : 0);
     
-    $hdrval <<= 7;
+    $second <<= 7;
     my $data = $params->{data} // '';
+    
+    if ($params->{close_code} && !ref $params->{close_code}) {
+    	$data = $params->{data} = pack("S>", $params->{close_code}).$data;
+    }
+    
     my $dlen = length($data);
     my $extlen = '';
     if ($dlen < 126) {
-        $hdrval |= $dlen;
+        $second |= $dlen;
     }
     elsif ($dlen < 65536) {
-        $hdrval |= 126;
+        $second |= 126;
         $extlen = pack "S>", $dlen;
     }
     else {
-        $hdrval |= 127;
+        $second |= 127;
         $extlen = pack "Q>", $dlen;
     }
+    $second = pack("C", $second);
     
     my $mask = '';
     my $payload;
@@ -122,7 +141,7 @@ sub gen_frame {
         $payload = $data;
     }
     
-    my $frame = pack("S>", $hdrval).$extlen.$mask.$payload;
+    my $frame = $first.$second.$extlen.$mask.$payload;
     return $frame;
 }
 

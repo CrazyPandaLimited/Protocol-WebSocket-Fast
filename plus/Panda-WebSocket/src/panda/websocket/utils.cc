@@ -1,4 +1,4 @@
-#include <panda/websocket/string_ci.h>
+#include <panda/websocket/utils.h>
 
 namespace panda { namespace websocket {
 

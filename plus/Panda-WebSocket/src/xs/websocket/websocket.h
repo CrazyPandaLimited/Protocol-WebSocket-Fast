@@ -13,4 +13,6 @@ AV*  header_values_to_av (pTHX_ const HTTPPacket::HeaderValues& vals);
 void http_packet_set_headers (pTHX_ HTTPPacket* p, HV* headers);
 void http_packet_set_body    (pTHX_ HTTPPacket* p, SV* body);
 
+SV* vector_string_to_sv (pTHX_ const std::vector<string>& v);
+
 }}

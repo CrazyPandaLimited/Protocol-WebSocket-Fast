@@ -5,7 +5,7 @@
 #include <panda/string.h>
 #include <panda/ranges/Joiner.h>
 #include <panda/ranges/KmpFinder.h>
-#include <panda/websocket/string_ci.h>
+#include <panda/websocket/utils.h>
 
 namespace panda { namespace websocket {
 

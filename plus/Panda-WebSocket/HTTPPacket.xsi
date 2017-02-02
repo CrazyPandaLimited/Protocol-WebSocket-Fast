@@ -56,19 +56,7 @@ SV* panda::websocket::HTTPPacket::body (SV* newval = NULL) {
         http_packet_set_body(THIS, newval);
         XSRETURN_UNDEF;
     }
-    
-    size_t blen = 0;
-    for (const auto& s : THIS->body) blen += s.length();
-    if (!blen) XSRETURN_UNDEF;
-    
-    RETVAL = newSV(blen+1);
-    SvPOK_on(RETVAL);
-    char* dest = SvPVX(RETVAL);
-    for (const auto& s : THIS->body) {
-        memcpy(dest, s.data(), s.length());
-        dest += s.length();
-    }
-    SvCUR_set(RETVAL, blen);
+    RETVAL = vector_string_to_sv(THIS->body);
 }
 
 void panda::websocket::HTTPPacket::clear ()

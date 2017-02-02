@@ -101,6 +101,14 @@ string ServerParser::accept_response (ConnectResponse* res) {
     return res->to_string();
 }
 
+FrameSP ServerParser::_get_frame () {
+    auto ret = Parser::_get_frame();
+    if (ret && !ret->error) {
+        if (!ret->has_mask()) ret->error = "client frame MUST be masked";
+    }
+    return ret;
+}
+
 void ServerParser::reset () {
     connect_request = NULL;
     _accepted = false;

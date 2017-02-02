@@ -14,6 +14,7 @@ void Parser::reset () {
 }
 
 Parser::FrameIteratorPair Parser::get_frames (string& buf) {
+    if (!_established) throw std::logic_error("Parser[get_frames] connection not established");
     if (_buffer) _buffer += buf; // really not good situation, that means that user has not iterated previous call to get_frame till the end
     else         _buffer = buf;
     return FrameIteratorPair(FrameIterator(this, _get_frame()), FrameIterator(this, NULL));
@@ -27,6 +28,8 @@ FrameSP Parser::_get_frame () {
         _buffer.clear();
         return NULL;
     }
+
+    if (_frame->error) _buffer.clear();
 
     FrameSP ret(_frame);
     _frame = NULL;

@@ -12,19 +12,16 @@ size_t panda::websocket::Parser::max_frame_size (SV* newval = NULL) {
 
 bool panda::websocket::Parser::established ()
 
-AV* panda::websocket::Parser::get_frames (SV* bufsv) {
-    string buf = sv2string(aTHX_ bufsv);
+void panda::websocket::Parser::get_frames (SV* bufsv) {
+    string buf = sv2string(aTHX_ bufsv); // need to copy because parser may save string inside (if partial content)
     PXS_TRY({
         auto frames = THIS->get_frames(buf);
         if (frames.begin() == frames.end()) XSRETURN_UNDEF;
-        RETVAL = newAV();
-        sv_2mortal((SV*)RETVAL); // iterator over frames is a lazy-parser and may throw exceptions, so AV could leak if we didn't make sv2mortal
-        for (auto frame : frames) {
+        for (auto frame : frames) { // iterator over frames is a lazy-parser and may throw exceptions
             auto frame_sv = typemap_outcast<panda::websocket::Frame*, const char* CLASS>(frame, "Panda::WebSocket::Frame");
-            av_push(RETVAL, frame_sv);
+            mXPUSHs(frame_sv);
         }
     });
-    SvREFCNT_inc(RETVAL); // remove mortality
 }
 
 void panda::websocket::Parser::reset ()

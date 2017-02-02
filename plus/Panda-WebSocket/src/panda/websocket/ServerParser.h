@@ -38,6 +38,9 @@ public:
 
     virtual ~ServerParser ();
 
+protected:
+    virtual FrameSP _get_frame ();
+
 private:
     ConnectRequestSP connect_request;
     bool             _accepted;

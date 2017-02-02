@@ -6,24 +6,22 @@ BOOT {
 }
 
 string panda::websocket::Frame::error () {
+    if (!THIS->error) XSRETURN_UNDEF;
     RETVAL = THIS->error;
 }
 
 int panda::websocket::Frame::opcode ()
 
+bool panda::websocket::Frame::final ()
+
+size_t panda::websocket::Frame::payload_length ()
+
 SV* panda::websocket::Frame::payload () {
-    size_t len = 0;
-    for (const auto& s : THIS->payload) len += s.length();
-    if (!len) XSRETURN_UNDEF;
-    
-    RETVAL = newSV(len+1);
-    SvPOK_on(RETVAL);
-    char* dest = SvPVX(RETVAL);
-    for (const auto& s : THIS->payload) {
-        memcpy(dest, s.data(), s.length());
-        dest += s.length();
-    }
-    SvCUR_set(RETVAL, len);
+    RETVAL = vector_string_to_sv(THIS->payload);
 }
+
+uint16_t panda::websocket::Frame::close_code ()
+
+string panda::websocket::Frame::close_message ()
 
 void panda::websocket::Frame::DESTROY () {}
