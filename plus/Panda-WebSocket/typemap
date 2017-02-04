@@ -14,7 +14,7 @@ panda::websocket::Frame*   XT_PWS_FRAME
 panda::websocket::Message* XT_PWS_MESSAGE
 
 xs::websocket::XSFrameIterator*   XT_PWSXS_FRAME_ITERATOR
-xs::websocket::XSMessageIterator* XT_PWSXS_FRAME_ITERATOR
+xs::websocket::XSMessageIterator* XT_PWSXS_MESSAGE_ITERATOR
 
 ######################################################################
 OUTPUT
@@ -27,9 +27,9 @@ XT_PWS_FRAME              : T_OEXT(basetype=panda::websocket::Frame*, refcnt)
 
 XT_PWS_MESSAGE            : T_OEXT(basetype=panda::websocket::Message*, refcnt)
 
-XT_PWSXS_FRAME_ITERATOR   : T_OPTR(xs=panda::websocket::XSFrameIterator*)
+XT_PWSXS_FRAME_ITERATOR   : T_OPTR(basetype=xs::websocket::XSFrameIterator*, static_cast)
 
-XT_PWSXS_MESSAGE_ITERATOR : T_OPTR(xs=panda::websocket::XSMessageIterator*)
+XT_PWSXS_MESSAGE_ITERATOR : T_OPTR(basetype=xs::websocket::XSMessageIterator*, static_cast)
 
 ######################################################################
 INPUT
@@ -42,6 +42,6 @@ XT_PWS_FRAME              : T_OEXT(basetype=panda::websocket::Frame*, refcnt)
 
 XT_PWS_MESSAGE            : T_OEXT(basetype=panda::websocket::Message*, refcnt)
 
-XT_PWSXS_FRAME_ITERATOR   : T_OPTR(xs=panda::websocket::XSFrameIterator*)
+XT_PWSXS_FRAME_ITERATOR   : T_OPTR(basetype=xs::websocket::XSFrameIterator*, static_cast)
 
-XT_PWSXS_MESSAGE_ITERATOR : T_OPTR(xs=panda::websocket::XSMessageIterator*)
+XT_PWSXS_MESSAGE_ITERATOR : T_OPTR(basetype=xs::websocket::XSMessageIterator*, static_cast)
