@@ -10,16 +10,43 @@ size_t panda::websocket::Parser::max_frame_size (SV* newval = NULL) {
     RETVAL = THIS->max_frame_size;
 }
 
+size_t panda::websocket::Parser::max_message_size (SV* newval = NULL) {
+    if (newval) THIS->max_message_size = SvUV(newval);
+    RETVAL = THIS->max_message_size;
+}
+
 bool panda::websocket::Parser::established ()
 
 void panda::websocket::Parser::get_frames (SV* bufsv) {
     string buf = sv2string(aTHX_ bufsv); // need to copy because parser may save string inside (if partial content)
     PXS_TRY({
         auto frames = THIS->get_frames(buf);
-        if (frames.begin() == frames.end()) XSRETURN_UNDEF;
-        for (auto frame : frames) { // iterator over frames is a lazy-parser and may throw exceptions
-            auto frame_sv = typemap_outcast<panda::websocket::Frame*, const char* CLASS>(frame, "Panda::WebSocket::Frame");
-            mXPUSHs(frame_sv);
+        if (GIMME_V == G_ARRAY) {
+            for (auto frame : frames) {
+                auto frame_sv = typemap_outcast<panda::websocket::Frame*, const char* CLASS>(frame, "Panda::WebSocket::Frame");
+                mXPUSHs(frame_sv);
+            }
+        } else {
+            if (frames.begin() == frames.end()) XSRETURN_UNDEF;
+            auto itsv = typemap_outcast<xs::websocket::XSFrameIterator*, const char* CLASS>(new XSFrameIterator(frames.begin()), "Panda::WebSocket::FrameIterator");
+            mPUSHs(itsv);
+        }
+    });
+}
+
+void panda::websocket::Parser::get_messages (SV* bufsv) {
+    string buf = sv2string(aTHX_ bufsv); // need to copy because parser may save string inside (if partial content)
+    PXS_TRY({
+        auto messages = THIS->get_messages(buf);
+        if (GIMME_V == G_ARRAY) {
+            for (auto message : messages) {
+                auto message_sv = typemap_outcast<panda::websocket::Message*, const char* CLASS>(message, "Panda::WebSocket::Message");
+                mXPUSHs(message_sv);
+            }
+        } else {
+            if (messages.begin() == messages.end()) XSRETURN_UNDEF;
+            auto itsv = typemap_outcast<xs::websocket::XSMessageIterator*, const char* CLASS>(new XSMessageIterator(messages.begin()), "Panda::WebSocket::MessageIterator");
+            mPUSHs(itsv);
         }
     });
 }

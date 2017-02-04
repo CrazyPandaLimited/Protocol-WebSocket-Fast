@@ -10,9 +10,6 @@ namespace panda { namespace websocket {
 using std::cout;
 using std::endl;
 
-ServerParser::ServerParser () : Parser(), max_accept_size(0), _accepted(false) {
-}
-
 ConnectRequestSP ServerParser::accept (string& buf) {
     if (_established || (connect_request && connect_request->parsed())) throw std::logic_error("ServerParser[accept] already parsed accept");
 
@@ -99,14 +96,6 @@ string ServerParser::accept_response (ConnectResponse* res) {
     _established = true;
     connect_request = NULL;
     return res->to_string();
-}
-
-FrameSP ServerParser::_get_frame () {
-    auto ret = Parser::_get_frame();
-    if (ret && !ret->error) {
-        if (!ret->has_mask()) ret->error = "client frame MUST be masked";
-    }
-    return ret;
 }
 
 void ServerParser::reset () {

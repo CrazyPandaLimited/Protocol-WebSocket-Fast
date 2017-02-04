@@ -72,3 +72,9 @@ INCLUDE: ConnectRequest.xsi
 INCLUDE: ConnectResponse.xsi
 
 INCLUDE: Frame.xsi
+
+INCLUDE: FrameIterator.xsi
+
+INCLUDE: Message.xsi
+
+INCLUDE: MessageIterator.xsi

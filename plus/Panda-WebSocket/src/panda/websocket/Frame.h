@@ -22,7 +22,8 @@ public:
     string              error;
     std::vector<string> payload;
 
-    Frame (size_t max_size = 0) : _max_size(max_size), _state(FIRST), _len16(0), _length(0), _mask(0) {}
+    Frame (bool mask_required, size_t max_size) :
+        _mask_required(mask_required), _max_size(max_size), _state(FIRST), _len16(0), _length(0), _mask(0) {}
 
     bool     is_control     () const { return _opcode >= CLOSE; }
     Opcode   opcode         () const { return _opcode; }
@@ -33,9 +34,12 @@ public:
     string   close_message  () const { return _close_message; }
 
     bool parse (string& buf);
+    void reset ();
 
 private:
     enum State { FIRST, SECOND, LENGTH, MASK, PAYLOAD, DONE };
+
+    bool     _mask_required;
     size_t   _max_size;
     State    _state;
     bool     _fin;

@@ -79,6 +79,10 @@ bool Frame::parse (string& buf) {
             }
         }
         _state = LENGTH;
+        if (!_has_mask && _mask_required) {
+            error = "frame is not masked";
+            _state = DONE;
+        }
     }
 
     if (_state == LENGTH) {
@@ -158,11 +162,23 @@ bool Frame::parse (string& buf) {
             }
             _close_code = panda::lib::be2h16(*((uint16_t*)tmp));
             _close_message.assign(tmp + sizeof(_close_code), _length - sizeof(_close_code), string::COPY);
+            payload.clear();
+            payload.push_back(_close_message);
+            _length -= sizeof(uint16_t);
         }
         cout << "Frame[parse]: CLOSE CODE=" << _close_code << " MSG=" << _close_message << endl;
     }
 
     return true;
+}
+
+void Frame::reset () {
+    error.clear();
+    payload.clear();
+    _state  = FIRST;
+    _len16  = 0;
+    _length = 0;
+    _mask   = 0;
 }
 
 }}

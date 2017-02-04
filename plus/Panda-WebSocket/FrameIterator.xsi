@@ -1,0 +1,15 @@
+MODULE = Panda::WebSocket                PACKAGE = Panda::WebSocket::FrameIterator
+PROTOTYPES: DISABLE
+
+BOOT {
+    xs::register_package("Panda::WebSocket::FrameIterator", "Panda::WebSocket");
+}
+
+panda::websocket::Frame* xs::websocket::XSFrameIterator::next () {
+    const char* CLASS = "Panda::WebSocket::Frame";
+    PXS_TRY({
+        RETVAL = THIS->next(); // iterator over frames is a lazy-parser and may throw exceptions
+    });
+}
+
+void xs::websocket::XSFrameIterator::DESTROY () {}

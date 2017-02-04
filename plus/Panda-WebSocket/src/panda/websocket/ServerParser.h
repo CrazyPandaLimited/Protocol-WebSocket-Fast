@@ -19,7 +19,7 @@ class ServerParser : public Parser {
 public:
     size_t max_accept_size;
 
-    ServerParser ();
+    ServerParser () : Parser(true), max_accept_size(0), _accepted(false) {}
 
     bool accepted () const { return _accepted; }
 
@@ -37,9 +37,6 @@ public:
     virtual void reset ();
 
     virtual ~ServerParser ();
-
-protected:
-    virtual FrameSP _get_frame ();
 
 private:
     ConnectRequestSP connect_request;

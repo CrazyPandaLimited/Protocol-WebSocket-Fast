@@ -17,11 +17,12 @@ sub import {
     
     my $caller = caller();
     foreach my $sym_name (qw/
-        is cmp_deeply ok done_testing skip isnt pass fail cmp_ok like isa_ok unlike ignore code all any noneof methods
+        plan is cmp_deeply ok done_testing skip isnt pass fail cmp_ok like isa_ok unlike ignore code all any noneof methods
         Dumper
         OPCODE_CONTINUE OPCODE_TEXT OPCODE_BINARY OPCODE_CLOSE OPCODE_PING OPCODE_PONG
         CLOSE_NORMAL CLOSE_AWAY CLOSE_PROTOCOL_ERROR CLOSE_INVALID_DATA CLOSE_UNKNOWN CLOSE_ABNORMALLY CLOSE_INVALID_TEXT
         CLOSE_BAD_REQUEST CLOSE_MAX_SIZE CLOSE_EXTENSION_NEEDED CLOSE_INTERNAL_ERROR CLOSE_TLS
+        gen_frame gen_message
     /) {
         no strict 'refs';
         *{"${caller}::$sym_name"} = *$sym_name;
@@ -113,7 +114,7 @@ sub gen_frame {
     my $data = $params->{data} // '';
     
     if ($params->{close_code} && !ref $params->{close_code}) {
-    	$data = $params->{data} = pack("S>", $params->{close_code}).$data;
+    	$data = pack("S>", $params->{close_code}).$data;
     }
     
     my $dlen = length($data);
@@ -143,6 +144,32 @@ sub gen_frame {
     
     my $frame = $first.$second.$extlen.$mask.$payload;
     return $frame;
+}
+
+sub gen_message {
+	my $params = shift;
+	
+	my $nframes = $params->{nframes} || 1;
+	my $payload = $params->{data} // '';
+	my $opcode  = OPCODE_TEXT;
+	
+	my $frame_len = int(length($payload) / $nframes);
+	my @bin;
+	
+	my $frames_left = $nframes;
+	while ($frames_left) {
+		my $curlen = (length($payload) / $frames_left--);
+		my $chunk = substr($payload, 0, $curlen, '');
+		push @bin, gen_frame({
+			opcode => $opcode,
+			data   => $chunk,
+			fin    => !length($payload),
+			mask   => $params->{mask},
+		});
+		$opcode = OPCODE_CONTINUE;
+	}
+	
+	return wantarray ? @bin : join('', @bin);
 }
 
 1;

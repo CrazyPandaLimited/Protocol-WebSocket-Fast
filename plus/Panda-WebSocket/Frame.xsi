@@ -12,6 +12,8 @@ string panda::websocket::Frame::error () {
 
 int panda::websocket::Frame::opcode ()
 
+bool panda::websocket::Frame::is_control ()
+
 bool panda::websocket::Frame::final ()
 
 size_t panda::websocket::Frame::payload_length ()

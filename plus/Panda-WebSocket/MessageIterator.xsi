@@ -1,0 +1,15 @@
+MODULE = Panda::WebSocket                PACKAGE = Panda::WebSocket::MessageIterator
+PROTOTYPES: DISABLE
+
+BOOT {
+    xs::register_package("Panda::WebSocket::MessageIterator", "Panda::WebSocket");
+}
+
+panda::websocket::Message* xs::websocket::XSMessageIterator::next () {
+    const char* CLASS = "Panda::WebSocket::Message";
+    PXS_TRY({
+        RETVAL = THIS->next(); // iterator over messages is a lazy-parser and may throw exceptions
+    });
+}
+
+void xs::websocket::XSMessageIterator::DESTROY () {}
