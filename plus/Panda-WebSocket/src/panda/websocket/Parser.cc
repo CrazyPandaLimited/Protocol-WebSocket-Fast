@@ -33,9 +33,19 @@ FrameSP Parser::_get_frame () {
         return NULL;
     }
 
-    if (_frame->error) _buffer.clear();
-    else if (_frame->final() && !(_frame->is_control() && _frame_count)) _state = NONE;
-    ++_frame_count;
+    if (_frame->error) {
+        _buffer.clear();
+        _frame_count = 0;
+        _state = NONE;
+    }
+    else if (_frame->is_control()) { // control frames can't be fragmented, no need to increment frame count
+        if (!_frame_count) _state = NONE; // do not reset state if control frame arrives in the middle of message
+    }
+    else if (_frame->final()) {
+        _state = NONE;
+        _frame_count = 0;
+    }
+    else ++_frame_count;
 
     FrameSP ret(_frame);
     _frame = NULL;
