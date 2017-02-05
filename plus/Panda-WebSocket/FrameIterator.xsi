@@ -12,4 +12,13 @@ panda::websocket::Frame* xs::websocket::XSFrameIterator::next () {
     });
 }
 
+xs::websocket::XSMessageIterator* xs::websocket::XSFrameIterator::get_messages () {
+    const char* CLASS = "Panda::WebSocket::MessageIterator";
+    PXS_TRY({
+        auto messages = THIS->get_messages();
+        if (messages.begin() == messages.end()) XSRETURN_UNDEF;
+        RETVAL = new XSMessageIterator(messages.begin());
+    });
+}
+
 void xs::websocket::XSFrameIterator::DESTROY () {}

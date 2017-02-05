@@ -10,7 +10,11 @@ using std::endl;
 void Parser::reset () {
     _established = false;
     _buffer.clear();
+    _state = NONE;
     _frame = NULL;
+    _frame_count = 0;
+    _message = NULL;
+    _message_frame.reset();
 }
 
 Parser::FrameIteratorPair Parser::get_frames (string& buf) {
@@ -32,6 +36,8 @@ FrameSP Parser::_get_frame () {
         _buffer.clear();
         return NULL;
     }
+
+    _frame->check(_frame_count);
 
     if (_frame->error) {
         _buffer.clear();
@@ -84,6 +90,7 @@ MessageSP Parser::_get_message () {
             return cntl_msg;
         }
 
+        _message_frame.check(_message->frame_count);
         bool done = _message->add_frame(_message_frame);
         _message_frame.reset();
 

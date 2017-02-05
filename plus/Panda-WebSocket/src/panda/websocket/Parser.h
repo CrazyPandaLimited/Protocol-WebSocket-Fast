@@ -31,7 +31,8 @@ public:
             FrameSP        operator*  ()                               { return cur; }
             FrameSP        operator-> ()                               { return cur; }
 
-            MessageIteratorPair to_messages () const {
+            MessageIteratorPair get_messages () {
+                cur = NULL; // invalidate current iterator
                 return MessageIteratorPair(MessageIterator(parser, parser->_get_message()), MessageIterator(parser, NULL));
             }
         protected:
@@ -50,7 +51,8 @@ public:
         MessageSP        operator*  ()                                 { return cur; }
         MessageSP        operator-> ()                                 { return cur; }
 
-        FrameIteratorPair to_frames () const {
+        FrameIteratorPair get_frames () {
+            cur = NULL; // invalidate current iterator
             return FrameIteratorPair(FrameIterator(parser, parser->_get_frame()), FrameIterator(parser, NULL));
         }
     protected:

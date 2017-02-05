@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <assert.h>
 #include <panda/refcnt.h>
 #include <panda/string.h>
 
@@ -35,6 +36,15 @@ public:
 
     bool parse (string& buf);
     void reset ();
+
+    void check (bool fragment_in_message) {
+        assert(_state == DONE);
+        if (is_control() || error) return;
+        if (!fragment_in_message) {
+            if (_opcode == Frame::CONTINUE) error = "initial frame can't have opcode CONTINUE";
+        }
+        else if (_opcode != Frame::CONTINUE) error = "fragment frame must have opcode CONTINUE";
+    }
 
 private:
     enum State { FIRST, SECOND, LENGTH, MASK, PAYLOAD, DONE };

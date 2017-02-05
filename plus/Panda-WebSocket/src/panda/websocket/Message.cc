@@ -20,11 +20,6 @@ bool Message::add_frame (const Frame& frame) {
             _close_message = frame.close_message();
         }
     }
-    else if (frame.opcode() != Frame::CONTINUE) {
-        error = "non-first message frame must have opcode CONTINUE";
-        _state = DONE;
-        return true;
-    }
 
     if (_max_size && _payload_length + frame.payload_length() > _max_size) {
         error = "max message size exceeded";

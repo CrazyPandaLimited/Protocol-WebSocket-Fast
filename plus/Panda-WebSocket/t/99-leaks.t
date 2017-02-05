@@ -2,6 +2,7 @@ use 5.020;
 use warnings;
 use lib 't', 't/lib'; use WSTest;
 use Benchmark ':hireswallclock';
+use Test::Builder;
 
 plan skip_all => 'set WITH_LEAKS=1 to enable leaks test' unless $ENV{WITH_LEAKS};
 plan skip_all => 'BSD::Resource required to test for leaks' unless eval { require BSD::Resource; 1 };
@@ -12,6 +13,7 @@ test_leak(1, [
     '04-ServerParser-accept_response.t',
     '05-Parser-get_frames.t',
     '06-Parser-get_messages.t',
+    '07-Parser-mixed-mode.t',
 ], 100);
 
 # $leak_threshold in Kb
@@ -59,6 +61,7 @@ sub test_leak {
         local *cmp_set = sub {};
         local *cmp_methods = sub {};
         local *done_testing = sub {1};
+        local *subtest = sub { my $name = shift; my $code = shift; $code->(@_) };
         local $main::leak_test = 1;
         use warnings;
         
