@@ -17,7 +17,9 @@ public:
 
 protected:
     virtual void _parse_header (StringRange range);
-
+    virtual void _to_string    (string& str);
 };
+
+typedef panda::shared_ptr<HTTPRequest> HTTPRequestSP;
 
 }}

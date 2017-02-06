@@ -21,7 +21,7 @@ void HTTPRequest::_parse_header (StringRange range) {
             method.resize(mlen);
             break;
         }
-        if (++mlen > MAX_METHOD) break;
+        if (++mlen > MAX_METHOD || c == '\r' || c == '\n') break;
         *mptr++ = c;
     }
     if (!method) { error = "bad request method"; return; }
@@ -34,10 +34,10 @@ void HTTPRequest::_parse_header (StringRange range) {
     for (; cur != end; ++cur) {
         char c = *cur;
         if (c == ' ') break;
-        if (c == '\r' || c == '\n'|| (uriptr-uristr) == MAX_URI) { ok = false; break; }
+        if (c == '\r' || c == '\n' || (uriptr-uristr) == MAX_URI) { ok = false; break; }
         *uriptr++ = c;
     }
-    if (!ok || *cur++ != ' ')  {error = "couldn't find uri"; return; }
+    if (!ok || *cur++ != ' ' || uriptr == uristr)  {error = "couldn't find uri"; return; }
     uri = new URI(string(uristr, uriptr-uristr));
 
     // skip till next line
@@ -45,6 +45,31 @@ void HTTPRequest::_parse_header (StringRange range) {
     if (*cur++ != '\n')  {error = "cannot find end of request line"; return; }
 
     HTTPPacket::_parse_header(StringRange{cur, end});
+}
+
+void HTTPRequest::_to_string (string& str) {
+    if (!uri || !uri->host()) throw std::logic_error("HTTPRequest[to_string] uri with net location must be defined");
+    string uristr = uri->relative();
+    if (!uristr) uristr = "/";
+
+    size_t rslen = (method ? method.length() : 3) + uristr.length() + 20;
+    str.reserve(rslen);
+
+    if (method) {
+        str += method;
+        str += ' ';
+    }
+    else str += "GET ";
+
+    str += uristr;
+    str += ' ';
+    str += "HTTP/1.1\r\n";
+
+
+    if (headers.find("User-Agent") == headers.end()) headers.emplace("User-Agent", "Panda-WebSocket");
+    if (headers.find("Host") == headers.end())       headers.emplace("Host", uri->host());
+
+    HTTPPacket::_to_string(str);
 }
 
 void HTTPRequest::clear () {

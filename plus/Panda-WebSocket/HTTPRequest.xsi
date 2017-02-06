@@ -6,8 +6,23 @@ BOOT {
     xs::inherit_package("Panda::WebSocket::HTTPRequest", "Panda::WebSocket::HTTPPacket");
 }
 
-panda::websocket::HTTPRequest* panda::websocket::HTTPRequest::new () {
-    RETVAL = new HTTPRequest();
+SV* panda::websocket::HTTPRequest::new (HV* params = NULL) {
+    auto res = new HTTPRequest();
+    RETVAL = typemap_outcast<panda::websocket::HTTPRequest*, const char* CLASS>(res, CLASS);
+    if (params) xs::call_method_void(RETVAL, "init", 4, &ST(1), 1);
+}
+
+void panda::websocket::HTTPRequest::init (HV* params) {
+    SV** ref;
+    
+    if ((ref = hv_fetchs(params, "method", 0))) THIS->method = sv2string(aTHX_ *ref);
+    
+    if ((ref = hv_fetchs(params, "uri", 0))) {
+        if (sv_isobject(*ref)) THIS->uri = typemap_incast<panda::uri::URI*>(*ref);
+        else THIS->uri = new panda::uri::URI(sv2string(aTHX_ *ref));
+    }
+    
+    xs::call_super(cv, &ST(0), items);
 }
 
 string panda::websocket::HTTPRequest::method (SV* newval = NULL) {

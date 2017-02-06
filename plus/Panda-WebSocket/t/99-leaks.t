@@ -14,7 +14,9 @@ test_leak(1, [
     '05-Parser-get_frames.t',
     '06-Parser-get_messages.t',
     '07-Parser-mixed-mode.t',
-], 100);
+    '08-ClientParser-connect_request.t',
+    '09-ClientParser-connect.t',
+], 10000);
 
 # $leak_threshold in Kb
 sub test_leak {
@@ -28,7 +30,7 @@ sub test_leak {
         next if ref $test;
         my $filename = $test;
         $test = sub {
-        	local $SIG{__WARN__} = sub {}; # remove warnings (redefine, etc) as we load the same files many times
+            local $SIG{__WARN__} = sub {}; # remove warnings (redefine, etc) as we load the same files many times
             require $filename;
             delete $INC{$filename};
         };
@@ -41,7 +43,7 @@ sub test_leak {
     my $leak = 0;
     
     {
-    	no warnings;
+        no warnings;
         local *ok = sub {};
         local *is = sub {};
         local *isnt = sub {};

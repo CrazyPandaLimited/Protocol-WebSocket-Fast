@@ -1,5 +1,4 @@
 #pragma once
-#include <deque>
 #include <iterator>
 #include <panda/refcnt.h>
 #include <panda/string.h>
@@ -68,15 +67,35 @@ public:
 
     bool established () const { return _established; }
 
-    FrameIteratorPair   get_frames   (string& buf);
-    MessageIteratorPair get_messages (string& buf);
+    FrameIteratorPair get_frames () {
+        if (!_established) throw std::logic_error("Parser[get_frames] connection not established");
+        return FrameIteratorPair(FrameIterator(this, _get_frame()), FrameIterator(this, NULL));
+    }
+
+    MessageIteratorPair get_messages () {
+        if (!_established) throw std::logic_error("Parser[get_messages] connection not established");
+        return MessageIteratorPair(MessageIterator(this, _get_message()), MessageIterator(this, NULL));
+    }
+
+    FrameIteratorPair get_frames (string& buf) {
+        if (_buffer) _buffer += buf; // user has not iterated previous call to get_frames till the end or remainder after handshake on client side
+        else         _buffer = buf;
+        return get_frames();
+    }
+
+    MessageIteratorPair get_messages (string& buf) {
+        if (_buffer) _buffer += buf; // user has not iterated previous call to get_frames till the end or remainder after handshake on client side
+        else         _buffer = buf;
+        return get_messages();
+    }
 
     virtual void reset ();
 
     virtual ~Parser () {}
 
 protected:
-    bool _established;
+    bool   _established;
+    string _buffer;
 
     Parser (bool mask_required) :
         max_frame_size(0), max_message_size(0), _established(false), _mask_required(mask_required), _state(NONE), _frame_count(0),
@@ -86,7 +105,6 @@ private:
     enum State { NONE, FRAME, MESSAGE };
 
     bool      _mask_required;
-    string    _buffer;
     State     _state;
     FrameSP   _frame;         // current frame (frame mode)
     int       _frame_count;   // frame count for current message (frame mode)

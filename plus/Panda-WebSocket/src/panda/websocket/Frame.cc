@@ -1,6 +1,6 @@
 #include <panda/websocket/Frame.h>
+#include <cassert>
 #include <iostream>
-#include <assert.h>
 #include <panda/lib/endian.h>
 #include <panda/websocket/utils.h>
 
@@ -54,9 +54,9 @@ bool Frame::parse (string& buf) {
         _rsv3   = first.rsv3;
         _opcode = (Opcode)first.opcode;
         _state = SECOND;
-        cout << "Frame[parse]: first: FIN=" << _fin << ", RSV1=" << _rsv1 << ", RSV2=" << _rsv2 << ", RSV3=" << _rsv3 << ", OPCODE=" << _opcode << endl;
+        //cout << "Frame[parse]: first: FIN=" << _fin << ", RSV1=" << _rsv1 << ", RSV2=" << _rsv2 << ", RSV3=" << _rsv3 << ", OPCODE=" << _opcode << endl;
         if (_opcode != CONTINUE && _opcode != TEXT && _opcode != BINARY && _opcode != CLOSE && _opcode != PING && _opcode != PONG) {
-            cout << "Frame[parse]: invalid opcode=" << _opcode << endl;
+            //cout << "Frame[parse]: invalid opcode=" << _opcode << endl;
             error = "invalid opcode received";
             _state = DONE;
         }
@@ -67,7 +67,7 @@ bool Frame::parse (string& buf) {
         auto second = *((BinarySecond*)data++);
         _has_mask = second.mask;
         _slen     = second.slen;
-        cout << "Frame[parse]: second: HASMASK=" << _has_mask << ", SLEN=" << (int)_slen << endl;
+        //cout << "Frame[parse]: second: HASMASK=" << _has_mask << ", SLEN=" << (int)_slen << endl;
         if (is_control()) {
             if (!_fin) {
                 error = "control frame can't be fragmented";
@@ -88,20 +88,20 @@ bool Frame::parse (string& buf) {
     if (_state == LENGTH) {
         if (_slen < 126) {
             _length = _slen;
-            cout << "Frame[parse]: LENGTH(in)=" << _length << endl;
+            //cout << "Frame[parse]: LENGTH(in)=" << _length << endl;
             _state = MASK;
         }
         else if (data == end) return false;
         else if (_slen == 126) {
             if (!parse_binary_number(_len16, data, end - data)) return false;
             _length = panda::lib::be2h16(_len16);
-            cout << "Frame[parse]: LENGTH(ex16)=" << _length << endl;
+            //cout << "Frame[parse]: LENGTH(ex16)=" << _length << endl;
             _state = MASK;
         }
         else { // 127
             if (!parse_binary_number(_length, data, end - data)) return false;
             _length = panda::lib::be2h64(_length);
-            cout << "Frame[parse]: LENGTH(ex64)=" << _length << endl;
+            //cout << "Frame[parse]: LENGTH(ex64)=" << _length << endl;
             _state = MASK;
         }
         _payload_bytes_left = _length;
@@ -112,7 +112,7 @@ bool Frame::parse (string& buf) {
         else if (data == end) return false;
         else {
             if (!parse_binary_number(_mask, data, end - data)) return false;
-            cout << "Frame[parse]: MASK=" << _mask << endl;
+            //cout << "Frame[parse]: MASK=" << _mask << endl;
             _state = _length ? PAYLOAD : DONE;
         }
 
@@ -166,7 +166,7 @@ bool Frame::parse (string& buf) {
             payload.push_back(_close_message);
             _length -= sizeof(uint16_t);
         }
-        cout << "Frame[parse]: CLOSE CODE=" << _close_code << " MSG=" << _close_message << endl;
+        //cout << "Frame[parse]: CLOSE CODE=" << _close_code << " MSG=" << _close_message << endl;
     }
 
     return true;

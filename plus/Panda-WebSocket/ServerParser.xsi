@@ -10,9 +10,9 @@ panda::websocket::ServerParser* panda::websocket::ServerParser::new () {
     RETVAL = new ServerParser();
 }
 
-size_t panda::websocket::ServerParser::max_accept_size (SV* newval = NULL) {
-    if (newval) THIS->max_accept_size = SvUV(newval);
-    RETVAL = THIS->max_accept_size;
+size_t panda::websocket::ServerParser::max_handshake_size (SV* newval = NULL) {
+    if (newval) THIS->max_handshake_size = SvUV(newval);
+    RETVAL = THIS->max_handshake_size;
 }
 
 bool panda::websocket::ServerParser::accepted ()
@@ -26,22 +26,20 @@ panda::websocket::ConnectRequest* panda::websocket::ServerParser::accept (SV* bu
 
 string panda::websocket::ServerParser::accept_error (SV* res_sv = NULL) {
     PXS_TRY({
-        if      (!res_sv)             RETVAL = THIS->accept_error();
-        else if (sv_isobject(res_sv)) RETVAL = THIS->accept_error(typemap_incast<panda::websocket::HTTPResponse*>(res_sv));
-        else { // from hash params
-            SV* res_obj = xs::call_method_scalar(http_response_class, "new", 3, &res_sv, 1);
-            RETVAL = THIS->accept_error(typemap_incast<panda::websocket::HTTPResponse*>(res_obj));
+        if (!res_sv) RETVAL = THIS->accept_error();
+        else {
+            if (!sv_isobject(res_sv)) res_sv = xs::call_method_scalar(http_response_class, "new", 3, &res_sv, 1); // from hash params
+            RETVAL = THIS->accept_error(typemap_incast<panda::websocket::HTTPResponse*>(res_sv));
         }
     });
 }
 
 string panda::websocket::ServerParser::accept_response (SV* res_sv = NULL) {
     PXS_TRY({
-        if      (!res_sv)             RETVAL = THIS->accept_response();
-        else if (sv_isobject(res_sv)) RETVAL = THIS->accept_response(typemap_incast<panda::websocket::ConnectResponse*>(res_sv));
-        else { // from hash params
-            SV* res_obj = xs::call_method_scalar(connect_response_class, "new", 3, &res_sv, 1);
-            RETVAL = THIS->accept_response(typemap_incast<panda::websocket::ConnectResponse*>(res_obj));
+        if (!res_sv) RETVAL = THIS->accept_response();
+        else {
+            if (!sv_isobject(res_sv)) res_sv = xs::call_method_scalar(connect_response_class, "new", 3, &res_sv, 1); // from hash params
+            RETVAL = THIS->accept_response(typemap_incast<panda::websocket::ConnectResponse*>(res_sv));
         }
     });
 }

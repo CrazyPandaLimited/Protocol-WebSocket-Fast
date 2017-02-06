@@ -1,21 +1,14 @@
 #include <panda/websocket/ServerParser.h>
-#include <panda/ranges/Joiner.h>
-#include <cctype>
-#include <iostream>
 #include <exception>
-#include <stdlib.h>
 
 namespace panda { namespace websocket {
-
-using std::cout;
-using std::endl;
 
 ConnectRequestSP ServerParser::accept (string& buf) {
     if (_established || (connect_request && connect_request->parsed())) throw std::logic_error("ServerParser[accept] already parsed accept");
 
     if (!connect_request) {
         connect_request = new ConnectRequest();
-        connect_request->max_headers_size = max_accept_size;
+        connect_request->max_headers_size = max_handshake_size;
     }
 
     if (!connect_request->parse(buf)) return NULL;
@@ -102,10 +95,6 @@ void ServerParser::reset () {
     connect_request = NULL;
     _accepted = false;
     Parser::reset();
-}
-
-ServerParser::~ServerParser () {
-
 }
 
 }}

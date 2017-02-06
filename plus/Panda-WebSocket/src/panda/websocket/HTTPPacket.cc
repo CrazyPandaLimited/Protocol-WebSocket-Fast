@@ -1,6 +1,6 @@
 #include <panda/websocket/HTTPPacket.h>
 #include <iostream>
-#include <assert.h>
+#include <cassert>
 
 namespace panda { namespace websocket {
 

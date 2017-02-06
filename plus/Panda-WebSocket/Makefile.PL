@@ -19,5 +19,5 @@ write_makefile(
     #    },
     #    TYPEMAPS => {'typemap' => ''},
     #},
-    OPTIMIZE => '-O2 -g',
+    #OPTIMIZE => '-O2 -g0',
 );

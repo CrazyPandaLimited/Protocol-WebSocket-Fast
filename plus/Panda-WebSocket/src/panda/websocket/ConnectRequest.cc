@@ -1,8 +1,17 @@
 #include <panda/websocket/ConnectRequest.h>
 #include <panda/encode/base64.h>
+#include <ctime>
+#include <cstdlib>
 #include <iostream>
 
 namespace panda { namespace websocket {
+
+static bool _init () {
+    std::srand(std::time(NULL));
+    return true;
+}
+
+static const bool _inited = _init();
 
 void ConnectRequest::_parse_header (StringRange range) {
     HTTPRequest::_parse_header(range);
@@ -60,6 +69,31 @@ void ConnectRequest::_parse_header (StringRange range) {
 
     it = headers.find("Sec-WebSocket-Protocol");
     if (it != headers.end()) ws_protocol = it->second;
+}
+
+void ConnectRequest::_to_string (string& str) {
+    if (uri && uri->scheme() != "ws" && uri->scheme() != "wss") throw std::logic_error("ConnectRequest[to_string] uri scheme must be 'ws' or 'wss'");
+    if (body.size()) throw std::logic_error("ConnectRequest[to_string] http body is not allowed for websocket handshake request");
+
+    method = "GET";
+
+    if (!ws_key) {
+        decltype(std::rand()) keybuf[] = {std::rand(), std::rand(), std::rand(), std::rand()};
+        ws_key = panda::encode::encode_base64((const char*)keybuf, sizeof(keybuf), false, true);
+    }
+    replace_header("Sec-WebSocket-Key", ws_key);
+
+    if (ws_protocol) replace_header("Sec-WebSocket-Protocol", ws_protocol);
+
+    if (!ws_version) ws_version = 13;
+    replace_header("Sec-WebSocket-Version", panda::lib::itoa(ws_version));
+
+    if (_ws_extensions.size()) replace_header("Sec-WebSocket-Extensions", compile_header_value(_ws_extensions));
+
+    replace_header("Connection", "Upgrade");
+    replace_header("Upgrade", "websocket");
+
+    HTTPRequest::_to_string(str);
 }
 
 }}

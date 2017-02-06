@@ -25,6 +25,7 @@ static inline SV* new_sv_shared (const char* str) { return newSVpvn_share(str, s
 
 static SV*const http_response_class    = new_sv_shared("Panda::WebSocket::HTTPResponse");
 static SV*const connect_response_class = new_sv_shared("Panda::WebSocket::ConnectResponse");
+static SV*const connect_request_class  = new_sv_shared("Panda::WebSocket::ConnectRequest");
 
 MODULE = Panda::WebSocket                PACKAGE = Panda::WebSocket
 PROTOTYPES: DISABLE
@@ -60,6 +61,8 @@ BOOT {
 INCLUDE: Parser.xsi
 
 INCLUDE: ServerParser.xsi
+
+INCLUDE: ClientParser.xsi
 
 INCLUDE: HTTPPacket.xsi
 

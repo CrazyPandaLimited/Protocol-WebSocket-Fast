@@ -1,5 +1,4 @@
 #pragma once
-#include <panda/uri.h>
 #include <panda/refcnt.h>
 #include <panda/websocket/HTTPPacket.h>
 
@@ -12,11 +11,12 @@ public:
 
     HTTPResponse () : code(0) {}
 
-    //virtual void parse (StringRange range);
-
 protected:
-    virtual void _to_string (string& str);
+    virtual void _parse_header (StringRange range);
+    virtual void _to_string    (string& str);
 
 };
+
+typedef panda::shared_ptr<HTTPResponse> HTTPResponseSP;
 
 }}

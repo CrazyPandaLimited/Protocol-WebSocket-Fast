@@ -17,10 +17,11 @@ size_t panda::websocket::Parser::max_message_size (SV* newval = NULL) {
 
 bool panda::websocket::Parser::established ()
 
-void panda::websocket::Parser::get_frames (SV* bufsv) {
-    string buf = sv2string(aTHX_ bufsv); // need to copy because parser may save string inside (if partial content)
+void panda::websocket::Parser::get_frames (SV* bufsv = NULL) {
+    string buf;
+    if (bufsv) buf = sv2string(aTHX_ bufsv); // need to copy bufsv because parser may save string inside (if partial content)
     PXS_TRY({
-        auto frames = THIS->get_frames(buf);
+        auto frames = bufsv ? THIS->get_frames(buf) : THIS->get_frames();
         if (GIMME_V == G_ARRAY) {
             for (auto frame : frames) {
                 auto frame_sv = typemap_outcast<panda::websocket::Frame*, const char* CLASS>(frame, "Panda::WebSocket::Frame");
@@ -34,10 +35,11 @@ void panda::websocket::Parser::get_frames (SV* bufsv) {
     });
 }
 
-void panda::websocket::Parser::get_messages (SV* bufsv) {
-    string buf = sv2string(aTHX_ bufsv); // need to copy because parser may save string inside (if partial content)
+void panda::websocket::Parser::get_messages (SV* bufsv = NULL) {
+    string buf;
+    if (bufsv) buf = sv2string(aTHX_ bufsv); // need to copy bufsv because parser may save string inside (if partial content)
     PXS_TRY({
-        auto messages = THIS->get_messages(buf);
+        auto messages = bufsv ? THIS->get_messages(buf) : THIS->get_messages();
         if (GIMME_V == G_ARRAY) {
             for (auto message : messages) {
                 auto message_sv = typemap_outcast<panda::websocket::Message*, const char* CLASS>(message, "Panda::WebSocket::Message");

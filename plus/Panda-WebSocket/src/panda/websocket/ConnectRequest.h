@@ -1,5 +1,6 @@
 #pragma once
 #include <panda/uri.h>
+#include <panda/refcnt.h>
 #include <panda/websocket/HTTPRequest.h>
 
 namespace panda { namespace websocket {
@@ -21,9 +22,9 @@ public:
 
     void ws_extensions (const HeaderValues& new_extensions) { _ws_extensions = new_extensions; }
 
-
 protected:
     virtual void _parse_header (StringRange range);
+    virtual void _to_string    (string& str);
 
 private:
     HeaderValues _ws_extensions;

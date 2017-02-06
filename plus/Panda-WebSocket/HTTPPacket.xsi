@@ -13,6 +13,7 @@ void panda::websocket::HTTPPacket::init (HV* params) {
 
 string panda::websocket::HTTPPacket::error () {
     RETVAL = THIS->error;
+    if (!RETVAL) XSRETURN_UNDEF;
 }
 
 bool panda::websocket::HTTPPacket::header_ok ()

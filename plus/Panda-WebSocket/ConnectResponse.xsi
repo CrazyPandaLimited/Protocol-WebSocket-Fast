@@ -26,6 +26,9 @@ void panda::websocket::ConnectResponse::init (HV* params) {
     xs::call_super(cv, &ST(0), items);
 }
 
+string panda::websocket::ConnectResponse::ws_accept_key ()
+
+string panda::websocket::ConnectResponse::ws_versions ()
 
 AV* panda::websocket::ConnectResponse::ws_extensions (AV* exts_av = NULL) {
     if (exts_av) {

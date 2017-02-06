@@ -1,5 +1,5 @@
 #include <panda/websocket/Message.h>
-#include <assert.h>
+#include <cassert>
 
 namespace panda { namespace websocket {
 

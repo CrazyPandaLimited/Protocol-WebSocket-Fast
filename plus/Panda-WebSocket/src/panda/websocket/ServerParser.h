@@ -1,11 +1,6 @@
 #pragma once
-#include <vector>
-#include <memory>
-#include <iostream>
-#include <panda/refcnt.h>
 #include <panda/string.h>
 #include <panda/websocket/Parser.h>
-#include <panda/websocket/ParserError.h>
 #include <panda/websocket/HTTPResponse.h>
 #include <panda/websocket/ConnectRequest.h>
 #include <panda/websocket/ConnectResponse.h>
@@ -17,9 +12,9 @@ using panda::shared_ptr;
 
 class ServerParser : public Parser {
 public:
-    size_t max_accept_size;
+    size_t max_handshake_size;
 
-    ServerParser () : Parser(true), max_accept_size(0), _accepted(false) {}
+    ServerParser () : Parser(true), max_handshake_size(0), _accepted(false) {}
 
     bool accepted () const { return _accepted; }
 
@@ -36,7 +31,7 @@ public:
 
     virtual void reset ();
 
-    virtual ~ServerParser ();
+    virtual ~ServerParser () {}
 
 private:
     ConnectRequestSP connect_request;

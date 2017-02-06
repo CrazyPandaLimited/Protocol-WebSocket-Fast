@@ -76,6 +76,27 @@ sub accept_parsed {
     );
 }
 
+sub connect_request {
+    return {
+        uri           => Panda::URI->new("ws://crazypanda.ru:4321/path?a=b"),
+        ws_protocol   => 'fuck',
+        ws_extensions => [ [ 'permessage-deflate', { 'client_max_window_bits' => '' } ] ],
+        ws_version    => 13,
+        headers       => {
+            'Accept-Encoding' => 'gzip, deflate, sdch',
+            'Origin'          => 'http://www.crazypanda.ru',
+            'Cache-Control'   => 'no-cache',
+            'User-Agent'      => 'PWS-Test',
+        },
+    };
+}
+
+sub connect_response {
+    return all( 
+       qr/^GET \/path?a=b HTTP\/1.1$/,
+    );
+}
+
 sub get_established_server {
     my $p = new Panda::WebSocket::ServerParser;
     $p->accept(scalar accept_packet()) or die "should not happen";
@@ -85,10 +106,10 @@ sub get_established_server {
 }
 
 sub reset_established_server {
-	my $p = shift;
-	$p->reset;
-	die "should not happen" if $p->established;
-	$p->accept(scalar accept_packet()) or die "should not happen";
+    my $p = shift;
+    $p->reset;
+    die "should not happen" if $p->established;
+    $p->accept(scalar accept_packet()) or die "should not happen";
     $p->accept_response;
     die "should not happen" unless $p->established;
 }
@@ -113,7 +134,7 @@ sub gen_frame {
     my $data = $params->{data} // '';
     
     if ($params->{close_code} && !ref $params->{close_code}) {
-    	$data = pack("S>", $params->{close_code}).$data;
+        $data = pack("S>", $params->{close_code}).$data;
     }
     
     my $dlen = length($data);
@@ -146,29 +167,29 @@ sub gen_frame {
 }
 
 sub gen_message {
-	my $params = shift;
-	
-	my $nframes = $params->{nframes} || 1;
-	my $payload = $params->{data} // '';
-	my $opcode  = $params->{opcode} // OPCODE_TEXT;
-	
-	my $frame_len = int(length($payload) / $nframes);
-	my @bin;
-	
-	my $frames_left = $nframes;
-	while ($frames_left) {
-		my $curlen = (length($payload) / $frames_left--);
-		my $chunk = substr($payload, 0, $curlen, '');
-		push @bin, gen_frame({
-			opcode => $opcode,
-			data   => $chunk,
-			fin    => !length($payload),
-			mask   => $params->{mask},
-		});
-		$opcode = OPCODE_CONTINUE;
-	}
-	
-	return wantarray ? @bin : join('', @bin);
+    my $params = shift;
+    
+    my $nframes = $params->{nframes} || 1;
+    my $payload = $params->{data} // '';
+    my $opcode  = $params->{opcode} // OPCODE_TEXT;
+    
+    my $frame_len = int(length($payload) / $nframes);
+    my @bin;
+    
+    my $frames_left = $nframes;
+    while ($frames_left) {
+        my $curlen = (length($payload) / $frames_left--);
+        my $chunk = substr($payload, 0, $curlen, '');
+        push @bin, gen_frame({
+            opcode => $opcode,
+            data   => $chunk,
+            fin    => !length($payload),
+            mask   => $params->{mask},
+        });
+        $opcode = OPCODE_CONTINUE;
+    }
+    
+    return wantarray ? @bin : join('', @bin);
 }
 
 1;

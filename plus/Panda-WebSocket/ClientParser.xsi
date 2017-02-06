@@ -1,0 +1,31 @@
+MODULE = Panda::WebSocket                PACKAGE = Panda::WebSocket::ClientParser
+PROTOTYPES: DISABLE
+
+BOOT {
+    xs::register_package("Panda::WebSocket::ClientParser", "Panda::WebSocket");
+    xs::inherit_package("Panda::WebSocket::ClientParser", "Panda::WebSocket::Parser");
+}
+
+panda::websocket::ClientParser* panda::websocket::ClientParser::new () {
+    RETVAL = new ClientParser();
+}
+
+size_t panda::websocket::ClientParser::max_handshake_size (SV* newval = NULL) {
+    if (newval) THIS->max_handshake_size = SvUV(newval);
+    RETVAL = THIS->max_handshake_size;
+}
+
+string panda::websocket::ClientParser::connect_request (SV* reqsv) {
+    if (!sv_isobject(reqsv)) reqsv = xs::call_method_scalar(connect_request_class, "new", 3, &reqsv, 1);
+    ConnectRequestSP req = typemap_incast<panda::websocket::ConnectRequest*>(reqsv);
+    PXS_TRY({
+        RETVAL = THIS->connect_request(req);
+    });
+}
+
+panda::websocket::ConnectResponse* panda::websocket::ClientParser::connect (SV* bufsv) {
+    const char* CLASS = "Panda::WebSocket::ConnectResponse";
+    string buf = sv2string(aTHX_ bufsv);
+    PXS_TRY({ RETVAL = THIS->connect(buf); });
+    if (!RETVAL) XSRETURN_UNDEF;
+}

@@ -1,6 +1,6 @@
 #include <panda/websocket/Parser.h>
 #include <iostream>
-#include <assert.h>
+#include <cassert>
 
 namespace panda { namespace websocket {
 
@@ -15,13 +15,6 @@ void Parser::reset () {
     _frame_count = 0;
     _message = NULL;
     _message_frame.reset();
-}
-
-Parser::FrameIteratorPair Parser::get_frames (string& buf) {
-    if (!_established) throw std::logic_error("Parser[get_frames] connection not established");
-    if (_buffer) _buffer += buf; // really not good situation, that means that user has not iterated previous call to get_frames till the end
-    else         _buffer = buf;
-    return FrameIteratorPair(FrameIterator(this, _get_frame()), FrameIterator(this, NULL));
 }
 
 FrameSP Parser::_get_frame () {
@@ -56,13 +49,6 @@ FrameSP Parser::_get_frame () {
     FrameSP ret(_frame);
     _frame = NULL;
     return ret;
-}
-
-Parser::MessageIteratorPair Parser::get_messages (string& buf) {
-    if (!_established) throw std::logic_error("Parser[get_messages] connection not established");
-    if (_buffer) _buffer += buf; // really not good situation, that means that user has not iterated previous call to get_messages till the end
-    else         _buffer = buf;
-    return MessageIteratorPair(MessageIterator(this, _get_message()), MessageIterator(this, NULL));
 }
 
 MessageSP Parser::_get_message () {

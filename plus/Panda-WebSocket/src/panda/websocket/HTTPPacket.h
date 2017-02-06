@@ -38,6 +38,12 @@ public:
     void   parse_header_value   (const string& strval, HeaderValues& values);
     string compile_header_value (const HeaderValues& values);
 
+    void replace_header (const string& name, const string& value) {
+        auto it = headers.find(name);
+        if (it != headers.end()) it->second = value;
+        else headers.emplace(name, value);
+    }
+
     virtual void clear ();
 
     string to_string () {
