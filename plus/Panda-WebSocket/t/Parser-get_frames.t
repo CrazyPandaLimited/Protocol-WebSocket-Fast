@@ -6,11 +6,12 @@ use lib 't/lib'; use WSTest;
 
 my $p = WSTest::get_established_server();
 
-ok(!eval { Panda::WebSocket::ServerParser->new->get_frames('asdasd'); }, "cant get frames until established");
+ok(!eval { Panda::WebSocket::ServerParser->new->get_frames('asdasd'); }, "server parser cant get frames until established");
+ok(!eval { Panda::WebSocket::ClientParser->new->get_frames('asdasd'); }, "client parser cant get frames until established");
 
 subtest 'small frame'  => \&test_frame, {opcode => OPCODE_BINARY, mask => 1, fin => 1, data => "hello world"};
 subtest 'medium frame' => \&test_frame, {opcode => OPCODE_BINARY, mask => 1, fin => 1, data => ("1" x 1024)};
-subtest 'big frame'    => \&test_frame, {opcode => OPCODE_TEXT,   mask => 1, fin => 1, data => ("1" x 100000)};
+subtest 'big frame'    => \&test_frame, {opcode => OPCODE_TEXT,   mask => 1, fin => 1, data => ("1" x 70000)};
 subtest 'empty frame'  => \&test_frame, {opcode => OPCODE_TEXT,   mask => 1, fin => 1};
 
 subtest 'max frame size' => sub {
@@ -19,8 +20,6 @@ subtest 'max frame size' => sub {
     subtest 'exceeds' => \&test_frame, {opcode => OPCODE_TEXT, mask => 1, fin => 1, data => ("1" x 1001)}, "max frame size exceeded";
     $p->max_frame_size(0);
 };
-
-subtest 'unmasked frame' => \&test_frame, {opcode => OPCODE_TEXT, mask => 0, fin => 1, data => "jopa"}, "frame is not masked";
 
 subtest 'ping' => sub {
     subtest 'empty'      => \&test_frame, {opcode => OPCODE_PING, mask => 1, fin => 1};
@@ -94,6 +93,12 @@ subtest 'fragment frame in message without CONTINUE' => sub {
     is($second->error, "fragment frame must have opcode CONTINUE", "fin does not matter");
 };
 
+subtest 'unmasked frame in server parser' => \&test_frame, {opcode => OPCODE_TEXT, mask => 0, fin => 1, data => "jopa"}, "frame is not masked";
+$p = WSTest::get_established_client();
+subtest 'masked frame in client parser'   => \&test_frame, {opcode => OPCODE_TEXT, mask => 1, fin => 1, data => "jopa"};
+subtest 'unmasked frame in client parser' => \&test_frame, {opcode => OPCODE_TEXT, mask => 0, fin => 1, data => "jopa"};
+$p = WSTest::get_established_server();
+
 sub test_frame {
     my ($frame_data, $error) = @_;
     my $bin = gen_frame($frame_data);
@@ -111,7 +116,7 @@ sub test_frame {
         ok(scalar(@frames) == 1 && $frame, "one frame returned");
         if ($error) {
             cmp_deeply($frame->error, $error, "frame parsing error: $error");
-            WSTest::reset_established_server($p);
+            WSTest::reset($p);
         } else {
             is($frame->error, undef, "no errors");
             cmp_deeply($frame, methods(%$check_data), "frame properties ok");
@@ -126,7 +131,7 @@ sub test_frame {
         
         if ($error) {
             cmp_deeply($frame->error, $error, "frame parsing error: $error");
-            WSTest::reset_established_server($p);
+            WSTest::reset($p);
         } else {
             is($frame->error, undef, "no errors");
             cmp_deeply($frame, methods(%$check_data), "frame properties ok");

@@ -1,5 +1,4 @@
 #pragma once
-#include <algorithm_perlsafe>
 #include <xs/xs.h>
 #include <panda/websocket.h>
 
@@ -13,7 +12,24 @@ AV*  header_values_to_av (pTHX_ const HTTPPacket::HeaderValues& vals);
 void http_packet_set_headers (pTHX_ HTTPPacket* p, HV* headers);
 void http_packet_set_body    (pTHX_ HTTPPacket* p, SV* body);
 
-SV* vector_string_to_sv (pTHX_ const std::vector<string>& v);
+template <class T>
+SV* strings_to_sv (pTHX_ const T& v) {
+    size_t len = 0;
+    for (const string& s : v) len += s.length();
+    if (!len) return &PL_sv_undef;
+
+    SV* ret = newSV(len+1);
+    SvPOK_on(ret);
+    char* dest = SvPVX(ret);
+    for (const string& s : v) {
+        memcpy(dest, s.data(), s.length());
+        dest += s.length();
+    }
+    SvCUR_set(ret, len);
+
+    return ret;
+}
+
 
 class XSFrameIterator : public FrameIterator {
 public:

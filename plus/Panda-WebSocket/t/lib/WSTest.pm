@@ -99,23 +99,32 @@ sub connect_response {
 
 sub get_established_server {
     my $p = new Panda::WebSocket::ServerParser;
-    $p->accept(scalar accept_packet()) or die "should not happen";
-    $p->accept_response;
-    die "should not happen" unless $p->established;
+    _establish_server($p);
     return $p;
 }
 
-sub reset_established_server {
+sub _establish_server {
     my $p = shift;
-    $p->reset;
-    die "should not happen" if $p->established;
     $p->accept(scalar accept_packet()) or die "should not happen";
     $p->accept_response;
     die "should not happen" unless $p->established;
+}
+
+sub reset {
+    my $p = shift;
+    $p->reset;
+    die "should not happen" if $p->established;
+    $p->isa("Panda::WebSocket::ServerParser") ? _establish_server($p) : _establish_client($p);
 }
 
 sub get_established_client {
     my $p = new Panda::WebSocket::ClientParser;
+    _establish_client($p);
+    return $p;
+}
+
+sub _establish_client {
+    my $p = shift;
     my $cstr = $p->connect_request({uri => "ws://jopa.ru"});
     my $sp = new Panda::WebSocket::ServerParser;
     $sp->accept($cstr) or die "should not happen";
@@ -164,11 +173,11 @@ sub gen_frame {
     }
     $second = pack("C", $second);
     
-    my $mask = '';
+    my $mask = $params->{mask} || '';
     my $payload;
     
-    if ($params->{mask}) {
-        $mask = pack("L>", int rand(2**32-1));
+    if ($mask) {
+        $mask = (length($mask) == 4) ? $mask : pack("L>", int rand(2**32-1));
         $payload = crypt_xor($data, $mask);
     } else {
         $payload = $data;

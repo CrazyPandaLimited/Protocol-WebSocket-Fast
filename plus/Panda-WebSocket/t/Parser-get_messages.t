@@ -14,7 +14,6 @@ subtest '2 frames'     => \&test_message, {mask => 1, data => "hello world", nfr
 subtest 'many frames'  => \&test_message, {mask => 1, data => ("suchka hey" x 100), nframes => 49};
 subtest 'empty'        => \&test_message, {mask => 1};
 
-
 subtest 'ping' => sub {
     subtest 'empty'      => \&test_message, {opcode => OPCODE_PING, mask => 1, fin => 1};
     subtest 'payload'    => \&test_message, {opcode => OPCODE_PING, mask => 1, fin => 1, data => "pingdata"};
@@ -45,11 +44,6 @@ subtest 'max message size' => sub {
     subtest 'exceeds' => \&test_message, {opcode => OPCODE_TEXT, mask => 1, fin => 1, data => ("1" x 1001)}, "max message size exceeded";
     $p->max_frame_size(0);
     $p->max_message_size(0);
-};
-
-subtest 'message with unmasked frame' => sub {
-    my $message = test_message({opcode => OPCODE_TEXT, mask => 0, data => "jopa noviy god", nframes => 2}, "frame is not masked");
-    is($message->frame_count, 0, "error caught on first frame and rest is dropped, error frame is not counted");
 };
 
 subtest '2 messages via it->next' => sub {
@@ -139,6 +133,16 @@ subtest 'fragment frame in message without CONTINUE' => sub {
     is($message->error, "fragment frame must have opcode CONTINUE", "uncompleted does not matter");
 };
 
+subtest 'message with unmasked frame in server parser' => sub {
+    my $message = test_message({opcode => OPCODE_TEXT, mask => 0, data => "jopa noviy god", nframes => 2}, "frame is not masked");
+    is($message->frame_count, 0, "error caught on first frame and rest is dropped, error frame is not counted");
+};
+
+$p = WSTest::get_established_client();
+subtest 'message with masked frame in client parser'   => \&test_message, {mask => 1, data => "jopa"};
+subtest 'message with unmasked frame in client parser' => \&test_message, {mask => 0, data => "jopa"};
+$p = WSTest::get_established_server();
+
 sub test_message {
     my ($message_data, $error) = @_;
     my $opcode = $message_data->{opcode} // OPCODE_TEXT;
@@ -165,7 +169,7 @@ sub test_message {
         ok(scalar(@messages) == 1 && $message, "one message returned");
         if ($error) {
             cmp_deeply($message->error, $error, "message parsing error: $error");
-            WSTest::reset_established_server($p);
+            WSTest::reset($p);
         } else {
             is($message->error, undef, "no errors");
             cmp_deeply($message, methods(%$check_data), "message properties ok");
@@ -181,7 +185,7 @@ sub test_message {
         
         if ($error) {
             cmp_deeply($message->error, $error, "message parsing error: $error");
-            WSTest::reset_established_server($p);
+            WSTest::reset($p);
         } else {
             is($message->error, undef, "no errors");
             cmp_deeply($message, methods(%$check_data), "message properties ok");

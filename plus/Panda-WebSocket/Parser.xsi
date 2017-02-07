@@ -53,6 +53,15 @@ void panda::websocket::Parser::get_messages (SV* bufsv = NULL) {
     });
 }
 
+SV* panda::websocket::Parser::send_frame (bool final, SV* svpayload, int opcode = Frame::BINARY) {
+    PXS_TRY({
+        std::deque<string> payload;
+        payload.push_back(sv2string(aTHX_ svpayload));
+        THIS->send_frame(final, payload, (Frame::Opcode)opcode);
+        RETVAL = strings_to_sv(payload);
+    });
+}
+
 void panda::websocket::Parser::reset ()
 
 void panda::websocket::Parser::DESTROY () {}

@@ -53,7 +53,7 @@ subtest '1x2 frame + message' => sub {
         my $f1 = $fit->next;
         cmp_deeply($f1, methods(opcode => OPCODE_TEXT, payload => "part1"), "frame ok");
         ok(!eval {$fit->get_messages}, "exception when trying to get messages");
-        WSTest::reset_established_server($p);
+        WSTest::reset($p);
     };
 };
 
@@ -84,7 +84,7 @@ subtest '1x2 frame + control in the middle + message' => sub {
         cmp_deeply($f1, methods(opcode => OPCODE_TEXT, payload => "fpart1"), "frame ok");
         cmp_deeply($cl, methods(opcode => OPCODE_CLOSE), "control ok");
         ok(!eval {$fit->get_messages}, "exception when trying to get messages");
-        WSTest::reset_established_server($p);
+        WSTest::reset($p);
     };
 };
 
@@ -108,7 +108,7 @@ subtest '1x2 message + frame' => sub {
         my $mit = $p->get_messages($m1bin1);
         is($mit, undef, "not yet");
         ok(!eval { $p->get_frames($m1bin2) }, "exception when trying to get frames");
-        WSTest::reset_established_server($p);
+        WSTest::reset($p);
     };
 };
 
@@ -139,7 +139,7 @@ subtest '1x2 message + control in the middle + frame' => sub {
         my $m = $mit->next;
         cmp_deeply($m, methods(opcode => OPCODE_PONG), "control ok");
         ok(!eval { $p->get_frames($m1bin2) }, "exception when trying to get frames");
-        WSTest::reset_established_server($p);
+        WSTest::reset($p);
     };
 };
 

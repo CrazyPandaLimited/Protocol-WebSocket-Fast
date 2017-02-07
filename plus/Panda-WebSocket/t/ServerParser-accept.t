@@ -51,7 +51,7 @@ $p->reset();
 subtest 'max_handshake_size' => sub {
     my @data = accept_packet();
     my $last = pop @data;
-    my $big  = ("header: value\r\n" x 1000);
+    my $big  = ("header: value\r\n" x 100);
     $p->accept($_) for @data;
     $p->accept($big);
     my $creq = $p->accept($last);
@@ -61,7 +61,7 @@ subtest 'max_handshake_size' => sub {
     
     $p->reset();
     
-    $p->max_handshake_size(10000);
+    $p->max_handshake_size(1000);
     $p->accept($_) for @data;
     $creq = $p->accept($big);
     ok($creq, "buffer limit exceeded");

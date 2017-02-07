@@ -61,7 +61,7 @@ SV* body (panda::websocket::HTTPPacketSP THIS, SV* newval = NULL) {
         http_packet_set_body(THIS, newval);
         XSRETURN_UNDEF;
     }
-    RETVAL = vector_string_to_sv(THIS->body);
+    RETVAL = strings_to_sv(THIS->body);
 }
 
 void clear (panda::websocket::HTTPPacketSP THIS) {

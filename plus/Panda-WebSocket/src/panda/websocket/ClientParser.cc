@@ -1,7 +1,16 @@
 #include <panda/websocket/ClientParser.h>
+#include <ctime>
+#include <cstdlib>
 #include <exception>
 
 namespace panda { namespace websocket {
+
+static bool _init () {
+    std::srand(std::time(NULL));
+    return true;
+}
+
+static const bool _inited = _init();
 
 string ClientParser::connect_request (ConnectRequestSP& req) {
     if (_connect_request) throw std::logic_error("ClientParser[connect_request] already requested connection");

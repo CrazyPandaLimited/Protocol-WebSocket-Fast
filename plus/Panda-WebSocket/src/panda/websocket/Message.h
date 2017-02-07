@@ -19,7 +19,7 @@ public:
     Message (size_t max_size) : frame_count(0), _max_size(max_size), _state(PENDING), _payload_length(0) {}
 
     Opcode   opcode         () const { return _opcode; }
-    bool     is_control     () const { return _is_control; }
+    bool     is_control     () const { return Frame::is_control_opcode(_opcode); }
     uint16_t close_code     () const { return _close_code; }
     string   close_message  () const { return _close_message; }
     size_t   payload_length () const { return _payload_length; }
@@ -32,7 +32,6 @@ private:
     size_t   _max_size;
     State    _state;
     Opcode   _opcode;
-    bool     _is_control;
     uint16_t _close_code;
     string   _close_message;
     size_t   _payload_length;

@@ -92,4 +92,19 @@ MessageSP Parser::_get_message () {
     return ret;
 }
 
+void Parser::send_frame (bool final, std::deque<string>& payload, Frame::Opcode opcode) {
+    if (Frame::is_control_opcode(opcode)) {
+        if (!final) throw std::logic_error("Parser[send_frame] control frame must be final");
+    } else {
+        if (_sent_frame_count) opcode = Frame::CONTINUE;
+        if (final) _sent_frame_count = 0;
+        else ++_sent_frame_count;
+    }
+
+    for (auto& str : payload) {
+        // TODO: change str with extensions
+    }
+    Frame::compile(final, 0, 0, 0, !_mask_required, opcode, payload);
+}
+
 }}

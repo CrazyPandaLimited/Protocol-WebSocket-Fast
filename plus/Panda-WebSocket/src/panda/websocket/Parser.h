@@ -1,4 +1,5 @@
 #pragma once
+#include <deque>
 #include <iterator>
 #include <panda/refcnt.h>
 #include <panda/string.h>
@@ -89,6 +90,8 @@ public:
         return get_messages();
     }
 
+    void send_frame (bool final, std::deque<string>& payload, Frame::Opcode opcode = Frame::BINARY);
+
     virtual void reset ();
 
     virtual ~Parser () {}
@@ -98,18 +101,26 @@ protected:
     string _buffer;
 
     Parser (bool mask_required) :
-        max_frame_size(0), max_message_size(0), _established(false), _mask_required(mask_required), _state(NONE), _frame_count(0),
-        _message_frame(mask_required, max_frame_size) {}
+        max_frame_size(0),
+        max_message_size(0),
+        _established(false),
+        _mask_required(mask_required),
+        _state(NONE),
+        _frame_count(0),
+        _message_frame(mask_required, max_frame_size),
+        _sent_frame_count(0)
+    {}
 
 private:
     enum State { NONE, FRAME, MESSAGE };
 
     bool      _mask_required;
     State     _state;
-    FrameSP   _frame;         // current frame (frame mode)
-    int       _frame_count;   // frame count for current message (frame mode)
-    MessageSP _message;       // current message (message mode)
-    Frame     _message_frame; // current frame (message mode)
+    FrameSP   _frame;            // current frame being received (frame mode)
+    int       _frame_count;      // frame count for current message being received (frame mode)
+    MessageSP _message;          // current message being received (message mode)
+    Frame     _message_frame;    // current frame being received (message mode)
+    int       _sent_frame_count; // frame count for current message being sent (frame mode)
 
     FrameSP   _get_frame ();
     MessageSP _get_message ();

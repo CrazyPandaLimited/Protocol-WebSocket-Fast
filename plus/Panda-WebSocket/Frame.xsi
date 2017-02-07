@@ -27,7 +27,7 @@ size_t payload_length (panda::websocket::FrameSP THIS) {
 }
 
 SV* payload (panda::websocket::FrameSP THIS) {
-    RETVAL = vector_string_to_sv(THIS->payload);
+    RETVAL = strings_to_sv(THIS->payload);
 }
 
 uint16_t close_code (panda::websocket::FrameSP THIS) {

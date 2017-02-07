@@ -1,17 +1,9 @@
 #include <panda/websocket/ConnectRequest.h>
 #include <panda/encode/base64.h>
-#include <ctime>
 #include <cstdlib>
 #include <iostream>
 
 namespace panda { namespace websocket {
-
-static bool _init () {
-    std::srand(std::time(NULL));
-    return true;
-}
-
-static const bool _inited = _init();
 
 void ConnectRequest::_parse_header (StringRange range) {
     HTTPRequest::_parse_header(range);

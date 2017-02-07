@@ -1,4 +1,5 @@
 #pragma once
+#include <deque>
 #include <vector>
 #include <cassert>
 #include <panda/refcnt.h>
@@ -26,7 +27,7 @@ public:
     Frame (bool mask_required, size_t max_size) :
         _mask_required(mask_required), _max_size(max_size), _state(FIRST), _len16(0), _length(0), _mask(0) {}
 
-    bool     is_control     () const { return _opcode >= CLOSE; }
+    bool     is_control     () const { return is_control_opcode(_opcode); }
     Opcode   opcode         () const { return _opcode; }
     bool     final          () const { return _fin; }
     bool     has_mask       () const { return _has_mask; }
@@ -45,6 +46,10 @@ public:
         }
         else if (_opcode != Frame::CONTINUE) error = "fragment frame must have opcode CONTINUE";
     }
+
+    static void compile (bool final, bool rsv1, bool rsv2, bool rsv3, bool need_mask, Opcode opcode, std::deque<string>& payload);
+
+    static bool is_control_opcode (Opcode opcode) { return opcode >= CLOSE; }
 
 private:
     enum State { FIRST, SECOND, LENGTH, MASK, PAYLOAD, DONE };

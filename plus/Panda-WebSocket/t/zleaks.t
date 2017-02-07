@@ -8,15 +8,16 @@ plan skip_all => 'set WITH_LEAKS=1 to enable leaks test' unless $ENV{WITH_LEAKS}
 plan skip_all => 'BSD::Resource required to test for leaks' unless eval { require BSD::Resource; 1 };
 
 test_leak(1, [
-    '02-ServerParser-accept.t',
-    '03-ServerParser-accept_error.t',
-    '04-ServerParser-accept_response.t',
-    '05-Parser-get_frames.t',
-    '06-Parser-get_messages.t',
-    '07-Parser-mixed-mode.t',
-    '08-ClientParser-connect_request.t',
-    '09-ClientParser-connect.t',
-], 10000);
+    'ServerParser-accept.t',
+    'ServerParser-accept_error.t',
+    'ServerParser-accept_response.t',
+    'Parser-get_frames.t',
+    'Parser-get_messages.t',
+    'Parser-mixed-mode.t',
+    'ClientParser-connect_request.t',
+    'ClientParser-connect.t',
+    'Parser-send_frame.t',
+], 1000);
 
 # $leak_threshold in Kb
 sub test_leak {

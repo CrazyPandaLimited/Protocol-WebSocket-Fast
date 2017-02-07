@@ -14,7 +14,6 @@ bool Message::add_frame (const Frame& frame) {
 
     if (!frame_count++) {
         _opcode = frame.opcode();
-        _is_control = frame.is_control();
         if (_opcode == Frame::CLOSE) {
             _close_code    = frame.close_code();
             _close_message = frame.close_message();

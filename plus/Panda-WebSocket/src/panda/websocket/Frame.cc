@@ -1,5 +1,6 @@
 #include <panda/websocket/Frame.h>
 #include <cassert>
+#include <cstdlib>
 #include <iostream>
 #include <panda/lib/endian.h>
 #include <panda/websocket/utils.h>
@@ -170,6 +171,45 @@ bool Frame::parse (string& buf) {
     }
 
     return true;
+}
+
+void Frame::compile (bool final, bool rsv1, bool rsv2, bool rsv3, bool need_mask, Opcode opcode, std::deque<string>& payload) {
+    string header(14); // worst case: 2 bytes required + 8-byte length + 4-byte mask
+    char* hptr = header.buf();
+
+    uint32_t mask;
+    size_t plen = 0;
+    if (need_mask) {
+        mask = std::rand();
+        for (auto& str : payload) {
+            auto slen = str.length();
+            crypt_mask((char*)str.data(), slen, mask, plen); // TODO: remove (char*)cast when unique_string is done
+            plen += slen;
+        }
+    }
+    else for (auto& str : payload) plen += str.length();
+
+    *((BinaryFirst*)hptr++) = BinaryFirst{opcode, rsv3, rsv2, rsv1, final};
+
+    if (plen < 126) {
+        *((BinarySecond*)hptr++) = BinarySecond{(uint8_t)plen, need_mask};
+    } else if (plen < 65536) {
+        *((BinarySecond*)hptr++) = BinarySecond{126, need_mask};
+        *((uint16_t*)hptr) = panda::lib::h2be16(plen);
+        hptr += sizeof(uint16_t);
+    } else {
+        *((BinarySecond*)hptr++) = BinarySecond{127, need_mask};
+        *((uint64_t*)hptr) = panda::lib::h2be64(plen);
+        hptr += sizeof(uint64_t);
+    }
+
+    if (need_mask) {
+        *((uint32_t*)hptr) = mask;
+        hptr += sizeof(uint32_t);
+    }
+
+    header.resize(hptr - header.data());
+    payload.push_front(header);
 }
 
 void Frame::reset () {

@@ -62,21 +62,4 @@ void http_packet_set_body (pTHX_ HTTPPacket* p, SV* sv) {
     if (newbody.length()) p->body.push_back(newbody);
 }
 
-SV* vector_string_to_sv (pTHX_ const std::vector<string>& v) {
-    size_t len = 0;
-    for (const auto& s : v) len += s.length();
-    if (!len) return &PL_sv_undef;
-
-    SV* ret = newSV(len+1);
-    SvPOK_on(ret);
-    char* dest = SvPVX(ret);
-    for (const auto& s : v) {
-        memcpy(dest, s.data(), s.length());
-        dest += s.length();
-    }
-    SvCUR_set(ret, len);
-
-    return ret;
-}
-
 }}
