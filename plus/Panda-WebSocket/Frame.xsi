@@ -5,25 +5,37 @@ BOOT {
     xs::register_package("Panda::WebSocket::Frame", "Panda::WebSocket");
 }
 
-string panda::websocket::Frame::error () {
+string error (panda::websocket::FrameSP THIS) {
     if (!THIS->error) XSRETURN_UNDEF;
     RETVAL = THIS->error;
 }
 
-int panda::websocket::Frame::opcode ()
+int opcode (panda::websocket::FrameSP THIS) {
+    RETVAL = THIS->opcode();
+}
 
-bool panda::websocket::Frame::is_control ()
+bool is_control (panda::websocket::FrameSP THIS) {
+    RETVAL = THIS->is_control();
+}
 
-bool panda::websocket::Frame::final ()
+bool final (panda::websocket::FrameSP THIS) {
+    RETVAL = THIS->final();
+}
 
-size_t panda::websocket::Frame::payload_length ()
+size_t payload_length (panda::websocket::FrameSP THIS) {
+    RETVAL = THIS->payload_length();
+}
 
-SV* panda::websocket::Frame::payload () {
+SV* payload (panda::websocket::FrameSP THIS) {
     RETVAL = vector_string_to_sv(THIS->payload);
 }
 
-uint16_t panda::websocket::Frame::close_code ()
+uint16_t close_code (panda::websocket::FrameSP THIS) {
+    RETVAL = THIS->close_code();
+}
 
-string panda::websocket::Frame::close_message ()
+string close_message (panda::websocket::FrameSP THIS) {
+    RETVAL = THIS->close_message();
+}
 
-void panda::websocket::Frame::DESTROY () {}
+void DESTROY (panda::websocket::FrameSP THIS) {}

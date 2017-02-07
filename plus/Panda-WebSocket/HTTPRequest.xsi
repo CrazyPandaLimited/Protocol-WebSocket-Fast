@@ -6,13 +6,13 @@ BOOT {
     xs::inherit_package("Panda::WebSocket::HTTPRequest", "Panda::WebSocket::HTTPPacket");
 }
 
-SV* panda::websocket::HTTPRequest::new (HV* params = NULL) {
+SV* new (SV* CLASS, SV* params = NULL) {
     auto res = new HTTPRequest();
-    RETVAL = typemap_outcast<panda::websocket::HTTPRequest*, const char* CLASS>(res, CLASS);
+    RETVAL = typemap_outcast<panda::websocket::HTTPRequestSP, SV* CLASS>(res, CLASS);
     if (params) xs::call_method_void(RETVAL, "init", 4, &ST(1), 1);
 }
 
-void panda::websocket::HTTPRequest::init (HV* params) {
+void init (panda::websocket::HTTPRequestSP THIS, HV* params) {
     SV** ref;
     
     if ((ref = hv_fetchs(params, "method", 0))) THIS->method = sv2string(aTHX_ *ref);
@@ -25,7 +25,7 @@ void panda::websocket::HTTPRequest::init (HV* params) {
     xs::call_super(cv, &ST(0), items);
 }
 
-string panda::websocket::HTTPRequest::method (SV* newval = NULL) {
+string method (panda::websocket::HTTPRequestSP THIS, SV* newval = NULL) {
     if (newval) {
         THIS->method = sv2string(aTHX_ newval);
         XSRETURN_UNDEF;
@@ -33,7 +33,7 @@ string panda::websocket::HTTPRequest::method (SV* newval = NULL) {
     RETVAL = THIS->method;
 }
 
-panda::uri::URI* panda::websocket::HTTPRequest::uri (panda::uri::URI* newval = NULL) {
+panda::uri::URI* uri (panda::websocket::HTTPRequestSP THIS, panda::uri::URI* newval = NULL) {
     if (newval) {
         THIS->uri = newval;
         XSRETURN_UNDEF;

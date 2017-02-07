@@ -17,13 +17,13 @@ size_t panda::websocket::ClientParser::max_handshake_size (SV* newval = NULL) {
 
 string panda::websocket::ClientParser::connect_request (SV* reqsv) {
     if (!sv_isobject(reqsv)) reqsv = xs::call_method_scalar(connect_request_class, "new", 3, &reqsv, 1);
-    ConnectRequestSP req = typemap_incast<panda::websocket::ConnectRequest*>(reqsv);
+    ConnectRequestSP req = typemap_incast<panda::websocket::ConnectRequestSP>(reqsv);
     PXS_TRY({
         RETVAL = THIS->connect_request(req);
     });
 }
 
-panda::websocket::ConnectResponse* panda::websocket::ClientParser::connect (SV* bufsv) {
+panda::websocket::ConnectResponseSP panda::websocket::ClientParser::connect (SV* bufsv) {
     const char* CLASS = "Panda::WebSocket::ConnectResponse";
     string buf = sv2string(aTHX_ bufsv);
     PXS_TRY({ RETVAL = THIS->connect(buf); });

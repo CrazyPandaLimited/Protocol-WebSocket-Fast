@@ -114,6 +114,18 @@ sub reset_established_server {
     die "should not happen" unless $p->established;
 }
 
+sub get_established_client {
+    my $p = new Panda::WebSocket::ClientParser;
+    my $cstr = $p->connect_request({uri => "ws://jopa.ru"});
+    my $sp = new Panda::WebSocket::ServerParser;
+    $sp->accept($cstr) or die "should not happen";
+    $sp->accepted or die "should not happen";
+    my $rstr = $sp->accept_response;
+    $p->connect($rstr) or die "should not happen";
+    $p->established or die "should not happen";
+    return $p;
+}
+
 sub gen_frame {
     my $params = shift;
     

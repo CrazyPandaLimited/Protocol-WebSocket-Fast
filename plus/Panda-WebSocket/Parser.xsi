@@ -24,7 +24,7 @@ void panda::websocket::Parser::get_frames (SV* bufsv = NULL) {
         auto frames = bufsv ? THIS->get_frames(buf) : THIS->get_frames();
         if (GIMME_V == G_ARRAY) {
             for (auto frame : frames) {
-                auto frame_sv = typemap_outcast<panda::websocket::Frame*, const char* CLASS>(frame, "Panda::WebSocket::Frame");
+                auto frame_sv = typemap_outcast<panda::websocket::FrameSP, const char* CLASS>(frame, "Panda::WebSocket::Frame");
                 mXPUSHs(frame_sv);
             }
         } else {
@@ -42,7 +42,7 @@ void panda::websocket::Parser::get_messages (SV* bufsv = NULL) {
         auto messages = bufsv ? THIS->get_messages(buf) : THIS->get_messages();
         if (GIMME_V == G_ARRAY) {
             for (auto message : messages) {
-                auto message_sv = typemap_outcast<panda::websocket::Message*, const char* CLASS>(message, "Panda::WebSocket::Message");
+                auto message_sv = typemap_outcast<panda::websocket::MessageSP, const char* CLASS>(message, "Panda::WebSocket::Message");
                 mXPUSHs(message_sv);
             }
         } else {

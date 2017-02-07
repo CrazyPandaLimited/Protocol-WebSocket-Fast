@@ -5,27 +5,37 @@ BOOT {
     xs::register_package("Panda::WebSocket::Message", "Panda::WebSocket");
 }
 
-string panda::websocket::Message::error () {
+string error (panda::websocket::MessageSP THIS) {
     if (!THIS->error) XSRETURN_UNDEF;
     RETVAL = THIS->error;
 }
 
-int panda::websocket::Message::opcode ()
+int opcode (panda::websocket::MessageSP THIS) {
+    RETVAL = THIS->opcode();
+}
 
-bool panda::websocket::Message::is_control ()
+bool is_control (panda::websocket::MessageSP THIS) {
+    RETVAL = THIS->is_control();
+}
 
-size_t panda::websocket::Message::payload_length ()
+size_t payload_length (panda::websocket::MessageSP THIS) {
+    RETVAL = THIS->payload_length();
+}
 
-SV* panda::websocket::Message::payload () {
+SV* payload (panda::websocket::MessageSP THIS) {
     RETVAL = vector_string_to_sv(THIS->payload);
 }
 
-uint16_t panda::websocket::Message::close_code ()
+uint16_t close_code (panda::websocket::MessageSP THIS) {
+    RETVAL = THIS->close_code();
+}
 
-string panda::websocket::Message::close_message ()
+string close_message (panda::websocket::MessageSP THIS) {
+    RETVAL = THIS->close_message();
+}
 
-int panda::websocket::Message::frame_count () {
+int frame_count (panda::websocket::MessageSP THIS) {
     RETVAL = THIS->frame_count;
 }
 
-void panda::websocket::Message::DESTROY () {}
+void DESTROY (panda::websocket::MessageSP THIS) {}

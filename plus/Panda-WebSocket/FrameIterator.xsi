@@ -5,7 +5,7 @@ BOOT {
     xs::register_package("Panda::WebSocket::FrameIterator", "Panda::WebSocket");
 }
 
-panda::websocket::Frame* xs::websocket::XSFrameIterator::next () {
+panda::websocket::FrameSP xs::websocket::XSFrameIterator::next () {
     const char* CLASS = "Panda::WebSocket::Frame";
     PXS_TRY({
         RETVAL = THIS->next(); // iterator over frames is a lazy-parser and may throw exceptions

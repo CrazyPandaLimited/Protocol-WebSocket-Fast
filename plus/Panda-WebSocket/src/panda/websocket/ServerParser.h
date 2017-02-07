@@ -34,7 +34,7 @@ public:
     virtual ~ServerParser () {}
 
 private:
-    ConnectRequestSP connect_request;
+    ConnectRequestSP _connect_request;
     bool             _accepted;
 
 };

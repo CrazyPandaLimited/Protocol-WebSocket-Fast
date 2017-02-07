@@ -6,7 +6,6 @@
 namespace panda { namespace websocket {
 
 using panda::uri::URI;
-using panda::shared_ptr;
 
 class HTTPRequest : public HTTPPacket {
 public:

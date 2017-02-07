@@ -6,13 +6,13 @@ BOOT {
     xs::inherit_package("Panda::WebSocket::ConnectResponse", "Panda::WebSocket::HTTPResponse");
 }
 
-SV* panda::websocket::ConnectResponse::new (HV* params = NULL) {
+SV* new (SV* CLASS, HV* params = NULL) {
     auto res = new ConnectResponse();
-    RETVAL = typemap_outcast<panda::websocket::ConnectResponse*, const char* CLASS>(res, CLASS);
+    RETVAL = typemap_outcast<panda::websocket::ConnectResponseSP, SV* CLASS>(res, CLASS);
     if (params) xs::call_method_void(RETVAL, "init", 4, &ST(1), 1);
 }
 
-void panda::websocket::ConnectResponse::init (HV* params) {
+void init (panda::websocket::ConnectResponseSP THIS, HV* params) {
     SV** ref;
     
     if ((ref = hv_fetchs(params, "ws_extensions", 0))) {
@@ -26,11 +26,15 @@ void panda::websocket::ConnectResponse::init (HV* params) {
     xs::call_super(cv, &ST(0), items);
 }
 
-string panda::websocket::ConnectResponse::ws_accept_key ()
+string ws_accept_key (panda::websocket::ConnectResponseSP THIS) {
+    RETVAL = THIS->ws_accept_key();
+}
 
-string panda::websocket::ConnectResponse::ws_versions ()
+string ws_versions (panda::websocket::ConnectResponseSP THIS) {
+    RETVAL = THIS->ws_versions();
+}
 
-AV* panda::websocket::ConnectResponse::ws_extensions (AV* exts_av = NULL) {
+AV* ws_extensions (panda::websocket::ConnectResponseSP THIS, AV* exts_av = NULL) {
     if (exts_av) {
         HTTPPacket::HeaderValues exts;
         av_to_header_values(aTHX_ exts_av, &exts);
@@ -42,7 +46,7 @@ AV* panda::websocket::ConnectResponse::ws_extensions (AV* exts_av = NULL) {
     if (!RETVAL) XSRETURN_UNDEF;
 }
 
-string panda::websocket::ConnectResponse::ws_protocol (SV* newval = NULL) {
+string ws_protocol (panda::websocket::ConnectResponseSP THIS, SV* newval = NULL) {
     if (newval) {
         THIS->ws_protocol = sv2string(aTHX_ newval);
         XSRETURN_UNDEF;

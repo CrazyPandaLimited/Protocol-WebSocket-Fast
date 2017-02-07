@@ -4,14 +4,14 @@ panda::websocket::Parser*       XT_PWS_PARSER
 panda::websocket::ServerParser* XT_PWS_PARSER
 panda::websocket::ClientParser* XT_PWS_PARSER
 
-panda::websocket::HTTPPacket*      XT_PWS_HTTP_PACKET
-panda::websocket::HTTPRequest*     XT_PWS_HTTP_PACKET
-panda::websocket::HTTPResponse*    XT_PWS_HTTP_PACKET
-panda::websocket::ConnectRequest*  XT_PWS_HTTP_PACKET
-panda::websocket::ConnectResponse* XT_PWS_HTTP_PACKET
+panda::websocket::HTTPPacketSP      XT_PWS_HTTP_PACKET
+panda::websocket::HTTPRequestSP     XT_PWS_HTTP_PACKET
+panda::websocket::HTTPResponseSP    XT_PWS_HTTP_PACKET
+panda::websocket::ConnectRequestSP  XT_PWS_HTTP_PACKET
+panda::websocket::ConnectResponseSP XT_PWS_HTTP_PACKET
 
-panda::websocket::Frame*   XT_PWS_FRAME
-panda::websocket::Message* XT_PWS_MESSAGE
+panda::websocket::FrameSP   XT_PWS_FRAME
+panda::websocket::MessageSP XT_PWS_MESSAGE
 
 xs::websocket::XSFrameIterator*   XT_PWSXS_FRAME_ITERATOR
 xs::websocket::XSMessageIterator* XT_PWSXS_MESSAGE_ITERATOR
@@ -21,11 +21,11 @@ OUTPUT
 
 XT_PWS_PARSER             : T_OEXT(basetype=panda::websocket::Parser*, refcnt)
 
-XT_PWS_HTTP_PACKET        : T_OEXT(basetype=panda::websocket::HTTPPacket*, refcnt)
+XT_PWS_HTTP_PACKET        : T_OEXT(basetype=panda::websocket::HTTPPacketSP)
 
-XT_PWS_FRAME              : T_OEXT(basetype=panda::websocket::Frame*, refcnt)
+XT_PWS_FRAME              : T_OEXT(basetype=panda::websocket::FrameSP)
 
-XT_PWS_MESSAGE            : T_OEXT(basetype=panda::websocket::Message*, refcnt)
+XT_PWS_MESSAGE            : T_OEXT(basetype=panda::websocket::MessageSP)
 
 XT_PWSXS_FRAME_ITERATOR   : T_OPTR(basetype=xs::websocket::XSFrameIterator*, static_cast)
 
@@ -36,11 +36,11 @@ INPUT
 
 XT_PWS_PARSER             : T_OEXT(basetype=panda::websocket::Parser*, refcnt)
 
-XT_PWS_HTTP_PACKET        : T_OEXT(basetype=panda::websocket::HTTPPacket*, refcnt)
+XT_PWS_HTTP_PACKET        : T_OEXT(basetype=panda::websocket::HTTPPacketSP)
 
-XT_PWS_FRAME              : T_OEXT(basetype=panda::websocket::Frame*, refcnt)
+XT_PWS_FRAME              : T_OEXT(basetype=panda::websocket::FrameSP)
 
-XT_PWS_MESSAGE            : T_OEXT(basetype=panda::websocket::Message*, refcnt)
+XT_PWS_MESSAGE            : T_OEXT(basetype=panda::websocket::MessageSP)
 
 XT_PWSXS_FRAME_ITERATOR   : T_OPTR(basetype=xs::websocket::XSFrameIterator*, static_cast)
 

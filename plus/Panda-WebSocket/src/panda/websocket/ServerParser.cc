@@ -4,31 +4,31 @@
 namespace panda { namespace websocket {
 
 ConnectRequestSP ServerParser::accept (string& buf) {
-    if (_established || (connect_request && connect_request->parsed())) throw std::logic_error("ServerParser[accept] already parsed accept");
+    if (_established || (_connect_request && _connect_request->parsed())) throw std::logic_error("ServerParser[accept] already parsed accept");
 
-    if (!connect_request) {
-        connect_request = new ConnectRequest();
-        connect_request->max_headers_size = max_handshake_size;
+    if (!_connect_request) {
+        _connect_request = new ConnectRequest();
+        _connect_request->max_headers_size = max_handshake_size;
     }
 
-    if (!connect_request->parse(buf)) return NULL;
+    if (!_connect_request->parse(buf)) return NULL;
 
-    if (!connect_request->error) {
-        if (buf) connect_request->error = "garbage found after http request";
+    if (!_connect_request->error) {
+        if (buf) _connect_request->error = "garbage found after http request";
         else _accepted = true;
     }
 
-    return connect_request;
+    return _connect_request;
 }
 
 string ServerParser::accept_error () {
-    if (_established || !connect_request || !connect_request->parsed()) throw std::logic_error("ServerParser[accept_error] accept not parsed yet");
-    if (!connect_request->error) throw std::logic_error("ServerParser[accept_error] no errors found");
+    if (_established || !_connect_request || !_connect_request->parsed()) throw std::logic_error("ServerParser[accept_error] accept not parsed yet");
+    if (!_connect_request->error) throw std::logic_error("ServerParser[accept_error] no errors found");
 
     HTTPResponse res;
     res.headers.emplace("Content-Type", "text/plain");
 
-    if (!connect_request->ws_version_supported()) {
+    if (!_connect_request->ws_version_supported()) {
         res.code    = 426;
         res.message = "Upgrade Required";
         res.body.push_back("426 Upgrade Required");
@@ -45,7 +45,7 @@ string ServerParser::accept_error () {
         res.code    = 400;
         res.message = "Bad Request";
         res.body.push_back("400 Bad Request\n");
-        res.body.push_back(connect_request->error);
+        res.body.push_back(_connect_request->error);
     }
 
     reset();
@@ -53,8 +53,8 @@ string ServerParser::accept_error () {
 }
 
 string ServerParser::accept_error (HTTPResponse* res) {
-    if (_established || !connect_request || !connect_request->parsed()) throw std::logic_error("ServerParser[accept_error] accept not parsed yet");
-    if (connect_request->error) return accept_error();
+    if (_established || !_connect_request || !_connect_request->parsed()) throw std::logic_error("ServerParser[accept_error] accept not parsed yet");
+    if (_connect_request->error) return accept_error();
 
     if (!res->code) {
         res->code = 400;
@@ -75,9 +75,9 @@ string ServerParser::accept_error (HTTPResponse* res) {
 string ServerParser::accept_response (ConnectResponse* res) {
     if (!_accepted) throw std::logic_error("ServerParser[accept_response] client not accepted");
 
-    res->_ws_key = connect_request->ws_key;
-    if (!res->ws_protocol) res->ws_protocol = connect_request->ws_protocol;
-    if (!res->ws_extensions_set()) res->ws_extensions(connect_request->ws_extensions());
+    res->_ws_key = _connect_request->ws_key;
+    if (!res->ws_protocol) res->ws_protocol = _connect_request->ws_protocol;
+    if (!res->ws_extensions_set()) res->ws_extensions(_connect_request->ws_extensions());
 
     const auto& exts = res->ws_extensions();
 
@@ -87,12 +87,12 @@ string ServerParser::accept_response (ConnectResponse* res) {
     }
 
     _established = true;
-    connect_request = NULL;
+    _connect_request = NULL;
     return res->to_string();
 }
 
 void ServerParser::reset () {
-    connect_request = NULL;
+    _connect_request = NULL;
     _accepted = false;
     Parser::reset();
 }

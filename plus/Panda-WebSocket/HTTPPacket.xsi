@@ -5,22 +5,26 @@ BOOT {
     xs::register_package("Panda::WebSocket::HTTPPacket", "Panda::WebSocket");
 }
 
-void panda::websocket::HTTPPacket::init (HV* params) {
+void init (panda::websocket::HTTPPacketSP THIS, HV* params) {
     SV** ref;
     if ((ref = hv_fetchs(params, "headers", 0))) http_packet_set_headers(aTHX_ THIS, typemap_incast<HV*>(*ref));
     if ((ref = hv_fetchs(params, "body", 0)))    http_packet_set_body(aTHX_ THIS, *ref);
 }
 
-string panda::websocket::HTTPPacket::error () {
+string error (panda::websocket::HTTPPacketSP THIS) {
     RETVAL = THIS->error;
     if (!RETVAL) XSRETURN_UNDEF;
 }
 
-bool panda::websocket::HTTPPacket::header_ok ()
+bool header_ok (panda::websocket::HTTPPacketSP THIS) {
+    RETVAL = THIS->header_ok();
+}
 
-size_t panda::websocket::HTTPPacket::content_length ()
+size_t content_length (panda::websocket::HTTPPacketSP THIS) {
+    RETVAL = THIS->content_length();
+}
 
-HV* panda::websocket::HTTPPacket::headers (HV* new_headers = NULL) {
+HV* headers (panda::websocket::HTTPPacketSP THIS, HV* new_headers = NULL) {
     if (new_headers) {
         http_packet_set_headers(aTHX_ THIS, new_headers);
         XSRETURN_UNDEF;
@@ -35,7 +39,7 @@ HV* panda::websocket::HTTPPacket::headers (HV* new_headers = NULL) {
     }
 }
 
-string panda::websocket::HTTPPacket::header (string name, SV* val = NULL) {
+string header (panda::websocket::HTTPPacketSP THIS, string name, SV* val = NULL) {
     if (val) {
         string value = sv2string(aTHX_ val);
         auto it = THIS->headers.find(name);
@@ -52,7 +56,7 @@ string panda::websocket::HTTPPacket::header (string name, SV* val = NULL) {
     else XSRETURN_UNDEF;
 }
 
-SV* panda::websocket::HTTPPacket::body (SV* newval = NULL) {
+SV* body (panda::websocket::HTTPPacketSP THIS, SV* newval = NULL) {
     if (newval) {
         http_packet_set_body(THIS, newval);
         XSRETURN_UNDEF;
@@ -60,6 +64,8 @@ SV* panda::websocket::HTTPPacket::body (SV* newval = NULL) {
     RETVAL = vector_string_to_sv(THIS->body);
 }
 
-void panda::websocket::HTTPPacket::clear ()
+void clear (panda::websocket::HTTPPacketSP THIS) {
+    THIS->clear();
+}
 
-void panda::websocket::HTTPPacket::DESTROY () {}
+void DESTROY (panda::websocket::HTTPPacketSP THIS) {}

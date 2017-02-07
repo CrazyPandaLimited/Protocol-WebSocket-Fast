@@ -85,4 +85,6 @@ private:
     }
 };
 
+typedef shared_ptr<HTTPPacket> HTTPPacketSP;
+
 }}

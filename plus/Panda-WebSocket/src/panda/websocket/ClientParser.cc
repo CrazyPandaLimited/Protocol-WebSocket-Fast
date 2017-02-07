@@ -22,11 +22,14 @@ ConnectResponseSP ClientParser::connect (string& buf) {
     if (!_connect_response->parse(buf)) return NULL;
 
     if (!_connect_response->error) {
-        _buffer = buf;       // if something remains in buf, user can get it via get_frames() or get_messages() without param.
+        _buffer = buf;       // if something remains in buf, user can get it via get_frames() or get_messages() without buf param.
         _established = true;
     }
 
-    return _connect_response;
+    ConnectResponseSP ret(_connect_response);
+    _connect_request = NULL;
+    _connect_response = NULL;
+    return ret;
 }
 
 void ClientParser::reset () {

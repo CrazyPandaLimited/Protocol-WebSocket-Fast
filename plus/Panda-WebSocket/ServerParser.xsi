@@ -17,7 +17,7 @@ size_t panda::websocket::ServerParser::max_handshake_size (SV* newval = NULL) {
 
 bool panda::websocket::ServerParser::accepted ()
 
-panda::websocket::ConnectRequest* panda::websocket::ServerParser::accept (SV* bufsv) {
+panda::websocket::ConnectRequestSP panda::websocket::ServerParser::accept (SV* bufsv) {
     const char* CLASS = "Panda::WebSocket::ConnectRequest";
     string buf = sv2string(aTHX_ bufsv);
     PXS_TRY({ RETVAL = THIS->accept(buf); });
@@ -29,7 +29,7 @@ string panda::websocket::ServerParser::accept_error (SV* res_sv = NULL) {
         if (!res_sv) RETVAL = THIS->accept_error();
         else {
             if (!sv_isobject(res_sv)) res_sv = xs::call_method_scalar(http_response_class, "new", 3, &res_sv, 1); // from hash params
-            RETVAL = THIS->accept_error(typemap_incast<panda::websocket::HTTPResponse*>(res_sv));
+            RETVAL = THIS->accept_error(typemap_incast<panda::websocket::HTTPResponseSP>(res_sv));
         }
     });
 }
@@ -39,7 +39,7 @@ string panda::websocket::ServerParser::accept_response (SV* res_sv = NULL) {
         if (!res_sv) RETVAL = THIS->accept_response();
         else {
             if (!sv_isobject(res_sv)) res_sv = xs::call_method_scalar(connect_response_class, "new", 3, &res_sv, 1); // from hash params
-            RETVAL = THIS->accept_response(typemap_incast<panda::websocket::ConnectResponse*>(res_sv));
+            RETVAL = THIS->accept_response(typemap_incast<panda::websocket::ConnectResponseSP>(res_sv));
         }
     });
 }

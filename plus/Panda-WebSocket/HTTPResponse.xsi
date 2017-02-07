@@ -6,20 +6,20 @@ BOOT {
     xs::inherit_package("Panda::WebSocket::HTTPResponse", "Panda::WebSocket::HTTPPacket");
 }
 
-SV* panda::websocket::HTTPResponse::new (HV* params = NULL) {
+SV* new (SV* CLASS, HV* params = NULL) {
     auto res = new HTTPResponse();
-    RETVAL = typemap_outcast<panda::websocket::HTTPResponse*, const char* CLASS>(res, CLASS);
+    RETVAL = typemap_outcast<panda::websocket::HTTPResponseSP, SV* CLASS>(res, CLASS);
     if (params) xs::call_method_void(RETVAL, "init", 4, &ST(1), 1);
 }
 
-void panda::websocket::HTTPResponse::init (HV* params) {
+void init (panda::websocket::HTTPResponseSP THIS, HV* params) {
     SV** ref;
     if ((ref = hv_fetchs(params, "code", 0)))    THIS->code = SvIV(*ref);
     if ((ref = hv_fetchs(params, "message", 0))) THIS->message = sv2string(aTHX_ *ref);
     xs::call_super(cv, &ST(0), items);
 }
 
-int panda::websocket::HTTPResponse::code (SV* newval = NULL) {
+int code (panda::websocket::HTTPResponseSP THIS, SV* newval = NULL) {
     if (newval) {
         THIS->code = SvIV(newval);
         XSRETURN_UNDEF;
@@ -27,7 +27,7 @@ int panda::websocket::HTTPResponse::code (SV* newval = NULL) {
     RETVAL = THIS->code;
 }
 
-string panda::websocket::HTTPResponse::message (SV* newval = NULL) {
+string message (panda::websocket::HTTPResponseSP THIS, SV* newval = NULL) {
     if (newval) {
         THIS->message = sv2string(aTHX_ newval);
         XSRETURN_UNDEF;

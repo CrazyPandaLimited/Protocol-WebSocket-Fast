@@ -6,13 +6,13 @@ BOOT {
     xs::inherit_package("Panda::WebSocket::ConnectRequest", "Panda::WebSocket::HTTPRequest");
 }
 
-SV* panda::websocket::ConnectRequest::new (HV* params = NULL) {
+SV* new (SV* CLASS, HV* params = NULL) {
     auto res = new ConnectRequest();
-    RETVAL = typemap_outcast<panda::websocket::ConnectRequest*, const char* CLASS>(res, CLASS);
+    RETVAL = typemap_outcast<panda::websocket::ConnectRequestSP, SV* CLASS>(res, CLASS);
     if (params) xs::call_method_void(RETVAL, "init", 4, &ST(1), 1);
 }
 
-void panda::websocket::ConnectRequest::init (HV* params) {
+void init (panda::websocket::ConnectRequestSP THIS, HV* params) {
     SV** ref;
     
     if ((ref = hv_fetchs(params, "ws_key", 0)))      THIS->ws_key      = sv2string(aTHX_ *ref);
@@ -29,7 +29,7 @@ void panda::websocket::ConnectRequest::init (HV* params) {
     xs::call_super(cv, &ST(0), items);
 }
 
-string panda::websocket::ConnectRequest::ws_key (SV* newval = NULL) {
+string ws_key (panda::websocket::ConnectRequestSP THIS, SV* newval = NULL) {
     if (newval) {
         THIS->ws_key = sv2string(aTHX_ newval);
         XSRETURN_UNDEF;
@@ -37,7 +37,7 @@ string panda::websocket::ConnectRequest::ws_key (SV* newval = NULL) {
     RETVAL = THIS->ws_key;
 }
 
-int panda::websocket::ConnectRequest::ws_version (SV* newval = NULL) {
+int ws_version (panda::websocket::ConnectRequestSP THIS, SV* newval = NULL) {
     if (newval) {
         THIS->ws_version = SvIV(newval);
         XSRETURN_UNDEF;
@@ -45,7 +45,7 @@ int panda::websocket::ConnectRequest::ws_version (SV* newval = NULL) {
     RETVAL = THIS->ws_version;
 }
 
-AV* panda::websocket::ConnectRequest::ws_extensions (AV* exts_av = NULL) {
+AV* ws_extensions (panda::websocket::ConnectRequestSP THIS, AV* exts_av = NULL) {
     if (exts_av) {
         HTTPPacket::HeaderValues exts;
         av_to_header_values(aTHX_ exts_av, &exts);
@@ -57,7 +57,7 @@ AV* panda::websocket::ConnectRequest::ws_extensions (AV* exts_av = NULL) {
     if (!RETVAL) XSRETURN_UNDEF;
 }
 
-string panda::websocket::ConnectRequest::ws_protocol (SV* newval = NULL) {
+string ws_protocol (panda::websocket::ConnectRequestSP THIS, SV* newval = NULL) {
     if (newval) {
         THIS->ws_protocol = sv2string(aTHX_ newval);
         XSRETURN_UNDEF;
@@ -65,4 +65,6 @@ string panda::websocket::ConnectRequest::ws_protocol (SV* newval = NULL) {
     RETVAL = THIS->ws_protocol;
 }
 
-bool panda::websocket::ConnectRequest::ws_version_supported ()
+bool ws_version_supported (panda::websocket::ConnectRequestSP THIS) {
+    RETVAL = THIS->ws_version_supported();
+}
