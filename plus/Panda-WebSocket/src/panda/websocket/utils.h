@@ -21,13 +21,13 @@ struct string_equal_ci {
 
 template <typename T>
 inline bool parse_binary_number (T& num, const char*& src, size_t len) {
-    uint8_t bcnt = ((char*)&num)[sizeof(T)-1];
-    if (!bcnt && len >= sizeof(T)) { // common case - have whole number in src
+    if (!num && len >= sizeof(T)) { // common case - have whole number in src
         num = *((T*)src);
         src += sizeof(T);
         return true;
     }
 
+    uint8_t bcnt = ((char*)&num)[sizeof(T)-1];
     char* dst = (char*)&num + bcnt;
 
     if (bcnt + len >= sizeof(T)) { // have everything left in src

@@ -36,12 +36,22 @@ subtest 'pong' => sub {
 };
 
 subtest 'close' => sub {
-    subtest 'empty'           => \&test_frame, {opcode => OPCODE_CLOSE, mask => 1, fin => 1, close_code => all(CLOSE_UNKNOWN)};
-    subtest 'code'            => \&test_frame, {opcode => OPCODE_CLOSE, mask => 1, fin => 1, close_code => CLOSE_NORMAL};
-    subtest 'message'         => \&test_frame, {opcode => OPCODE_CLOSE, mask => 1, fin => 1, close_code => CLOSE_AWAY, data => "walk"};
+    subtest 'empty' => \&test_frame, {opcode => OPCODE_CLOSE, mask => 1, fin => 1, close_code => all(CLOSE_UNKNOWN)};
+    
+    my ($frame) = $p->get_frames(gen_frame({opcode => OPCODE_TEXT, mask => 1, fin => 1}));
+    ok(!$frame, "no more frames available after close");
+    WSTest::reset($p);
+    
+    subtest 'code' => \&test_frame, {opcode => OPCODE_CLOSE, mask => 1, fin => 1, close_code => CLOSE_NORMAL};
+    WSTest::reset($p);
+    subtest 'message' => \&test_frame, {opcode => OPCODE_CLOSE, mask => 1, fin => 1, close_code => CLOSE_AWAY, data => "walk"};
+    WSTest::reset($p);
     subtest 'invalid payload' => \&test_frame, {opcode => OPCODE_CLOSE, mask => 1, fin => 1, data => "a"}, "control frame CLOSE contains invalid data";
-    subtest 'fragmented'      => \&test_frame, {opcode => OPCODE_CLOSE, mask => 1, fin => 0}, "control frame can't be fragmented";
-    subtest 'long'            => \&test_frame, {opcode => OPCODE_CLOSE, mask => 1, fin => 1, close_code => CLOSE_AWAY, data => ("1" x 1000)}, "control frame payload is too big";
+    WSTest::reset($p);
+    subtest 'fragmented' => \&test_frame, {opcode => OPCODE_CLOSE, mask => 1, fin => 0}, "control frame can't be fragmented";
+    WSTest::reset($p);
+    subtest 'long' => \&test_frame, {opcode => OPCODE_CLOSE, mask => 1, fin => 1, close_code => CLOSE_AWAY, data => ("1" x 1000)}, "control frame payload is too big";
+    WSTest::reset($p);
 };
 
 subtest '2 frames via it->next' => sub {
@@ -93,7 +103,8 @@ subtest 'fragment frame in message without CONTINUE' => sub {
     is($second->error, "fragment frame must have opcode CONTINUE", "fin does not matter");
 };
 
-subtest 'unmasked frame in server parser' => \&test_frame, {opcode => OPCODE_TEXT, mask => 0, fin => 1, data => "jopa"}, "frame is not masked";
+subtest 'unmasked frame in server parser'       => \&test_frame, {opcode => OPCODE_TEXT, mask => 0, fin => 1, data => "jopa"}, "frame is not masked";
+subtest 'unmasked empty frame in server parser' => \&test_frame, {opcode => OPCODE_TEXT, mask => 0, fin => 1};
 $p = WSTest::get_established_client();
 subtest 'masked frame in client parser'   => \&test_frame, {opcode => OPCODE_TEXT, mask => 1, fin => 1, data => "jopa"};
 subtest 'unmasked frame in client parser' => \&test_frame, {opcode => OPCODE_TEXT, mask => 0, fin => 1, data => "jopa"};
@@ -122,6 +133,8 @@ sub test_frame {
             cmp_deeply($frame, methods(%$check_data), "frame properties ok");
         }
     };
+    
+    WSTest::reset($p) if $check_data->{opcode} == OPCODE_CLOSE;
         
     subtest 'buffer by char' => sub {
         my $it;

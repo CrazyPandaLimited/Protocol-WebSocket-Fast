@@ -20,17 +20,29 @@ public:
         PONG     = 0x0A,
     };
 
+    struct Header {
+        bool     fin;
+        bool     rsv1;
+        bool     rsv2;
+        bool     rsv3;
+        bool     has_mask;
+        uint32_t mask;
+        Opcode   opcode;
+    };
 
     string              error;
     std::vector<string> payload;
 
     Frame (bool mask_required, size_t max_size) :
-        _mask_required(mask_required), _max_size(max_size), _state(FIRST), _len16(0), _length(0), _mask(0) {}
+        _mask_required(mask_required), _max_size(max_size), _state(FIRST), _len16(0), _length(0)
+    {
+        _header.mask = 0;
+    }
 
-    bool     is_control     () const { return is_control_opcode(_opcode); }
-    Opcode   opcode         () const { return _opcode; }
-    bool     final          () const { return _fin; }
-    bool     has_mask       () const { return _has_mask; }
+    bool     is_control     () const { return is_control_opcode(_header.opcode); }
+    Opcode   opcode         () const { return _header.opcode; }
+    bool     final          () const { return _header.fin; }
+    //bool     has_mask       () const { return _header.has_mask; }
     size_t   payload_length () const { return _length; }
     uint16_t close_code     () const { return _close_code; }
     string   close_message  () const { return _close_message; }
@@ -42,12 +54,14 @@ public:
         assert(_state == DONE);
         if (is_control() || error) return;
         if (!fragment_in_message) {
-            if (_opcode == Frame::CONTINUE) error = "initial frame can't have opcode CONTINUE";
+            if (opcode() == Frame::CONTINUE) error = "initial frame can't have opcode CONTINUE";
         }
-        else if (_opcode != Frame::CONTINUE) error = "fragment frame must have opcode CONTINUE";
+        else if (opcode() != Frame::CONTINUE) error = "fragment frame must have opcode CONTINUE";
     }
 
-    static void compile (bool final, bool rsv1, bool rsv2, bool rsv3, bool need_mask, Opcode opcode, std::deque<string>& payload);
+    static void compile (Header header, std::deque<string>& payload);
+
+    static string compile_close_payload (uint16_t code, const string& message);
 
     static bool is_control_opcode (Opcode opcode) { return opcode >= CLOSE; }
 
@@ -57,16 +71,10 @@ private:
     bool     _mask_required;
     size_t   _max_size;
     State    _state;
-    bool     _fin;
-    bool     _rsv1;
-    bool     _rsv2;
-    bool     _rsv3;
-    bool     _has_mask;
+    Header   _header;
     uint8_t  _slen;
     uint16_t _len16;
     uint64_t _length;
-    Opcode   _opcode;
-    uint32_t _mask;
     uint64_t _payload_bytes_left;
     uint16_t _close_code;
     string   _close_message;

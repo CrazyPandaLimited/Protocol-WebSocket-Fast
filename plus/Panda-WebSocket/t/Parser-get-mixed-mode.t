@@ -59,7 +59,7 @@ subtest '1x2 frame + message' => sub {
 
 subtest '1x2 frame + control in the middle + message' => sub {
     my $bin = gen_frame({opcode => OPCODE_TEXT,     mask => 1, fin => 0, data => "fpart1"}).
-              gen_frame({opcode => OPCODE_CLOSE,    mask => 1, fin => 1}).
+              gen_frame({opcode => OPCODE_PING,     mask => 1, fin => 1}).
               gen_frame({opcode => OPCODE_CONTINUE, mask => 1, fin => 1, data => "fpart2"}).
               gen_message({mask => 1, data => "msg"});
     
@@ -70,7 +70,7 @@ subtest '1x2 frame + control in the middle + message' => sub {
         my $f2 = $fit->next;
         ok($f1 && $f2 && $cl, "3 returned");
         cmp_deeply($f1, methods(opcode => OPCODE_TEXT, payload => "fpart1"), "frame1 ok");
-        cmp_deeply($cl, methods(opcode => OPCODE_CLOSE), "control ok");
+        cmp_deeply($cl, methods(opcode => OPCODE_PING), "control ok");
         cmp_deeply($f2, methods(opcode => OPCODE_CONTINUE, payload => "fpart2"), "frame2 ok");
         my $mit = $fit->get_messages;
         my $m = $mit->next;
@@ -82,7 +82,7 @@ subtest '1x2 frame + control in the middle + message' => sub {
         my $f1 = $fit->next;
         my $cl = $fit->next;
         cmp_deeply($f1, methods(opcode => OPCODE_TEXT, payload => "fpart1"), "frame ok");
-        cmp_deeply($cl, methods(opcode => OPCODE_CLOSE), "control ok");
+        cmp_deeply($cl, methods(opcode => OPCODE_PING), "control ok");
         ok(!eval {$fit->get_messages}, "exception when trying to get messages");
         WSTest::reset($p);
     };

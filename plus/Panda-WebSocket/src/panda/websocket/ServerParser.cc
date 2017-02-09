@@ -4,7 +4,7 @@
 namespace panda { namespace websocket {
 
 ConnectRequestSP ServerParser::accept (string& buf) {
-    if (_established || (_connect_request && _connect_request->parsed())) throw std::logic_error("ServerParser[accept] already parsed accept");
+    if (_state[STATE_ACCEPT_PARSED]) throw std::logic_error("already parsed accept");
 
     if (!_connect_request) {
         _connect_request = new ConnectRequest();
@@ -13,17 +13,20 @@ ConnectRequestSP ServerParser::accept (string& buf) {
 
     if (!_connect_request->parse(buf)) return NULL;
 
+    _state.set(STATE_ACCEPT_PARSED);
+
     if (!_connect_request->error) {
         if (buf) _connect_request->error = "garbage found after http request";
-        else _accepted = true;
+        else _state.set(STATE_ACCEPTED);
     }
 
     return _connect_request;
 }
 
 string ServerParser::accept_error () {
-    if (_established || !_connect_request || !_connect_request->parsed()) throw std::logic_error("ServerParser[accept_error] accept not parsed yet");
-    if (!_connect_request->error) throw std::logic_error("ServerParser[accept_error] no errors found");
+    if (!_state[STATE_ACCEPT_PARSED]) throw std::logic_error("accept not parsed yet");
+    if (established()) throw std::logic_error("already established");
+    if (!_connect_request->error) throw std::logic_error("no errors found");
 
     HTTPResponse res;
     res.headers.emplace("Content-Type", "text/plain");
@@ -48,12 +51,12 @@ string ServerParser::accept_error () {
         res.body.push_back(_connect_request->error);
     }
 
-    reset();
     return res.to_string();
 }
 
 string ServerParser::accept_error (HTTPResponse* res) {
-    if (_established || !_connect_request || !_connect_request->parsed()) throw std::logic_error("ServerParser[accept_error] accept not parsed yet");
+    if (!_state[STATE_ACCEPT_PARSED]) throw std::logic_error("accept not parsed yet");
+    if (established()) throw std::logic_error("already established");
     if (_connect_request->error) return accept_error();
 
     if (!res->code) {
@@ -68,12 +71,12 @@ string ServerParser::accept_error (HTTPResponse* res) {
 
     if (res->headers.find("Content-Type") == res->headers.end()) res->headers.emplace("Content-Type", "text/plain");
 
-    reset();
     return res->to_string();
 }
 
 string ServerParser::accept_response (ConnectResponse* res) {
-    if (!_accepted) throw std::logic_error("ServerParser[accept_response] client not accepted");
+    if (!accepted()) throw std::logic_error("client has not been accepted");
+    if (established()) throw std::logic_error("already established");
 
     res->_ws_key = _connect_request->ws_key;
     if (!res->ws_protocol) res->ws_protocol = _connect_request->ws_protocol;
@@ -86,14 +89,13 @@ string ServerParser::accept_response (ConnectResponse* res) {
         res->ws_extensions(HTTPPacket::HeaderValues()); // for now no extensions supported
     }
 
-    _established = true;
+    _state.set(STATE_ESTABLISHED);
     _connect_request = NULL;
     return res->to_string();
 }
 
 void ServerParser::reset () {
     _connect_request = NULL;
-    _accepted = false;
     Parser::reset();
 }
 

@@ -29,12 +29,22 @@ subtest 'pong' => sub {
 };
 
 subtest 'close' => sub {
-    subtest 'empty'           => \&test_message, {opcode => OPCODE_CLOSE, mask => 1, fin => 1, close_code => all(CLOSE_UNKNOWN)};
-    subtest 'code'            => \&test_message, {opcode => OPCODE_CLOSE, mask => 1, fin => 1, close_code => CLOSE_NORMAL};
-    subtest 'message'         => \&test_message, {opcode => OPCODE_CLOSE, mask => 1, fin => 1, close_code => CLOSE_AWAY, data => "walk"};
+    subtest 'empty' => \&test_message, {opcode => OPCODE_CLOSE, mask => 1, fin => 1, close_code => all(CLOSE_UNKNOWN)};
+
+    my ($message) = $p->get_messages(gen_frame({opcode => OPCODE_TEXT, mask => 1, fin => 1}));
+    ok(!$message, "no more messages available after close");
+    WSTest::reset($p);
+    
+    subtest 'code' => \&test_message, {opcode => OPCODE_CLOSE, mask => 1, fin => 1, close_code => CLOSE_NORMAL};
+    WSTest::reset($p);
+    subtest 'message' => \&test_message, {opcode => OPCODE_CLOSE, mask => 1, fin => 1, close_code => CLOSE_AWAY, data => "walk"};
+    WSTest::reset($p);
     subtest 'invalid payload' => \&test_message, {opcode => OPCODE_CLOSE, mask => 1, fin => 1, data => "a"}, "control frame CLOSE contains invalid data";
-    subtest 'fragmented'      => \&test_message, {opcode => OPCODE_CLOSE, mask => 1, fin => 0}, "control frame can't be fragmented";
-    subtest 'long'            => \&test_message, {opcode => OPCODE_CLOSE, mask => 1, fin => 1, close_code => CLOSE_AWAY, data => ("1" x 1000)}, "control frame payload is too big";
+    WSTest::reset($p);
+    subtest 'fragmented' => \&test_message, {opcode => OPCODE_CLOSE, mask => 1, fin => 0}, "control frame can't be fragmented";
+    WSTest::reset($p);
+    subtest 'long' => \&test_message, {opcode => OPCODE_CLOSE, mask => 1, fin => 1, close_code => CLOSE_AWAY, data => ("1" x 1000)}, "control frame payload is too big";
+    WSTest::reset($p);
 };
 
 subtest 'max message size' => sub {
@@ -175,6 +185,8 @@ sub test_message {
             cmp_deeply($message, methods(%$check_data), "message properties ok");
         }
     };
+    
+    WSTest::reset($p) if $check_data->{opcode} == OPCODE_CLOSE;
     
     my $message;
     subtest 'buffer by char' => sub {

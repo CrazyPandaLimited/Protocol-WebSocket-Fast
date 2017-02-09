@@ -18,9 +18,8 @@ subtest 'bad http' => sub {
     ok(!$p->established, "not established");
     my $ans = $p->accept_error;
     like($ans, qr/^HTTP\/1\.1 400 Bad Request\r\n/, "answer ok");
+    $p->reset();
 };
-
-# no need to reset because parser auto-resets on accept_error
 
 subtest 'bad websocket http' => sub {
     my $data = accept_packet();
@@ -32,6 +31,7 @@ subtest 'bad websocket http' => sub {
     ok(!$p->accepted, "not accepted");
     my $ans = $p->accept_error;
     like($ans, qr/^HTTP\/1\.1 400 Bad Request\r\n/, "answer ok");
+    $p->reset();
 };
 
 subtest 'bad websocket version' => sub {
@@ -45,6 +45,7 @@ subtest 'bad websocket version' => sub {
     my $ans = $p->accept_error;
     like($ans, qr/^HTTP\/1\.1 426 Upgrade Required\r\n/, "answer ok");
     like($ans, qr/Sec-WebSocket-Version: 13\r\n/, "version ok");
+    $p->reset();
 };
 
 subtest 'custom error override ignored when request error' => sub {
@@ -54,6 +55,7 @@ subtest 'custom error override ignored when request error' => sub {
     ok(!$p->accepted, "not accepted");
     my $ans = $p->accept_error({code => 404});
     like($ans, qr/^HTTP\/1\.1 400 Bad Request\r\n/, "answer ok");
+    $p->reset();
 };
 
 subtest 'custom error' => sub {
@@ -69,6 +71,7 @@ subtest 'custom error' => sub {
     like($ans, qr/^abc: 1\r\n/m, "answer ok");
     like($ans, qr/^def: 2\r\n/m, "answer ok");
     like($ans, qr/^404 Hello World$/m, "answer ok");
+    $p->reset();
 };
 
 subtest 'custom error with body' => sub {
@@ -82,6 +85,7 @@ subtest 'custom error with body' => sub {
     });
     like($ans, qr/^HTTP\/1\.1 404 Hello World\r\n/, "answer ok");
     like($ans, qr/^Fuck You$/m, "answer ok");
+    $p->reset();
 };
 
 done_testing();

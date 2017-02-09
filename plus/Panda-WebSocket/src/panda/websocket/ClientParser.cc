@@ -13,14 +13,15 @@ static bool _init () {
 static const bool _inited = _init();
 
 string ClientParser::connect_request (ConnectRequestSP& req) {
-    if (_connect_request) throw std::logic_error("ClientParser[connect_request] already requested connection");
+    if (_state[STATE_CONNECTION_REQUESTED]) throw std::logic_error("already requested connection");
+    _state.set(STATE_CONNECTION_REQUESTED);
     _connect_request = req;
     return req->to_string();
 }
 
 ConnectResponseSP ClientParser::connect (string& buf) {
-    if (!_connect_request) throw std::logic_error("ClientParser[connect] has not requested connection");
-    if (_established || (_connect_response && _connect_response->parsed())) throw std::logic_error("ClientParser[connect] already parsed response");
+    if (!_state[STATE_CONNECTION_REQUESTED]) throw std::logic_error("has not requested connection");
+    if (_state[STATE_CONNECTION_RESPONSE_PARSED]) throw std::logic_error("already parsed connect response");
 
     if (!_connect_response) {
         _connect_response = new ConnectResponse();
@@ -30,9 +31,11 @@ ConnectResponseSP ClientParser::connect (string& buf) {
 
     if (!_connect_response->parse(buf)) return NULL;
 
+    _state.set(STATE_CONNECTION_RESPONSE_PARSED);
+
     if (!_connect_response->error) {
         _buffer = buf;       // if something remains in buf, user can get it via get_frames() or get_messages() without buf param.
-        _established = true;
+        _state.set(STATE_ESTABLISHED);
     }
 
     ConnectResponseSP ret(_connect_response);

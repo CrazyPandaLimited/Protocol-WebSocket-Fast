@@ -1,6 +1,5 @@
 #include <panda/websocket/Frame.h>
 #include <cassert>
-#include <cstdlib>
 #include <iostream>
 #include <panda/lib/endian.h>
 #include <panda/websocket/utils.h>
@@ -13,6 +12,7 @@ using std::endl;
 union _check_endianess { unsigned x; unsigned char c; };
 static const bool am_i_little = (_check_endianess{1}).c;
 static const int MAX_CONTROL_FRAME_LEN = 125;
+static const int MAX_HEADER_SIZE = 14; // 2 bytes required + 8-byte length + 4-byte mask
 
 static inline uint32_t rotate_shift (uint32_t x, unsigned shift) {
     return am_i_little ? ((x >> shift) | (x << (sizeof(x)*8 - shift))) :
@@ -49,15 +49,15 @@ bool Frame::parse (string& buf) {
     if (_state == FIRST) {
         if (data == end) return false;
         auto first = *((BinaryFirst*)data++);
-        _fin    = first.fin;
-        _rsv1   = first.rsv1;
-        _rsv2   = first.rsv2;
-        _rsv3   = first.rsv3;
-        _opcode = (Opcode)first.opcode;
+        _header.fin    = first.fin;
+        _header.rsv1   = first.rsv1;
+        _header.rsv2   = first.rsv2;
+        _header.rsv3   = first.rsv3;
+        _header.opcode = (Opcode)first.opcode;
         _state = SECOND;
-        //cout << "Frame[parse]: first: FIN=" << _fin << ", RSV1=" << _rsv1 << ", RSV2=" << _rsv2 << ", RSV3=" << _rsv3 << ", OPCODE=" << _opcode << endl;
-        if (_opcode != CONTINUE && _opcode != TEXT && _opcode != BINARY && _opcode != CLOSE && _opcode != PING && _opcode != PONG) {
-            //cout << "Frame[parse]: invalid opcode=" << _opcode << endl;
+        //cout << "Frame[parse]: first: FIN=" << final() << ", RSV1=" << _header.rsv1 << ", RSV2=" << _header.rsv2 << ", RSV3=" << _header.rsv3 << ", OPCODE=" << opcode() << endl;
+        if (opcode() > PONG) {
+            //cout << "Frame[parse]: invalid opcode=" << opcode() << endl;
             error = "invalid opcode received";
             _state = DONE;
         }
@@ -66,11 +66,11 @@ bool Frame::parse (string& buf) {
     if (_state == SECOND) {
         if (data == end) return false;
         auto second = *((BinarySecond*)data++);
-        _has_mask = second.mask;
-        _slen     = second.slen;
-        //cout << "Frame[parse]: second: HASMASK=" << _has_mask << ", SLEN=" << (int)_slen << endl;
+        _header.has_mask = second.mask;
+        _slen            = second.slen;
+        //cout << "Frame[parse]: second: HASMASK=" << _header.has_mask << ", SLEN=" << (int)_slen << endl;
         if (is_control()) {
-            if (!_fin) {
+            if (!final()) {
                 error = "control frame can't be fragmented";
                 _state = DONE;
             }
@@ -80,7 +80,7 @@ bool Frame::parse (string& buf) {
             }
         }
         _state = LENGTH;
-        if (!_has_mask && _mask_required) {
+        if (!_header.has_mask && _mask_required && _slen) {
             error = "frame is not masked";
             _state = DONE;
         }
@@ -109,11 +109,11 @@ bool Frame::parse (string& buf) {
     }
 
     if (_state == MASK) {
-        if (!_has_mask) _state = _length ? PAYLOAD : DONE;
+        if (!_header.has_mask) _state = _length ? PAYLOAD : DONE;
         else if (data == end) return false;
         else {
-            if (!parse_binary_number(_mask, data, end - data)) return false;
-            //cout << "Frame[parse]: MASK=" << _mask << endl;
+            if (!parse_binary_number(_header.mask, data, end - data)) return false;
+            //cout << "Frame[parse]: MASK=" << _header.mask << endl;
             _state = _length ? PAYLOAD : DONE;
         }
 
@@ -129,7 +129,7 @@ bool Frame::parse (string& buf) {
         auto buflen = end - data;
         //cout << "Frame[parse]: have buflen=" << buflen << ", payloadleft=" << _payload_bytes_left << endl;
         if (buflen >= _payload_bytes_left) { // last needed buffer
-            if (_has_mask) crypt_mask((char*)data, _payload_bytes_left, _mask, _length - _payload_bytes_left); // TODO: remove (char*)cast when unique_string is done
+            if (_header.has_mask) crypt_mask((char*)data, _payload_bytes_left, _header.mask, _length - _payload_bytes_left); // TODO: remove (char*)cast when unique_string is done
             data += _payload_bytes_left;
             if (data == end && !shift) payload.push_back(buf); // payload is the whole buf
             else payload.push_back(buf.substr(shift, _payload_bytes_left));
@@ -138,7 +138,7 @@ bool Frame::parse (string& buf) {
             //for (const auto& s : payload) cout << s; cout << endl;
         }
         else { // not last buffer
-            if (_has_mask) crypt_mask((char*)data, buflen, _mask, _length - _payload_bytes_left); // TODO: remove (char*)cast when unique_string is done
+            if (_header.has_mask) crypt_mask((char*)data, buflen, _header.mask, _length - _payload_bytes_left); // TODO: remove (char*)cast when unique_string is done
             _payload_bytes_left -= buflen;
             if (!shift) payload.push_back(buf);        // payload is the whole buf
             else payload.push_back(buf.substr(shift)); // payload is not in the beginning - first packet
@@ -149,7 +149,7 @@ bool Frame::parse (string& buf) {
     if (data == end) buf.clear(); // no extra data after the end of frame
     else buf = buf.substr(data - buf.data());
 
-    if (_opcode == CLOSE) {
+    if (opcode() == CLOSE) {
         if (error || !_length) _close_code = CLOSE_UNKNOWN;
         else if (_length < sizeof(_close_code)) {
             _close_code = CLOSE_UNKNOWN;
@@ -173,52 +173,64 @@ bool Frame::parse (string& buf) {
     return true;
 }
 
-void Frame::compile (bool final, bool rsv1, bool rsv2, bool rsv3, bool need_mask, Opcode opcode, std::deque<string>& payload) {
-    string header(14); // worst case: 2 bytes required + 8-byte length + 4-byte mask
-    char* hptr = header.buf();
-
-    uint32_t mask;
+void Frame::compile (Header header, std::deque<string>& payload) {
     size_t plen = 0;
-    if (need_mask) {
-        mask = std::rand();
-        for (auto& str : payload) {
-            auto slen = str.length();
-            crypt_mask((char*)str.data(), slen, mask, plen); // TODO: remove (char*)cast when unique_string is done
-            plen += slen;
+    if (payload.size()) {
+        if (header.has_mask) {
+            for (auto& str : payload) {
+                auto slen = str.length();
+                crypt_mask((char*)str.data(), slen, header.mask, plen); // TODO: remove (char*)cast when unique_string is done
+                plen += slen;
+            }
         }
+        else
+            for (auto& str : payload) plen += str.length();
     }
-    else for (auto& str : payload) plen += str.length();
 
-    *((BinaryFirst*)hptr++) = BinaryFirst{opcode, rsv3, rsv2, rsv1, final};
+    string header_str(MAX_HEADER_SIZE);
+    char* hptr = header_str.buf();
+    *((BinaryFirst*)hptr++) = BinaryFirst{header.opcode, header.rsv3, header.rsv2, header.rsv1, header.fin};
 
     if (plen < 126) {
-        *((BinarySecond*)hptr++) = BinarySecond{(uint8_t)plen, need_mask};
+        *((BinarySecond*)hptr++) = BinarySecond{(uint8_t)plen, header.has_mask};
     } else if (plen < 65536) {
-        *((BinarySecond*)hptr++) = BinarySecond{126, need_mask};
+        *((BinarySecond*)hptr++) = BinarySecond{126, header.has_mask};
         *((uint16_t*)hptr) = panda::lib::h2be16(plen);
         hptr += sizeof(uint16_t);
     } else {
-        *((BinarySecond*)hptr++) = BinarySecond{127, need_mask};
+        *((BinarySecond*)hptr++) = BinarySecond{127, header.has_mask};
         *((uint64_t*)hptr) = panda::lib::h2be64(plen);
         hptr += sizeof(uint64_t);
     }
 
-    if (need_mask) {
-        *((uint32_t*)hptr) = mask;
+    if (header.has_mask) {
+        *((uint32_t*)hptr) = header.mask;
         hptr += sizeof(uint32_t);
     }
 
-    header.resize(hptr - header.data());
-    payload.push_front(header);
+    header_str.resize(hptr - header_str.data());
+
+    payload.push_front(header_str);
+}
+
+string Frame::compile_close_payload (uint16_t code, const string& message) {
+    size_t sz = sizeof(code) + message.length();
+    string ret(sz);
+    char* buf = ret.buf();
+    *((uint16_t*)buf) = panda::lib::h2be16(code);
+    buf += sizeof(code);
+    if (message.length()) std::memcpy(buf, message.data(), message.length());
+    ret.resize(sz);
+    return ret;
 }
 
 void Frame::reset () {
     error.clear();
     payload.clear();
-    _state  = FIRST;
-    _len16  = 0;
-    _length = 0;
-    _mask   = 0;
+    _state       = FIRST;
+    _len16       = 0;
+    _length      = 0;
+    _header.mask = 0;
 }
 
 }}

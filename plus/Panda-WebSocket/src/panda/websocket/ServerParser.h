@@ -14,9 +14,9 @@ class ServerParser : public Parser {
 public:
     size_t max_handshake_size;
 
-    ServerParser () : Parser(true), max_handshake_size(0), _accepted(false) {}
+    ServerParser () : Parser(true), max_handshake_size(0) {}
 
-    bool accepted () const { return _accepted; }
+    bool accepted () const { return _state[STATE_ACCEPTED]; }
 
     ConnectRequestSP accept (string& buf);
 
@@ -34,9 +34,10 @@ public:
     virtual ~ServerParser () {}
 
 private:
-    ConnectRequestSP _connect_request;
-    bool             _accepted;
+    static const int STATE_ACCEPT_PARSED = STATE_LAST + 1;
+    static const int STATE_ACCEPTED      = STATE_ACCEPT_PARSED + 1;
 
+    ConnectRequestSP _connect_request;
 };
 
 }}

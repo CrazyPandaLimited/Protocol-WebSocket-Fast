@@ -1,6 +1,7 @@
 #include <panda/websocket/Parser.h>
-#include <iostream>
+#include <cstdlib>
 #include <cassert>
+#include <iostream>
 
 namespace panda { namespace websocket {
 
@@ -8,9 +9,8 @@ using std::cout;
 using std::endl;
 
 void Parser::reset () {
-    _established = false;
     _buffer.clear();
-    _state = NONE;
+    _state.reset();
     _frame = NULL;
     _frame_count = 0;
     _message = NULL;
@@ -18,12 +18,13 @@ void Parser::reset () {
 }
 
 FrameSP Parser::_get_frame () {
-    if (_state == MESSAGE) throw std::logic_error(
-        "Parser[_get_frame] can't get frame: message is being parsed. You can't get frames until you receive one next message."
-    );
+    if (!_state[STATE_ESTABLISHED]) throw std::logic_error("not established");
+    if (_state[STATE_RECV_MESSAGE]) throw std::logic_error("message is being parsed");
+    if (_state[STATE_RECV_CLOSED]) { _buffer.clear(); return NULL; }
     if (!_buffer) return NULL;
-    _state = FRAME;
-    if (!_frame) _frame = new Frame(_mask_required, max_frame_size);
+
+    _state.set(STATE_RECV_FRAME);
+    if (!_frame) _frame = new Frame(_recv_mask_required, max_frame_size);
 
     if (!_frame->parse(_buffer)) {
         _buffer.clear();
@@ -35,13 +36,16 @@ FrameSP Parser::_get_frame () {
     if (_frame->error) {
         _buffer.clear();
         _frame_count = 0;
-        _state = NONE;
     }
     else if (_frame->is_control()) { // control frames can't be fragmented, no need to increment frame count
-        if (!_frame_count) _state = NONE; // do not reset state if control frame arrives in the middle of message
+        if (!_frame_count) _state.reset(STATE_RECV_FRAME); // do not reset state if control frame arrives in the middle of message
+        if (_frame->opcode() == Frame::CLOSE) {
+            _buffer.clear();
+            _state.set(STATE_RECV_CLOSED);
+        }
     }
     else if (_frame->final()) {
-        _state = NONE;
+        _state.reset(STATE_RECV_FRAME);
         _frame_count = 0;
     }
     else ++_frame_count;
@@ -52,12 +56,12 @@ FrameSP Parser::_get_frame () {
 }
 
 MessageSP Parser::_get_message () {
-    if (_state == FRAME) throw std::logic_error(
-        "Parser[_get_message] can't get message: you are getting frames. "
-        "You can't get messages until you receive all the frames of current message (till frame->final() is true, not counting control frames)"
-    );
+    if (!_state[STATE_ESTABLISHED]) throw std::logic_error("not established");
+    if (_state[STATE_RECV_FRAME]) throw std::logic_error("frame mode active");
+    if (_state[STATE_RECV_CLOSED]) { _buffer.clear(); return NULL; }
     if (!_buffer) return NULL;
-    _state = MESSAGE;
+
+    _state.set(STATE_RECV_MESSAGE);
     if (!_message) _message = new Message(max_message_size);
 
     while (1) {
@@ -68,12 +72,18 @@ MessageSP Parser::_get_message () {
 
         // control frame arrived in the middle of fragmented message - wrap in new message and return (state remains MESSAGE)
         // because user can only switch to getting frames after receiving non-control message
-        if (!_message_frame.error && _message_frame.is_control() && _message->frame_count) {
-            auto cntl_msg = new Message(max_message_size);
-            bool done = cntl_msg->add_frame(_message_frame);
-            assert(done);
-            _message_frame.reset();
-            return cntl_msg;
+        if (!_message_frame.error && _message_frame.is_control()) {
+            if (_message_frame.opcode() == Frame::CLOSE) {
+                _buffer.clear();
+                _state.set(STATE_RECV_CLOSED);
+            }
+            if (_message->frame_count) {
+                auto cntl_msg = new Message(max_message_size);
+                bool done = cntl_msg->add_frame(_message_frame);
+                assert(done);
+                _message_frame.reset();
+                return cntl_msg;
+            }
         }
 
         _message_frame.check(_message->frame_count);
@@ -86,25 +96,59 @@ MessageSP Parser::_get_message () {
 
     if (_message->error) _buffer.clear();
 
-    _state = NONE;
+    _state.reset(STATE_RECV_MESSAGE);
     MessageSP ret(_message);
     _message = NULL;
     return ret;
 }
 
 void Parser::send_frame (bool final, std::deque<string>& payload, Frame::Opcode opcode) {
+    if (!_state[STATE_ESTABLISHED]) throw std::logic_error("not established");
+    if (_state[STATE_SEND_MESSAGE]) throw std::logic_error("message is being sent");
+    if (_state[STATE_SEND_CLOSED]) throw std::logic_error("close sent, can't send anymore");
+
+    _state.set(STATE_SEND_FRAME);
+
     if (Frame::is_control_opcode(opcode)) {
-        if (!final) throw std::logic_error("Parser[send_frame] control frame must be final");
+        if (!final) throw std::logic_error("control frame must be final");
+        if (!_sent_frame_count) _state.reset(STATE_SEND_FRAME);
+        if (opcode == Frame::CLOSE) _state.set(STATE_SEND_CLOSED);
     } else {
         if (_sent_frame_count) opcode = Frame::CONTINUE;
-        if (final) _sent_frame_count = 0;
+        if (final) {
+            _sent_frame_count = 0;
+            _state.reset(STATE_SEND_FRAME);
+        }
         else ++_sent_frame_count;
     }
+
+    Frame::Header header = {final, 0, 0, 0, !_recv_mask_required, 0, opcode};
+    if (!_recv_mask_required) header.mask = std::rand(); // invert because _mask_required
 
     for (auto& str : payload) {
         // TODO: change str with extensions
     }
-    Frame::compile(final, 0, 0, 0, !_mask_required, opcode, payload);
+
+    Frame::compile(header, payload);
+}
+
+string Parser::send_control (Frame::Opcode opcode) {
+    send_frame(true, _simple_payload_tmp, opcode);
+    string ret = _simple_payload_tmp.front();
+    _simple_payload_tmp.clear();
+    return ret;
+}
+
+string Parser::send_control (Frame::Opcode opcode, const string& payload) {
+    if (!payload) return send_control(opcode);
+    _simple_payload_tmp.push_back(payload);
+    send_frame(true, _simple_payload_tmp, opcode);
+    auto cend = _simple_payload_tmp.cend();
+    auto& str = _simple_payload_tmp.front();
+    for (auto it = _simple_payload_tmp.cbegin() + 1; it != cend; ++it) str += *it;
+    string ret = _simple_payload_tmp.front();
+    _simple_payload_tmp.clear();
+    return ret;
 }
 
 }}

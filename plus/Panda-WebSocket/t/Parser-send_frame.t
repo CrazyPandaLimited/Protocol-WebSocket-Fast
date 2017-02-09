@@ -52,6 +52,12 @@ subtest 'big client2server frame' => sub {
     is_bin($bin, gen_frame({mask => substr($bin, 10, 4), fin => 1, opcode => OPCODE_TEXT, data => $payload}), "frame ok");
 };
 
+subtest 'empty frame still masked' => sub {
+    my $bin = $p->send_frame(1, "");
+    is(length($bin), 6, "frame length ok"); # 2 header + 4 mask
+    is_bin($bin, gen_frame({mask => substr($bin, 2, 4), fin => 1, opcode => OPCODE_BINARY}), "frame ok");
+};
+
 $p = WSTest::get_established_server();
 
 subtest 'opcode CONTINUE is forced for fragment frames of message (including final frame)' => sub {
@@ -74,6 +80,7 @@ subtest 'control frame send' => sub {
     is_bin($bin, gen_frame({fin => 1, opcode => OPCODE_PONG, data => "mypong"}), "pong ok");
     $bin = $p->send_frame(1, "myclose", OPCODE_CLOSE);
     is_bin($bin, gen_frame({fin => 1, opcode => OPCODE_CLOSE, data => "myclose"}), "close ok");
+    WSTest::reset($p);
 };
 
 subtest 'frame count survives control message in the middle' => sub {
@@ -91,7 +98,9 @@ subtest 'frame count survives control message in the middle' => sub {
 
 subtest 'control frame cannot be sent being non-final' => sub {
     ok(!eval { $p->send_frame(0, "", OPCODE_PING) }, "exception thrown");
+    WSTest::reset($p);
 };
+
 
 done_testing();
 

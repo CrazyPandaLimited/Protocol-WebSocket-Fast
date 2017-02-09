@@ -1,5 +1,6 @@
 #pragma once
 #include <deque>
+#include <bitset>
 #include <iterator>
 #include <panda/refcnt.h>
 #include <panda/string.h>
@@ -66,15 +67,15 @@ public:
     size_t max_frame_size;
     size_t max_message_size;
 
-    bool established () const { return _established; }
+    bool established () const { return _state[STATE_ESTABLISHED]; }
+    bool recv_closed () const { return _state[STATE_RECV_CLOSED]; }
+    bool send_closed () const { return _state[STATE_SEND_CLOSED]; }
 
     FrameIteratorPair get_frames () {
-        if (!_established) throw std::logic_error("Parser[get_frames] connection not established");
         return FrameIteratorPair(FrameIterator(this, _get_frame()), FrameIterator(this, NULL));
     }
 
     MessageIteratorPair get_messages () {
-        if (!_established) throw std::logic_error("Parser[get_messages] connection not established");
         return MessageIteratorPair(MessageIterator(this, _get_message()), MessageIterator(this, NULL));
     }
 
@@ -92,35 +93,55 @@ public:
 
     void send_frame (bool final, std::deque<string>& payload, Frame::Opcode opcode = Frame::BINARY);
 
+    string send_control (Frame::Opcode opcode);
+    string send_control (Frame::Opcode opcode, const string& payload);
+
+    string send_ping ()                      { return send_control(Frame::PING); }
+    string send_ping (const string& payload) { return send_control(Frame::PING, payload); }
+
+    string send_pong ()                      { return send_control(Frame::PONG); }
+    string send_pong (const string& payload) { return send_control(Frame::PONG, payload); }
+
+    string send_close ()                                     { return send_control(Frame::CLOSE); }
+    string send_close (uint16_t code)                        { return send_control(Frame::CLOSE, Frame::compile_close_payload(code, string())); }
+    string send_close (uint16_t code, const string& payload) { return send_control(Frame::CLOSE, Frame::compile_close_payload(code, payload)); }
+
     virtual void reset ();
 
     virtual ~Parser () {}
 
 protected:
-    bool   _established;
-    string _buffer;
+    static const int STATE_ESTABLISHED  = 1;
+    static const int STATE_RECV_FRAME   = 2;
+    static const int STATE_RECV_MESSAGE = 3;
+    static const int STATE_RECV_CLOSED  = 4;
+    static const int STATE_SEND_FRAME   = 5;
+    static const int STATE_SEND_MESSAGE = 6;
+    static const int STATE_SEND_CLOSED  = 7;
+    static const int STATE_LAST         = STATE_SEND_CLOSED;
 
-    Parser (bool mask_required) :
+    std::bitset<32> _state;
+    string          _buffer;
+
+    Parser (bool recv_mask_required) :
         max_frame_size(0),
         max_message_size(0),
-        _established(false),
-        _mask_required(mask_required),
-        _state(NONE),
+        _state(0),
+        _recv_mask_required(recv_mask_required),
         _frame_count(0),
-        _message_frame(mask_required, max_frame_size),
+        _message_frame(_recv_mask_required, max_frame_size),
         _sent_frame_count(0)
     {}
 
 private:
-    enum State { NONE, FRAME, MESSAGE };
-
-    bool      _mask_required;
-    State     _state;
+    bool      _recv_mask_required;
     FrameSP   _frame;            // current frame being received (frame mode)
     int       _frame_count;      // frame count for current message being received (frame mode)
     MessageSP _message;          // current message being received (message mode)
     Frame     _message_frame;    // current frame being received (message mode)
     int       _sent_frame_count; // frame count for current message being sent (frame mode)
+
+    std::deque<string> _simple_payload_tmp;
 
     FrameSP   _get_frame ();
     MessageSP _get_message ();

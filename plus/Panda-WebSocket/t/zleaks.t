@@ -7,17 +7,10 @@ use Test::Builder;
 plan skip_all => 'set WITH_LEAKS=1 to enable leaks test' unless $ENV{WITH_LEAKS};
 plan skip_all => 'BSD::Resource required to test for leaks' unless eval { require BSD::Resource; 1 };
 
-test_leak(1, [
-    'ServerParser-accept.t',
-    'ServerParser-accept_error.t',
-    'ServerParser-accept_response.t',
-    'Parser-get_frames.t',
-    'Parser-get_messages.t',
-    'Parser-mixed-mode.t',
-    'ClientParser-connect_request.t',
-    'ClientParser-connect.t',
-    'Parser-send_frame.t',
-], 1000);
+my %exclude = map {$_ => 1} qw/ 00-Panda-WebSocket.t zleaks.t /;
+my @files = grep { !$exclude{$_} } map { substr($_, 2) } <t/*.t>;
+
+test_leak(1, [@files], 500);
 
 # $leak_threshold in Kb
 sub test_leak {

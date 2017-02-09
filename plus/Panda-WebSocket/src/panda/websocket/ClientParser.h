@@ -23,6 +23,9 @@ public:
     virtual ~ClientParser () {}
 
 private:
+    static const int STATE_CONNECTION_REQUESTED       = STATE_LAST + 1;
+    static const int STATE_CONNECTION_RESPONSE_PARSED = STATE_CONNECTION_REQUESTED + 1;
+
     ConnectRequestSP  _connect_request;
     ConnectResponseSP _connect_response;
 
