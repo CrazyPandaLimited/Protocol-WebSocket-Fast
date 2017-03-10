@@ -38,10 +38,8 @@ bool HTTPPacket::parse (string& buf) {
             body.push_back(buf);
             buf.clear();
         } else {
-            string last_chunk = buf;
-            buf = buf.substr(left);
-            last_chunk.resize(left);
-            body.push_back(last_chunk);
+            body.push_back(buf.substr(0, left));
+            buf.offset(left);
         }
         _parsed = true;
         return true;
@@ -53,9 +51,8 @@ bool HTTPPacket::parse (string& buf) {
     string last_chunk;
     if (end != buf.cend()) { // have data in buffer after headers
         size_t pos = end - buf.cbegin();
-        last_chunk = buf;
-        buf = buf.substr(pos);
-        last_chunk.resize(pos);
+        last_chunk = buf.substr(0, pos);
+        buf.offset(pos);
     } else {
         last_chunk = buf;
         buf.clear();
@@ -120,13 +117,13 @@ void HTTPPacket::_parse_header (StringRange range) {
             }
 
             string key;
-            if (keylen) key.assign(keyacc, keylen, string::COPY);
+            if (keylen) key.assign(keyacc, keylen);
 
             string value;
             const char* valptr = valacc;
             if (curacc != valptr && *valptr == ' ') valptr++;
             if (curacc != valptr && *(curacc-1) == '\r') curacc--;
-            if (curacc != valptr) value.assign(valptr, curacc - valptr, string::COPY);
+            if (curacc != valptr) value.assign(valptr, curacc - valptr);
 
             headers.emplace(key, value);
             //std::cout << "found key='" << key << "' value='" << value << "'\n";
@@ -141,7 +138,10 @@ void HTTPPacket::_parse_header (StringRange range) {
     _header_ok = true;
 
     auto it = headers.find("Content-Length");
-    if (it != headers.end()) _content_length = atoi(it->second.data());
+    if (it != headers.end()) {
+        auto res = it->second.to_number(_content_length);
+        assert(!res.ec);
+    }
 }
 
 void HTTPPacket::parse_header_value (const string& strval, HeaderValues& values) {
@@ -167,7 +167,7 @@ void HTTPPacket::parse_header_value (const string& strval, HeaderValues& values)
                 auto sz = values.size();
                 values.resize(sz+1);
                 elem = &values[sz];
-                elem->name.assign(accstr, acc-accstr, string::COPY);
+                elem->name.assign(accstr, acc-accstr);
                 acc = accstr;
                 if (c == ';') mode = PARSE_MODE_KEY;
             }
@@ -175,12 +175,12 @@ void HTTPPacket::parse_header_value (const string& strval, HeaderValues& values)
         }
         else if (mode == PARSE_MODE_KEY) {
             if (c == ';' || c == ',') {
-                elem->params.emplace(string(accstr, acc-accstr, string::COPY), string());
+                elem->params.emplace(string(accstr, acc-accstr), string());
                 acc = accstr;
                 if (c == ',') mode = PARSE_MODE_NAME;
             }
             else if (c == '=') {
-                key.assign(accstr, acc-accstr, string::COPY);
+                key.assign(accstr, acc-accstr);
                 acc = accstr;
                 mode = PARSE_MODE_VAL;
             }
@@ -188,7 +188,7 @@ void HTTPPacket::parse_header_value (const string& strval, HeaderValues& values)
         }
         else { // PARSE_MODE_VAL
             if (c == ';' || c == ',') {
-                elem->params.emplace(key, string(accstr, acc-accstr, string::COPY));
+                elem->params.emplace(key, string(accstr, acc-accstr));
                 acc = accstr;
                 if (c == ',') mode = PARSE_MODE_NAME;
                 else mode = PARSE_MODE_KEY;
@@ -198,9 +198,9 @@ void HTTPPacket::parse_header_value (const string& strval, HeaderValues& values)
     }
 
     // finish
-    if      (mode == PARSE_MODE_NAME) values.push_back(HeaderValue{string(accstr, acc-accstr, string::COPY)});
-    else if (mode == PARSE_MODE_KEY)  elem->params.emplace(string(accstr, acc-accstr, string::COPY), string());
-    else    /* PARSE_MODE_VAL */      elem->params.emplace(key, string(accstr, acc-accstr, string::COPY));
+    if      (mode == PARSE_MODE_NAME) values.push_back(HeaderValue{string(accstr, acc-accstr)});
+    else if (mode == PARSE_MODE_KEY)  elem->params.emplace(string(accstr, acc-accstr), string());
+    else    /* PARSE_MODE_VAL */      elem->params.emplace(key, string(accstr, acc-accstr));
 }
 
 string HTTPPacket::compile_header_value (const HeaderValues& values) {
@@ -219,7 +219,7 @@ string HTTPPacket::compile_header_value (const HeaderValues& values) {
         str += ", ";
     }
 
-    if (str) str.resize(str.length() - 2);
+    if (str) str.length(str.length() - 2);
 
     return str;
 }
@@ -253,7 +253,7 @@ void HTTPPacket::_to_string (string& str) {
     }
     if (blen) {
         str += "Content-Length: ";
-        str += panda::lib::itoa(blen);
+        str += string::from_number(blen);
         str += "\r\n";
     }
     str += "\r\n";

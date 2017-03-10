@@ -1,4 +1,4 @@
-#include <xs/websocket/websocket.h>
+#include <xs/websocket.h>
 #include <xs/lib.h>
 
 namespace xs { namespace websocket {
@@ -60,6 +60,21 @@ void http_packet_set_body (pTHX_ HTTPPacket* p, SV* sv) {
     p->body.clear();
     string newbody = sv2string(aTHX_ sv);
     if (newbody.length()) p->body.push_back(newbody);
+}
+
+SV* strings_to_sv (pTHX_ const string& s1, const string& s2) {
+    auto len = s1.length() + s2.length();
+    if (!len) return &PL_sv_undef;
+
+    SV* ret = newSV(len+1);
+    SvPOK_on(ret);
+    char* dest = SvPVX(ret);
+    std::memcpy(dest, s1.data(), s1.length());
+    std::memcpy(dest + s1.length(), s2.data(), s2.length());
+    dest[len] = 0;
+    SvCUR_set(ret, len);
+
+    return ret;
 }
 
 }}

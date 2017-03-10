@@ -1,7 +1,6 @@
 #include <panda/websocket/ConnectResponse.h>
 #include <openssl/sha.h>
 #include <panda/encode/base64.h>
-#include <iostream>
 
 namespace panda { namespace websocket {
 
@@ -23,13 +22,13 @@ void ConnectResponse::_parse_header (StringRange range) {
     }
 
     auto it = headers.find("Connection");
-    if (it == headers.end() || it->second.find("Upgrade", 0, 7) == string::npos) {
+    if (it == headers.end() || it->second.find("Upgrade") == string::npos) {
         error = "Connection must be 'Upgrade'";
         return;
     }
 
     it = headers.find("Upgrade");
-    if (it == headers.end() || it->second.find("websocket", 0, 9) == string::npos) {
+    if (it == headers.end() || it->second.find("websocket") == string::npos) {
         error = "Upgrade must be 'websocket'";
         return;
     }
@@ -51,7 +50,6 @@ void ConnectResponse::_parse_header (StringRange range) {
 }
 
 void ConnectResponse::_to_string (string& str) {
-
     code    = 101;
     message = "Switching Protocols";
     headers.emplace("Upgrade", "websocket");
@@ -73,7 +71,7 @@ string ConnectResponse::_calc_accept_key (string ws_key) {
     auto key_base = ws_key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
     unsigned char sha1bin[21];
     SHA1((const unsigned char*)key_base.data(), key_base.length(), sha1bin);
-    return panda::encode::encode_base64((const char*)sha1bin, 20, false, true);
+    return panda::encode::encode_base64(std::string_view((const char*)sha1bin, 20), false, true);
 }
 
 }}

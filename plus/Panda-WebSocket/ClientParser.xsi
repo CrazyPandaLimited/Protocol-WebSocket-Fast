@@ -23,9 +23,8 @@ string panda::websocket::ClientParser::connect_request (SV* reqsv) {
     });
 }
 
-panda::websocket::ConnectResponseSP panda::websocket::ClientParser::connect (SV* bufsv) {
+panda::websocket::ConnectResponseSP panda::websocket::ClientParser::connect (string buf) {
     const char* CLASS = "Panda::WebSocket::ConnectResponse";
-    string buf = sv2string(aTHX_ bufsv);
     PXS_TRY({ RETVAL = THIS->connect(buf); });
     if (!RETVAL) XSRETURN_UNDEF;
 }

@@ -39,7 +39,7 @@ FrameSP Parser::_get_frame () {
     }
     else if (_frame->is_control()) { // control frames can't be fragmented, no need to increment frame count
         if (!_frame_count) _state.reset(STATE_RECV_FRAME); // do not reset state if control frame arrives in the middle of message
-        if (_frame->opcode() == Frame::CLOSE) {
+        if (_frame->opcode() == Opcode::CLOSE) {
             _buffer.clear();
             _state.set(STATE_RECV_CLOSED);
         }
@@ -73,7 +73,7 @@ MessageSP Parser::_get_message () {
         // control frame arrived in the middle of fragmented message - wrap in new message and return (state remains MESSAGE)
         // because user can only switch to getting frames after receiving non-control message
         if (!_message_frame.error && _message_frame.is_control()) {
-            if (_message_frame.opcode() == Frame::CLOSE) {
+            if (_message_frame.opcode() == Opcode::CLOSE) {
                 _buffer.clear();
                 _state.set(STATE_RECV_CLOSED);
             }
@@ -102,19 +102,19 @@ MessageSP Parser::_get_message () {
     return ret;
 }
 
-void Parser::send_frame (bool final, std::deque<string>& payload, Frame::Opcode opcode) {
+FrameHeader Parser::_prepare_frame_header (bool final, Opcode opcode) {
     if (!_state[STATE_ESTABLISHED]) throw std::logic_error("not established");
     if (_state[STATE_SEND_MESSAGE]) throw std::logic_error("message is being sent");
     if (_state[STATE_SEND_CLOSED]) throw std::logic_error("close sent, can't send anymore");
 
     _state.set(STATE_SEND_FRAME);
 
-    if (Frame::is_control_opcode(opcode)) {
+    if (FrameHeader::is_control_opcode(opcode)) {
         if (!final) throw std::logic_error("control frame must be final");
         if (!_sent_frame_count) _state.reset(STATE_SEND_FRAME);
-        if (opcode == Frame::CLOSE) _state.set(STATE_SEND_CLOSED);
+        if (opcode == Opcode::CLOSE) _state.set(STATE_SEND_CLOSED);
     } else {
-        if (_sent_frame_count) opcode = Frame::CONTINUE;
+        if (_sent_frame_count) opcode = Opcode::CONTINUE;
         if (final) {
             _sent_frame_count = 0;
             _state.reset(STATE_SEND_FRAME);
@@ -122,33 +122,7 @@ void Parser::send_frame (bool final, std::deque<string>& payload, Frame::Opcode 
         else ++_sent_frame_count;
     }
 
-    Frame::Header header = {final, 0, 0, 0, !_recv_mask_required, 0, opcode};
-    if (!_recv_mask_required) header.mask = std::rand(); // invert because _mask_required
-
-    for (auto& str : payload) {
-        // TODO: change str with extensions
-    }
-
-    Frame::compile(header, payload);
-}
-
-string Parser::send_control (Frame::Opcode opcode) {
-    send_frame(true, _simple_payload_tmp, opcode);
-    string ret = _simple_payload_tmp.front();
-    _simple_payload_tmp.clear();
-    return ret;
-}
-
-string Parser::send_control (Frame::Opcode opcode, const string& payload) {
-    if (!payload) return send_control(opcode);
-    _simple_payload_tmp.push_back(payload);
-    send_frame(true, _simple_payload_tmp, opcode);
-    auto cend = _simple_payload_tmp.cend();
-    auto& str = _simple_payload_tmp.front();
-    for (auto it = _simple_payload_tmp.cbegin() + 1; it != cend; ++it) str += *it;
-    string ret = _simple_payload_tmp.front();
-    _simple_payload_tmp.clear();
-    return ret;
+    return FrameHeader(opcode, final, 0, 0, 0, !_recv_mask_required, _recv_mask_required ? 0 : (uint32_t)std::rand());
 }
 
 }}

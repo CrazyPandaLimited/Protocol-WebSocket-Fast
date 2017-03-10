@@ -87,15 +87,15 @@ subtest 'send_close' => sub {
         WSTest::reset($p);
     };
     subtest 'with code' => sub {
-        my $bin = $p->send_close(CLOSE_NORMAL);
+        my $bin = $p->send_close(CLOSE_DONE);
         is(length($bin), 4, "frame length ok");
-        is_bin($bin, gen_frame({fin => 1, opcode => OPCODE_CLOSE, close_code => CLOSE_NORMAL}), "frame ok");
+        is_bin($bin, gen_frame({fin => 1, opcode => OPCODE_CLOSE, close_code => CLOSE_DONE}), "frame ok");
         WSTest::reset($p);
     };
     subtest 'with code and payload' => sub {
-        my $bin = $p->send_close(CLOSE_NORMAL, "fuckyou");
+        my $bin = $p->send_close(CLOSE_AWAY, "fuckyou");
         is(length($bin), 11, "frame length ok");
-        is_bin($bin, gen_frame({fin => 1, opcode => OPCODE_CLOSE, close_code => CLOSE_NORMAL, data => "fuckyou"}), "frame ok");
+        is_bin($bin, gen_frame({fin => 1, opcode => OPCODE_CLOSE, close_code => CLOSE_AWAY, data => "fuckyou"}), "frame ok");
         WSTest::reset($p);
     };
 };

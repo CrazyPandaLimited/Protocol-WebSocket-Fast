@@ -18,7 +18,7 @@ void HTTPRequest::_parse_header (StringRange range) {
     for (; cur != end; ++cur) {
         char c = *cur;
         if (c == ' ') {
-            method.resize(mlen);
+            method.length(mlen);
             break;
         }
         if (++mlen > MAX_METHOD || c == '\r' || c == '\n') break;
@@ -50,7 +50,7 @@ void HTTPRequest::_parse_header (StringRange range) {
 void HTTPRequest::_to_string (string& str) {
     if (!uri || !uri->host()) throw std::logic_error("HTTPRequest[to_string] uri with net location must be defined");
     string uristr = uri->relative();
-    if (!uristr) uristr = "/";
+    if (!uristr) uristr = '/';
 
     size_t rslen = (method ? method.length() : 3) + uristr.length() + 20;
     str.reserve(rslen);

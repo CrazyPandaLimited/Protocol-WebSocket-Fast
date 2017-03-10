@@ -35,7 +35,7 @@ subtest 'close' => sub {
     ok(!$message, "no more messages available after close");
     WSTest::reset($p);
     
-    subtest 'code' => \&test_message, {opcode => OPCODE_CLOSE, mask => 1, fin => 1, close_code => CLOSE_NORMAL};
+    subtest 'code' => \&test_message, {opcode => OPCODE_CLOSE, mask => 1, fin => 1, close_code => CLOSE_DONE};
     WSTest::reset($p);
     subtest 'message' => \&test_message, {opcode => OPCODE_CLOSE, mask => 1, fin => 1, close_code => CLOSE_AWAY, data => "walk"};
     WSTest::reset($p);

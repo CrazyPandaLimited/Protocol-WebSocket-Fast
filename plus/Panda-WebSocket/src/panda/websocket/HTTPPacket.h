@@ -4,8 +4,9 @@
 #include <panda/refcnt.h>
 #include <panda/string.h>
 #include <panda/ranges/Joiner.h>
-#include <panda/ranges/KmpFinder.h>
 #include <panda/websocket/utils.h>
+#include <panda/ranges/KmpFinder.h>
+#include <panda/unordered_string_map.h>
 
 namespace panda { namespace websocket {
 
@@ -15,10 +16,10 @@ static auto fndr = panda::ranges::make_kmp_finder("\r\n\r\n");
 
 class HTTPPacket : public virtual panda::RefCounted {
 public:
-    typedef std::unordered_multimap<string, string, string_hash_ci, string_equal_ci> Headers;
+    typedef panda::unordered_string_multimap<string, string, string_hash_ci, string_equal_ci> Headers;
     struct HeaderValue {
         string name;
-        std::unordered_map<string, const string> params;
+        panda::unordered_string_map<string, const string> params;
     };
     typedef std::vector<HeaderValue> HeaderValues;
     typedef std::vector<string>      Body;

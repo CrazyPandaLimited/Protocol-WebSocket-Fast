@@ -38,10 +38,10 @@ string ServerParser::accept_error () {
 
         string svers(50);
         for (int v : supported_ws_versions) {
-            svers += panda::lib::itoa(v);
+            svers += string::from_number(v);
             svers += ", ";
         }
-        if (svers) svers.resize(svers.length()-2);
+        if (svers) svers.length(svers.length()-2);
         res.headers.emplace("Sec-WebSocket-Version", svers);
     }
     else {
@@ -66,7 +66,7 @@ string ServerParser::accept_error (HTTPResponse* res) {
     else if (!res->message) res->message = "Unknown";
 
     if (!res->body.size()) {
-        res->body.push_back(string() + panda::lib::itoa(res->code) + ' ' + res->message);
+        res->body.push_back(string::from_number(res->code) + ' ' + res->message);
     }
 
     if (res->headers.find("Content-Type") == res->headers.end()) res->headers.emplace("Content-Type", "text/plain");

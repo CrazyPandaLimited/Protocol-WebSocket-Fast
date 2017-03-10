@@ -1,9 +1,7 @@
-#include <algorithm_perlsafe> // early include algorithm to avoid collisions with fucking perl source code
-#include <xs/xs.h>
+#include <xs/websocket.h>
 #include <xs/lib.h>
 #include <xs/uri.h>
 #include <xs/export.h>
-#include <xs/websocket.h>
 
 #include <iostream>
 
@@ -15,6 +13,7 @@ using xs::exp::create_constant;
 using xs::exp::create_constants;
 
 using panda::string;
+using std::string_view;
 using xs::lib::sv2string;
 using xs::my_perl;
 
@@ -32,25 +31,25 @@ PROTOTYPES: DISABLE
 
 BOOT {
     constant_t clist[] = {
-        {"OPCODE_CONTINUE", Frame::CONTINUE},
-        {"OPCODE_TEXT",     Frame::TEXT},
-        {"OPCODE_BINARY",   Frame::BINARY},
-        {"OPCODE_CLOSE",    Frame::CLOSE},
-        {"OPCODE_PING",     Frame::PING},
-        {"OPCODE_PONG",     Frame::PONG},
+        {"OPCODE_CONTINUE", (int)Opcode::CONTINUE},
+        {"OPCODE_TEXT",     (int)Opcode::TEXT},
+        {"OPCODE_BINARY",   (int)Opcode::BINARY},
+        {"OPCODE_CLOSE",    (int)Opcode::CLOSE},
+        {"OPCODE_PING",     (int)Opcode::PING},
+        {"OPCODE_PONG",     (int)Opcode::PONG},
 
-        {"CLOSE_NORMAL",           Frame::CLOSE_NORMAL},
-        {"CLOSE_AWAY",             Frame::CLOSE_AWAY},
-        {"CLOSE_PROTOCOL_ERROR",   Frame::CLOSE_PROTOCOL_ERROR},
-        {"CLOSE_INVALID_DATA",     Frame::CLOSE_INVALID_DATA},
-        {"CLOSE_UNKNOWN",          Frame::CLOSE_UNKNOWN},
-        {"CLOSE_ABNORMALLY",       Frame::CLOSE_ABNORMALLY},
-        {"CLOSE_INVALID_TEXT",     Frame::CLOSE_INVALID_TEXT},
-        {"CLOSE_BAD_REQUEST",      Frame::CLOSE_BAD_REQUEST},
-        {"CLOSE_MAX_SIZE",         Frame::CLOSE_MAX_SIZE},
-        {"CLOSE_EXTENSION_NEEDED", Frame::CLOSE_EXTENSION_NEEDED},
-        {"CLOSE_INTERNAL_ERROR",   Frame::CLOSE_INTERNAL_ERROR},
-        {"CLOSE_TLS",              Frame::CLOSE_TLS},
+        {"CLOSE_DONE",             (int)CloseCode::DONE},
+        {"CLOSE_AWAY",             (int)CloseCode::AWAY},
+        {"CLOSE_PROTOCOL_ERROR",   (int)CloseCode::PROTOCOL_ERROR},
+        {"CLOSE_INVALID_DATA",     (int)CloseCode::INVALID_DATA},
+        {"CLOSE_UNKNOWN",          (int)CloseCode::UNKNOWN},
+        {"CLOSE_ABNORMALLY",       (int)CloseCode::ABNORMALLY},
+        {"CLOSE_INVALID_TEXT",     (int)CloseCode::INVALID_TEXT},
+        {"CLOSE_BAD_REQUEST",      (int)CloseCode::BAD_REQUEST},
+        {"CLOSE_MAX_SIZE",         (int)CloseCode::MAX_SIZE},
+        {"CLOSE_EXTENSION_NEEDED", (int)CloseCode::EXTENSION_NEEDED},
+        {"CLOSE_INTERNAL_ERROR",   (int)CloseCode::INTERNAL_ERROR},
+        {"CLOSE_TLS",              (int)CloseCode::TLS},
 
         {NULL}
     };

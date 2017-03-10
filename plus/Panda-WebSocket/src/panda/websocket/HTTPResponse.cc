@@ -1,6 +1,5 @@
 #include <panda/websocket/HTTPResponse.h>
-#include <cstdlib>
-#include <panda/lib/lib.h>
+#include <panda/lib/from_chars.h>
 
 namespace panda { namespace websocket {
 
@@ -34,8 +33,7 @@ void HTTPResponse::_parse_header (StringRange range) {
         *cptr++ = c;
     }
     if (cptr == cstr || *cur++ != ' ')  {error = "couldn't find valid status code"; return; }
-    *cptr = 0;
-    code = std::atoi(cstr);
+    std::from_chars(cstr, cptr, code);
 
     // find status message
     char  mstr[MAX_MESSAGE];
@@ -48,7 +46,7 @@ void HTTPResponse::_parse_header (StringRange range) {
         *mptr++ = c;
     }
     if (*cur++ != '\n' || mptr == mstr)  {error = "cannot find valid status message"; return; }
-    message.assign(mstr, mptr-mstr, string::COPY);
+    message.assign(mstr, mptr-mstr);
 
     HTTPPacket::_parse_header(StringRange{cur, end});
 }
@@ -58,7 +56,7 @@ void HTTPResponse::_to_string (string& str) {
     str.reserve(stlen);
 
     str += "HTTP/1.1 ";
-    str += panda::lib::itoa(code);
+    str += string::from_number(code);
     str += ' ';
     str += message;
     str += "\r\n";

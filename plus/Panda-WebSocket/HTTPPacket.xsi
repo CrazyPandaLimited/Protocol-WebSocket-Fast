@@ -39,14 +39,11 @@ HV* headers (panda::websocket::HTTPPacketSP THIS, HV* new_headers = NULL) {
     }
 }
 
-string header (panda::websocket::HTTPPacketSP THIS, string name, SV* val = NULL) {
+string header (panda::websocket::HTTPPacketSP THIS, string_view name, SV* val = NULL) {
     if (val) {
         string value = sv2string(aTHX_ val);
         auto it = THIS->headers.find(name);
-        if (it == THIS->headers.cend()) {
-            name.retain();
-            THIS->headers.emplace(name, value);
-        }
+        if (it == THIS->headers.cend()) THIS->headers.emplace(string(name), value);
         else it->second = value;
         XSRETURN_UNDEF;
     }

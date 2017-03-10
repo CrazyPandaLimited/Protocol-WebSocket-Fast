@@ -1,7 +1,7 @@
 #pragma once
+#include <cstdint>
 #include <strings.h> // strncasecmp
 #include <panda/string.h>
-#include <iostream>
 
 namespace panda { namespace websocket {
 
@@ -42,5 +42,7 @@ inline bool parse_binary_number (T& num, const char*& src, size_t len) {
     while (dst != end) *dst++ = *src++;
     return false;
 }
+
+void crypt_mask (char* str, size_t len, uint32_t mask, uint64_t bytes_received);
 
 }}

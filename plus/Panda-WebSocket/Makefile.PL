@@ -6,7 +6,7 @@ write_makefile(
     VERSION_FROM  => 'lib/Panda/WebSocket.pm',
     ABSTRACT_FROM => 'lib/Panda/WebSocket.pod',
     CPLUS         => 1,
-    CCFLAGS       => '-std=c++11',
+    CCFLAGS       => '-fno-omit-frame-pointer',
     BIN_DEPS      => ['Panda::Lib', 'Panda::Export', 'CPP::Range', 'Panda::URI', 'Panda::Encode::Base2N'],
     LIBS          => '-lssl',
     SRC           => 'src',

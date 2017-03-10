@@ -10,12 +10,15 @@ use WSTest;
 
 say "START $$";
 
-my $p = WSTest::get_established_server();
+my $p = WSTest::get_established_client();
 
-use Benchmark qw/timethis/;
 my $s = WSTest::gen_frame({opcode => OPCODE_TEXT, mask => 1, fin => 1, data => ("1" x 100000)});
-timethis(-1, sub {
-    $p->get_frames($s);
-});
+my $f1 = substr($s, 0, 6);
+my $f2 = substr($s, 6);
+
+timethis(-100, sub { $p->test_parse_frame($s) });
+
+my $pl = ("1" x 100000);
+timethis(-1, sub { $p->test_send_frame($pl) });
 
 1;

@@ -12,13 +12,14 @@ namespace panda { namespace websocket {
 
 using panda::string;
 using panda::shared_ptr;
+using panda::IteratorPair;
 
 class Parser : public virtual panda::RefCounted {
 public:
 
     class MessageIterator : public std::iterator<std::input_iterator_tag, MessageSP> {
     public:
-        typedef panda::IteratorPair<MessageIterator> MessageIteratorPair;
+        typedef IteratorPair<MessageIterator> MessageIteratorPair;
 
         class FrameIterator : public std::iterator<std::input_iterator_tag, FrameSP> {
         public:
@@ -40,7 +41,7 @@ public:
             Parser* parser;
             FrameSP cur;
         };
-        typedef panda::IteratorPair<FrameIterator> FrameIteratorPair;
+        typedef IteratorPair<FrameIterator> FrameIteratorPair;
 
         MessageIterator (Parser* parser, const MessageSP& start_message) : parser(parser), cur(start_message) {}
         MessageIterator (const MessageIterator& oth)                     : parser(oth.parser), cur(oth.cur) {}
@@ -63,6 +64,10 @@ public:
     typedef MessageIterator::FrameIterator       FrameIterator;
     typedef MessageIterator::MessageIteratorPair MessageIteratorPair;
     typedef MessageIterator::FrameIteratorPair   FrameIteratorPair;
+
+    class OutputIterator : public std::iterator<std::input_iterator_tag, string> {
+    public:
+    };
 
     size_t max_frame_size;
     size_t max_message_size;
@@ -91,20 +96,49 @@ public:
         return get_messages();
     }
 
-    void send_frame (bool final, std::deque<string>& payload, Frame::Opcode opcode = Frame::BINARY);
+    string send_frame (bool final, Opcode opcode = Opcode::BINARY) {
+        auto header = _prepare_frame_header(final, opcode);
+        return Frame::compile(header);
+    }
 
-    string send_control (Frame::Opcode opcode);
-    string send_control (Frame::Opcode opcode, const string& payload);
+    string send_frame (bool final, string& payload, Opcode opcode = Opcode::BINARY) {
+        auto header = _prepare_frame_header(final, opcode);
+        // TODO: change payload with extensions
+        return Frame::compile(header, payload);
+    }
 
-    string send_ping ()                      { return send_control(Frame::PING); }
-    string send_ping (const string& payload) { return send_control(Frame::PING, payload); }
+    template <class It>
+    string send_frame (bool final, It payload_begin, It payload_end, Opcode opcode = Opcode::BINARY) {
+        auto header = _prepare_frame_header(final, opcode);
 
-    string send_pong ()                      { return send_control(Frame::PONG); }
-    string send_pong (const string& payload) { return send_control(Frame::PONG, payload); }
+        auto payload = IteratorPair<It>(payload_begin, payload_end);
+        for (string& str : payload) {
+            // TODO: change str with extensions
+        }
 
-    string send_close ()                                     { return send_control(Frame::CLOSE); }
-    string send_close (uint16_t code)                        { return send_control(Frame::CLOSE, Frame::compile_close_payload(code, string())); }
-    string send_close (uint16_t code, const string& payload) { return send_control(Frame::CLOSE, Frame::compile_close_payload(code, payload)); }
+        return Frame::compile(header, payload_begin, payload_end);
+    }
+
+    string send_control (Opcode opcode)                  { return send_frame(true, opcode); }
+    string send_control (Opcode opcode, string& payload) { return send_frame(true, payload, opcode); }
+
+    string send_ping  ()                { return send_control(Opcode::PING); }
+    string send_ping  (string& payload) { return send_control(Opcode::PING, payload); }
+    string send_pong  ()                { return send_control(Opcode::PONG); }
+    string send_pong  (string& payload) { return send_control(Opcode::PONG, payload); }
+    string send_close ()                { return send_control(Opcode::CLOSE); }
+
+    string send_close (uint16_t code, const string payload = string()) {
+        string frpld = FrameHeader::compile_close_payload(code, payload);
+        string ret = send_control(Opcode::CLOSE, frpld);
+        ret += frpld;
+        return ret;
+    }
+
+//    template <class It>
+//    OutputIterator send_message (It begin, It end, Frame::Opcode = Frame::BINARY) {
+//
+//    }
 
     virtual void reset ();
 
@@ -145,6 +179,8 @@ private:
 
     FrameSP   _get_frame ();
     MessageSP _get_message ();
+
+    FrameHeader _prepare_frame_header (bool final, Opcode opcode);
 
 };
 

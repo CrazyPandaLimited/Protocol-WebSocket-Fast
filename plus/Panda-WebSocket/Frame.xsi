@@ -11,7 +11,7 @@ string error (panda::websocket::FrameSP THIS) {
 }
 
 int opcode (panda::websocket::FrameSP THIS) {
-    RETVAL = THIS->opcode();
+    RETVAL = (int)THIS->opcode();
 }
 
 bool is_control (panda::websocket::FrameSP THIS) {
