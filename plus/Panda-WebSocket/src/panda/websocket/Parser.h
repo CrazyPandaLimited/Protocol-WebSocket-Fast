@@ -112,9 +112,8 @@ public:
         auto header = _prepare_frame_header(final, opcode);
 
         auto payload = IteratorPair<It>(payload_begin, payload_end);
-        for (string& str : payload) {
-            // TODO: change str with extensions
-        }
+        // TODO: change str with extensions
+        //for (string& str : payload) { }
 
         return Frame::compile(header, payload_begin, payload_end);
     }

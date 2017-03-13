@@ -65,7 +65,7 @@ bool HTTPPacket::parse (string& buf) {
 
     if (_header_ok && _content_length) {
         if (max_body_size) {
-            if (max_body_size == -1) {
+            if (max_body_size == (size_t)-1) {
                 error = "http body is disallowed for this request";
                 _parsed = true;
                 return true;
@@ -93,7 +93,7 @@ void HTTPPacket::_parse_header (StringRange range) {
     char keyacc[MAX_HEADER_NAME];
     char valacc[MAX_HEADER_VALUE];
     enum { PARSE_MODE_KEY, PARSE_MODE_VAL } mode = PARSE_MODE_KEY;
-    size_t keylen;
+    size_t keylen = 0;
     char* curacc = keyacc;
 
     for (; cur != end; ++cur) {
@@ -198,7 +198,7 @@ void HTTPPacket::parse_header_value (const string& strval, HeaderValues& values)
     }
 
     // finish
-    if      (mode == PARSE_MODE_NAME) values.push_back(HeaderValue{string(accstr, acc-accstr)});
+    if      (mode == PARSE_MODE_NAME) values.push_back(HeaderValue{string(accstr, acc-accstr), HeaderValueParams()});
     else if (mode == PARSE_MODE_KEY)  elem->params.emplace(string(accstr, acc-accstr), string());
     else    /* PARSE_MODE_VAL */      elem->params.emplace(key, string(accstr, acc-accstr));
 }

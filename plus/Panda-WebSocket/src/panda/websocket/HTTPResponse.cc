@@ -9,7 +9,6 @@ static const int MAX_MESSAGE = 512;
 void HTTPResponse::_parse_header (StringRange range) {
     auto cur = std::begin(range);
     auto end = std::end(range);
-    bool ok;
 
     // skip until space (http version)
     int httpv_len = 0;

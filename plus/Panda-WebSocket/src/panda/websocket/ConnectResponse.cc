@@ -7,7 +7,6 @@ namespace panda { namespace websocket {
 void ConnectResponse::_parse_header (StringRange range) {
     HTTPResponse::_parse_header(range);
     if (error) return;
-    bool ok;
 
     if (code == 426) {
         auto it = headers.find("Sec-WebSocket-Version");

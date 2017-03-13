@@ -15,17 +15,18 @@ void av_to_header_values (pTHX_ AV* av, HTTPPacket::HeaderValues* vals) {
         auto elemav = (AV*)SvRV(elem);
         SV** ref = av_fetch(elemav, 0, 0);
         if (!ref) continue;
-        vals->push_back(HTTPPacket::HeaderValue{});
-        auto& elem = vals->back();
+        HTTPPacket::HeaderValue elem;
         elem.name = sv2string(aTHX_ *ref);
         ref = av_fetch(elemav, 1, 0);
-        if (!ref || !SvROK(*ref) || SvTYPE(SvRV(*ref)) != SVt_PVHV) continue;
-        auto arghv = (HV*)SvRV(*ref);
-        if (arghv) XS_HV_ITER(arghv, {
-            STRLEN klen;
-            char* key = HePV(he, klen);
-            elem.params.emplace(string(key, klen), sv2string(aTHX_ HeVAL(he)));
-        });
+        if (ref && SvROK(*ref) && SvTYPE(SvRV(*ref)) == SVt_PVHV) {
+            auto arghv = (HV*)SvRV(*ref);
+            if (arghv) XS_HV_ITER(arghv, {
+                STRLEN klen;
+                char* key = HePV(he, klen);
+                elem.params.emplace(string(key, klen), sv2string(aTHX_ HeVAL(he)));
+            });
+        }
+        vals->push_back(std::move(elem));
     });
 }
 

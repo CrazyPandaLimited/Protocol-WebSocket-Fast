@@ -31,27 +31,27 @@ PROTOTYPES: DISABLE
 
 BOOT {
     constant_t clist[] = {
-        {"OPCODE_CONTINUE", (int)Opcode::CONTINUE},
-        {"OPCODE_TEXT",     (int)Opcode::TEXT},
-        {"OPCODE_BINARY",   (int)Opcode::BINARY},
-        {"OPCODE_CLOSE",    (int)Opcode::CLOSE},
-        {"OPCODE_PING",     (int)Opcode::PING},
-        {"OPCODE_PONG",     (int)Opcode::PONG},
+        {"OPCODE_CONTINUE", (int)Opcode::CONTINUE, NULL},
+        {"OPCODE_TEXT",     (int)Opcode::TEXT,     NULL},
+        {"OPCODE_BINARY",   (int)Opcode::BINARY,   NULL},
+        {"OPCODE_CLOSE",    (int)Opcode::CLOSE,    NULL},
+        {"OPCODE_PING",     (int)Opcode::PING,     NULL},
+        {"OPCODE_PONG",     (int)Opcode::PONG,     NULL},
 
-        {"CLOSE_DONE",             (int)CloseCode::DONE},
-        {"CLOSE_AWAY",             (int)CloseCode::AWAY},
-        {"CLOSE_PROTOCOL_ERROR",   (int)CloseCode::PROTOCOL_ERROR},
-        {"CLOSE_INVALID_DATA",     (int)CloseCode::INVALID_DATA},
-        {"CLOSE_UNKNOWN",          (int)CloseCode::UNKNOWN},
-        {"CLOSE_ABNORMALLY",       (int)CloseCode::ABNORMALLY},
-        {"CLOSE_INVALID_TEXT",     (int)CloseCode::INVALID_TEXT},
-        {"CLOSE_BAD_REQUEST",      (int)CloseCode::BAD_REQUEST},
-        {"CLOSE_MAX_SIZE",         (int)CloseCode::MAX_SIZE},
-        {"CLOSE_EXTENSION_NEEDED", (int)CloseCode::EXTENSION_NEEDED},
-        {"CLOSE_INTERNAL_ERROR",   (int)CloseCode::INTERNAL_ERROR},
-        {"CLOSE_TLS",              (int)CloseCode::TLS},
+        {"CLOSE_DONE",             (int)CloseCode::DONE,             NULL},
+        {"CLOSE_AWAY",             (int)CloseCode::AWAY,             NULL},
+        {"CLOSE_PROTOCOL_ERROR",   (int)CloseCode::PROTOCOL_ERROR,   NULL},
+        {"CLOSE_INVALID_DATA",     (int)CloseCode::INVALID_DATA,     NULL},
+        {"CLOSE_UNKNOWN",          (int)CloseCode::UNKNOWN,          NULL},
+        {"CLOSE_ABNORMALLY",       (int)CloseCode::ABNORMALLY,       NULL},
+        {"CLOSE_INVALID_TEXT",     (int)CloseCode::INVALID_TEXT,     NULL},
+        {"CLOSE_BAD_REQUEST",      (int)CloseCode::BAD_REQUEST,      NULL},
+        {"CLOSE_MAX_SIZE",         (int)CloseCode::MAX_SIZE,         NULL},
+        {"CLOSE_EXTENSION_NEEDED", (int)CloseCode::EXTENSION_NEEDED, NULL},
+        {"CLOSE_INTERNAL_ERROR",   (int)CloseCode::INTERNAL_ERROR,   NULL},
+        {"CLOSE_TLS",              (int)CloseCode::TLS,              NULL},
 
-        {NULL}
+        {NULL, 0, NULL}
     };
     HV* stash = gv_stashpvs("Panda::WebSocket", GV_ADD);
     create_constants(aTHX_ stash, clist);

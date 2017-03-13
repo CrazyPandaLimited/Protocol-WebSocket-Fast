@@ -36,9 +36,9 @@ SV* strings_to_sv (pTHX_ const string& s1, const string& s2);
 
 class XSFrameIterator : public FrameIterator {
 public:
-    XSFrameIterator (Parser* parser, const FrameSP& start_frame) : nexted(false), FrameIterator(parser, start_frame) { parser->retain(); }
-    XSFrameIterator (const XSFrameIterator& oth)                 : nexted(oth.nexted), FrameIterator(oth)            { parser->retain(); }
-    XSFrameIterator (const FrameIterator& oth)                   : nexted(false), FrameIterator(oth)                 { parser->retain(); }
+    XSFrameIterator (Parser* parser, const FrameSP& start_frame) : FrameIterator(parser, start_frame), nexted(false) { parser->retain(); }
+    XSFrameIterator (const XSFrameIterator& oth)                 : FrameIterator(oth), nexted(oth.nexted)            { parser->retain(); }
+    XSFrameIterator (const FrameIterator& oth)                   : FrameIterator(oth), nexted(false)                 { parser->retain(); }
 
     FrameSP next () {
         if (nexted) operator++();
@@ -53,9 +53,9 @@ private:
 
 class XSMessageIterator : public MessageIterator {
 public:
-    XSMessageIterator (Parser* parser, const MessageSP& start_msg) : nexted(false), MessageIterator(parser, start_msg) { parser->retain(); }
-    XSMessageIterator (const XSMessageIterator& oth)               : nexted(oth.nexted), MessageIterator(oth)          { parser->retain(); }
-    XSMessageIterator (const MessageIterator& oth)                 : nexted(false), MessageIterator(oth)               { parser->retain(); }
+    XSMessageIterator (Parser* parser, const MessageSP& start_msg) : MessageIterator(parser, start_msg), nexted(false) { parser->retain(); }
+    XSMessageIterator (const XSMessageIterator& oth)               : MessageIterator(oth), nexted(oth.nexted)          { parser->retain(); }
+    XSMessageIterator (const MessageIterator& oth)                 : MessageIterator(oth), nexted(false)               { parser->retain(); }
 
     MessageSP next () {
         if (nexted) operator++();

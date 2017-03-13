@@ -19,7 +19,7 @@ public:
     uint32_t mask;
     uint64_t length;
 
-    FrameHeader () : _state(State::FIRST), mask(0), _len16(0), length(0) {}
+    FrameHeader () : mask(0), length(0), _state(State::FIRST), _len16(0) {}
 
     FrameHeader (Opcode opcode, bool final, bool rsv1, bool rsv2, bool rsv3, bool has_mask, uint32_t mask) :
         opcode(opcode), fin(final), rsv1(rsv1), rsv2(rsv2), rsv3(rsv3), has_mask(has_mask), mask(mask) {}

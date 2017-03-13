@@ -17,9 +17,10 @@ static auto fndr = panda::ranges::make_kmp_finder("\r\n\r\n");
 class HTTPPacket : public virtual panda::RefCounted {
 public:
     typedef panda::unordered_string_multimap<string, string, string_hash_ci, string_equal_ci> Headers;
+    typedef panda::unordered_string_map<string, const string>                                 HeaderValueParams;
     struct HeaderValue {
         string name;
-        panda::unordered_string_map<string, const string> params;
+        HeaderValueParams params;
     };
     typedef std::vector<HeaderValue> HeaderValues;
     typedef std::vector<string>      Body;
@@ -59,8 +60,8 @@ protected:
     typedef decltype(panda::ranges::joiner(Body::const_iterator(), Body::const_iterator())) StringRange;
 
     HTTPPacket () :
-        max_headers_size(0), max_body_size(0), headers(Headers(16)), _content_length(0), _header_finder(fndr), _header_ok(false),
-        _parsed(false), _buf_size(0) {
+        max_headers_size(0), max_body_size(0), headers(Headers(16)), _header_finder(fndr), _header_ok(false), _parsed(false), _buf_size(0),
+        _content_length(0) {
     }
 
     virtual void _parse_header (StringRange range);
