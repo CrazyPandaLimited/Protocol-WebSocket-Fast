@@ -4,9 +4,9 @@
 #include <iterator>
 #include <panda/refcnt.h>
 #include <panda/string.h>
-#include <panda/iterator.h>
 #include <panda/websocket/Frame.h>
 #include <panda/websocket/Message.h>
+#include <panda/websocket/iterator.h>
 
 namespace panda { namespace websocket {
 
@@ -101,43 +101,68 @@ public:
         return Frame::compile(header);
     }
 
-    string send_frame (bool final, string& payload, Opcode opcode = Opcode::BINARY) {
+    StringPairIteratorPair send_frame (bool final, string& payload, Opcode opcode = Opcode::BINARY) {
         auto header = _prepare_frame_header(final, opcode);
         // TODO: change payload with extensions
-        return Frame::compile(header, payload);
+        string hbin = Frame::compile(header, payload);
+        return make_iterator_pair(hbin, payload);
     }
 
     template <class It>
-    string send_frame (bool final, It payload_begin, It payload_end, Opcode opcode = Opcode::BINARY) {
+    StringChainIteratorPair<It> send_frame (bool final, It payload_begin, It payload_end, Opcode opcode = Opcode::BINARY) {
         auto header = _prepare_frame_header(final, opcode);
 
-        auto payload = IteratorPair<It>(payload_begin, payload_end);
+        //auto payload = IteratorPair<It>(payload_begin, payload_end);
         // TODO: change str with extensions
         //for (string& str : payload) { }
 
-        return Frame::compile(header, payload_begin, payload_end);
+        string hbin = Frame::compile(header, payload_begin, payload_end);
+        return make_iterator_pair(hbin, payload_begin, payload_end);
     }
 
-    string send_control (Opcode opcode)                  { return send_frame(true, opcode); }
-    string send_control (Opcode opcode, string& payload) { return send_frame(true, payload, opcode); }
+    string                 send_control (Opcode opcode)                  { return send_frame(true, opcode); }
+    StringPairIteratorPair send_control (Opcode opcode, string& payload) { return send_frame(true, payload, opcode); }
 
-    string send_ping  ()                { return send_control(Opcode::PING); }
-    string send_ping  (string& payload) { return send_control(Opcode::PING, payload); }
-    string send_pong  ()                { return send_control(Opcode::PONG); }
-    string send_pong  (string& payload) { return send_control(Opcode::PONG, payload); }
-    string send_close ()                { return send_control(Opcode::CLOSE); }
+    string                 send_ping  ()                { return send_control(Opcode::PING); }
+    StringPairIteratorPair send_ping  (string& payload) { return send_control(Opcode::PING, payload); }
+    string                 send_pong  ()                { return send_control(Opcode::PONG); }
+    StringPairIteratorPair send_pong  (string& payload) { return send_control(Opcode::PONG, payload); }
+    string                 send_close ()                { return send_control(Opcode::CLOSE); }
 
-    string send_close (uint16_t code, const string payload = string()) {
+    StringPairIteratorPair send_close (uint16_t code, const string& payload = string()) {
         string frpld = FrameHeader::compile_close_payload(code, payload);
-        string ret = send_control(Opcode::CLOSE, frpld);
-        ret += frpld;
+        return send_control(Opcode::CLOSE, frpld);
+    }
+
+    StringPairIteratorPair send_message (string& payload, Opcode opcode = Opcode::BINARY) {
+        return send_frame(true, payload, opcode);
+    }
+
+    template <class It, typename = typename std::enable_if<std::is_same<decltype(*It()), string&>::value>::type>
+    StringChainIteratorPair<It> send_message (It payload_begin, It payload_end, Opcode opcode = Opcode::BINARY) {
+        return send_frame(true, payload_begin, payload_end, opcode);
+    }
+
+    template <class ContIt, typename = typename std::enable_if<std::is_same<decltype(*((*ContIt()).begin())), string&>::value>::type>
+    std::vector<string> send_message (ContIt cont_begin, ContIt cont_end, Opcode opcode = Opcode::BINARY) {
+        std::vector<string> ret;
+
+        size_t sz = 0;
+        auto cont_range = IteratorPair<ContIt>(cont_begin, cont_end);
+        for (const auto& range : cont_range) sz += range.end() - range.begin();
+
+        ret.reserve(sz);
+
+        size_t cont_size = cont_end - cont_begin;
+        for (size_t i = 0; i < cont_size; ++i) {
+            auto& range = cont_begin[i];
+            bool final = (i == cont_size - 1);
+            auto frame_range = send_frame(final, range.begin(), range.end(), opcode);
+            for (const auto& s : frame_range) ret.push_back(s);
+        }
+
         return ret;
     }
-
-//    template <class It>
-//    OutputIterator send_message (It begin, It end, Frame::Opcode = Frame::BINARY) {
-//
-//    }
 
     virtual void reset ();
 

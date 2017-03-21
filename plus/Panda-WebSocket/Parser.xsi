@@ -55,36 +55,79 @@ void panda::websocket::Parser::get_messages (string buf = string()) {
 
 SV* panda::websocket::Parser::send_frame (bool final, string payload, int opcode = (int)Opcode::BINARY) {
     PXS_TRY({
-        string pre = THIS->send_frame(final, payload, (Opcode)opcode);
-        RETVAL = strings_to_sv(pre, payload);
+        auto range = THIS->send_frame(final, payload, (Opcode)opcode);
+        RETVAL = strings_to_sv(aTHX_ range);
+    });
+}
+
+SV* panda::websocket::Parser::send_frame_av (bool final, AV* payload, int opcode = (int)Opcode::BINARY) {
+    std::vector<string> list;
+    av_to_vstring(payload, list);
+    PXS_TRY({
+        auto range = THIS->send_frame(final, list.begin(), list.end(), (Opcode)opcode);
+        RETVAL = strings_to_sv(aTHX_ range);
     });
 }
 
 SV* panda::websocket::Parser::send_control (int opcode, string payload = string()) {
     PXS_TRY({
-        string pre = THIS->send_control((Opcode)opcode, payload);
-        RETVAL = strings_to_sv(pre, payload);
+        auto range = THIS->send_control((Opcode)opcode, payload);
+        RETVAL = strings_to_sv(aTHX_ range);
     });
 }
 
 SV* panda::websocket::Parser::send_ping (string payload = string()) {
     PXS_TRY({
-        string pre = THIS->send_ping(payload);
-        RETVAL = strings_to_sv(pre, payload);
+        auto range = THIS->send_ping(payload);
+        RETVAL = strings_to_sv(aTHX_ range);
     });
 }
 
 SV* panda::websocket::Parser::send_pong (string payload = string()) {
     PXS_TRY({
-        string pre = THIS->send_pong(payload);
-        RETVAL = strings_to_sv(pre, payload);
+        auto range = THIS->send_pong(payload);
+        RETVAL = strings_to_sv(aTHX_ range);
     });
 }
 
-string panda::websocket::Parser::send_close (SV* code = NULL, string message = string()) {
+SV* panda::websocket::Parser::send_close (SV* code = NULL, string message = string()) {
     PXS_TRY({
-        RETVAL = code ? THIS->send_close((uint16_t)SvUV(code), message) :
-                        THIS->send_close();
+        if (code) {
+            auto range = THIS->send_close((uint16_t)SvUV(code), message);
+            RETVAL = strings_to_sv(aTHX_ range);
+        } else {
+            string ret = THIS->send_close();
+            RETVAL = newSVpvn(ret.data(), ret.length());
+        }
+    });
+}
+
+SV* panda::websocket::Parser::send_message (string payload, int opcode = (int)Opcode::BINARY) {
+    PXS_TRY({
+        auto range = THIS->send_message(payload, (Opcode)opcode);
+        RETVAL = strings_to_sv(aTHX_ range);
+    });
+}
+
+SV* panda::websocket::Parser::send_message_av (AV* payload, int opcode = (int)Opcode::BINARY) {
+    std::vector<string> list;
+    av_to_vstring(payload, list);
+    PXS_TRY({
+        auto range = THIS->send_message(list.begin(), list.end(), (Opcode)opcode);
+        RETVAL = strings_to_sv(aTHX_ range);
+    });
+}
+
+SV* panda::websocket::Parser::send_message_multiframe (AV* payloads, int opcode = (int)Opcode::BINARY) {
+    std::vector<std::vector<string>> cont;
+    XS_AV_ITER_NU(payloads, {
+        std::vector<string> tmp;
+        tmp.push_back(sv2string(aTHX_ elem));
+        cont.push_back(std::move(tmp));
+    });
+    PXS_TRY({
+        auto range = THIS->send_message(cont.begin(), cont.end(), (Opcode)opcode);
+        RETVAL = strings_to_sv(aTHX_ range);
     });
 }
 
@@ -104,9 +147,8 @@ int panda::websocket::Parser::test_parse_frame (string buf) {
 int panda::websocket::Parser::test_send_frame (string pl) {
     int cnt = 0;
     for (int i = 0; i < 1000; ++i) {
-        string pre = THIS->send_frame(1, pl);
-        cnt += pre.length();
-        cnt += pl.length();
+        auto range = THIS->send_frame(1, pl);
+        for (const string& s : range) cnt += s.length();
     }
     RETVAL = cnt;
 }

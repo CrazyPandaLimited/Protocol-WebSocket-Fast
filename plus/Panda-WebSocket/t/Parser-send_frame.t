@@ -13,6 +13,7 @@ subtest 'small server2client frame' => sub {
     my $bin = $p->send_frame(1, $payload);
     is(length($bin), 8, "frame length ok"); # 2 header + 6 payload
     is_bin($bin, gen_frame({mask => 0, fin => 1, opcode => OPCODE_BINARY, data => $payload}), "frame ok");
+    is_bin($p->send_frame_av(1, [qw/pr ev ed/]), $bin, "it mode ok");
 };
 
 subtest 'medium server2client frame' => sub {

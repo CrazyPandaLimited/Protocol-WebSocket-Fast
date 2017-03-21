@@ -78,4 +78,12 @@ SV* strings_to_sv (pTHX_ const string& s1, const string& s2) {
     return ret;
 }
 
+void av_to_vstring (pTHX_ AV* av, std::vector<string>& v) {
+    XS_AV_ITER_NU(av, {
+        STRLEN len;
+        char* ptr = SvPV(elem, len);
+        v.push_back(string(ptr, len));
+    });
+}
+
 }}
