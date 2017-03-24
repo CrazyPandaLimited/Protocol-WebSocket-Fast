@@ -2,7 +2,7 @@ MODULE = Panda::WebSocket                PACKAGE = Panda::WebSocket::Message
 PROTOTYPES: DISABLE
 
 BOOT {
-    xs::register_package("Panda::WebSocket::Message", "Panda::WebSocket");
+    xs::register_package(aTHX_ "Panda::WebSocket::Message", "Panda::WebSocket");
 }
 
 string error (panda::websocket::MessageSP THIS) {
@@ -23,7 +23,7 @@ size_t payload_length (panda::websocket::MessageSP THIS) {
 }
 
 SV* payload (panda::websocket::MessageSP THIS) {
-    RETVAL = strings_to_sv(THIS->payload);
+    RETVAL = strings_to_sv(aTHX_ THIS->payload);
 }
 
 uint16_t close_code (panda::websocket::MessageSP THIS) {

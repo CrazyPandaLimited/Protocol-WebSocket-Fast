@@ -2,8 +2,8 @@ MODULE = Panda::WebSocket                PACKAGE = Panda::WebSocket::ServerParse
 PROTOTYPES: DISABLE
 
 BOOT {
-    xs::register_package("Panda::WebSocket::ServerParser", "Panda::WebSocket");
-    xs::inherit_package("Panda::WebSocket::ServerParser", "Panda::WebSocket::Parser");
+    xs::register_package(aTHX_ "Panda::WebSocket::ServerParser", "Panda::WebSocket");
+    xs::inherit_package(aTHX_ "Panda::WebSocket::ServerParser", "Panda::WebSocket::Parser");
 }
 
 panda::websocket::ServerParser* panda::websocket::ServerParser::new () {
@@ -28,7 +28,7 @@ string panda::websocket::ServerParser::accept_error (SV* res_sv = NULL) {
     PXS_TRY({
         if (!res_sv) RETVAL = THIS->accept_error();
         else {
-            if (!sv_isobject(res_sv)) res_sv = xs::call_method_scalar(http_response_class, "new", 3, &res_sv, 1); // from hash params
+            if (!sv_isobject(res_sv)) res_sv = xs::call_method_scalar(aTHX_ http_response_class, "new", 3, &res_sv, 1); // from hash params
             RETVAL = THIS->accept_error(typemap_incast<panda::websocket::HTTPResponseSP>(res_sv));
         }
     });
@@ -38,7 +38,7 @@ string panda::websocket::ServerParser::accept_response (SV* res_sv = NULL) {
     PXS_TRY({
         if (!res_sv) RETVAL = THIS->accept_response();
         else {
-            if (!sv_isobject(res_sv)) res_sv = xs::call_method_scalar(connect_response_class, "new", 3, &res_sv, 1); // from hash params
+            if (!sv_isobject(res_sv)) res_sv = xs::call_method_scalar(aTHX_ connect_response_class, "new", 3, &res_sv, 1); // from hash params
             RETVAL = THIS->accept_response(typemap_incast<panda::websocket::ConnectResponseSP>(res_sv));
         }
     });

@@ -2,7 +2,7 @@ MODULE = Panda::WebSocket                PACKAGE = Panda::WebSocket::Parser
 PROTOTYPES: DISABLE
 
 BOOT {
-    xs::register_package("Panda::WebSocket::Parser", "Panda::WebSocket");
+    xs::register_package(aTHX_ "Panda::WebSocket::Parser", "Panda::WebSocket");
 }
 
 size_t panda::websocket::Parser::max_frame_size (SV* newval = NULL) {
@@ -62,7 +62,7 @@ SV* panda::websocket::Parser::send_frame (bool final, string payload, int opcode
 
 SV* panda::websocket::Parser::send_frame_av (bool final, AV* payload, int opcode = (int)Opcode::BINARY) {
     std::vector<string> list;
-    av_to_vstring(payload, list);
+    av_to_vstring(aTHX_ payload, list);
     PXS_TRY({
         auto range = THIS->send_frame(final, list.begin(), list.end(), (Opcode)opcode);
         RETVAL = strings_to_sv(aTHX_ range);
@@ -111,7 +111,7 @@ SV* panda::websocket::Parser::send_message (string payload, int opcode = (int)Op
 
 SV* panda::websocket::Parser::send_message_av (AV* payload, int opcode = (int)Opcode::BINARY) {
     std::vector<string> list;
-    av_to_vstring(payload, list);
+    av_to_vstring(aTHX_ payload, list);
     PXS_TRY({
         auto range = THIS->send_message(list.begin(), list.end(), (Opcode)opcode);
         RETVAL = strings_to_sv(aTHX_ range);

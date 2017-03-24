@@ -2,7 +2,7 @@ MODULE = Panda::WebSocket                PACKAGE = Panda::WebSocket::MessageIter
 PROTOTYPES: DISABLE
 
 BOOT {
-    xs::register_package("Panda::WebSocket::MessageIterator", "Panda::WebSocket");
+    xs::register_package(aTHX_ "Panda::WebSocket::MessageIterator", "Panda::WebSocket");
 }
 
 panda::websocket::MessageSP xs::websocket::XSMessageIterator::next () {

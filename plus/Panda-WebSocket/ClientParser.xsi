@@ -2,8 +2,8 @@ MODULE = Panda::WebSocket                PACKAGE = Panda::WebSocket::ClientParse
 PROTOTYPES: DISABLE
 
 BOOT {
-    xs::register_package("Panda::WebSocket::ClientParser", "Panda::WebSocket");
-    xs::inherit_package("Panda::WebSocket::ClientParser", "Panda::WebSocket::Parser");
+    xs::register_package(aTHX_ "Panda::WebSocket::ClientParser", "Panda::WebSocket");
+    xs::inherit_package(aTHX_ "Panda::WebSocket::ClientParser", "Panda::WebSocket::Parser");
 }
 
 panda::websocket::ClientParser* panda::websocket::ClientParser::new () {
@@ -16,7 +16,7 @@ size_t panda::websocket::ClientParser::max_handshake_size (SV* newval = NULL) {
 }
 
 string panda::websocket::ClientParser::connect_request (SV* reqsv) {
-    if (!sv_isobject(reqsv)) reqsv = xs::call_method_scalar(connect_request_class, "new", 3, &reqsv, 1);
+    if (!sv_isobject(reqsv)) reqsv = xs::call_method_scalar(aTHX_ connect_request_class, "new", 3, &reqsv, 1);
     ConnectRequestSP req = typemap_incast<panda::websocket::ConnectRequestSP>(reqsv);
     PXS_TRY({
         RETVAL = THIS->connect_request(req);

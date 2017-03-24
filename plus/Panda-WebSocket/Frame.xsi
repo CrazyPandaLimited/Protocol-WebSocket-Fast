@@ -2,7 +2,7 @@ MODULE = Panda::WebSocket                PACKAGE = Panda::WebSocket::Frame
 PROTOTYPES: DISABLE
 
 BOOT {
-    xs::register_package("Panda::WebSocket::Frame", "Panda::WebSocket");
+    xs::register_package(aTHX_ "Panda::WebSocket::Frame", "Panda::WebSocket");
 }
 
 string error (panda::websocket::FrameSP THIS) {
@@ -27,7 +27,7 @@ size_t payload_length (panda::websocket::FrameSP THIS) {
 }
 
 SV* payload (panda::websocket::FrameSP THIS) {
-    RETVAL = strings_to_sv(THIS->payload);
+    RETVAL = strings_to_sv(aTHX_ THIS->payload);
 }
 
 uint16_t close_code (panda::websocket::FrameSP THIS) {

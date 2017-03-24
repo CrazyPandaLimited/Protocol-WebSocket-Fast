@@ -2,21 +2,21 @@ MODULE = Panda::WebSocket                PACKAGE = Panda::WebSocket::HTTPRespons
 PROTOTYPES: DISABLE
 
 BOOT {
-    xs::register_package("Panda::WebSocket::HTTPResponse", "Panda::WebSocket");
-    xs::inherit_package("Panda::WebSocket::HTTPResponse", "Panda::WebSocket::HTTPPacket");
+    xs::register_package(aTHX_ "Panda::WebSocket::HTTPResponse", "Panda::WebSocket");
+    xs::inherit_package(aTHX_ "Panda::WebSocket::HTTPResponse", "Panda::WebSocket::HTTPPacket");
 }
 
 SV* new (SV* CLASS, HV* params = NULL) {
     auto res = new HTTPResponse();
     RETVAL = typemap_outcast<panda::websocket::HTTPResponseSP, SV* CLASS>(res, CLASS);
-    if (params) xs::call_method_void(RETVAL, "init", 4, &ST(1), 1);
+    if (params) xs::call_method_void(aTHX_ RETVAL, "init", 4, &ST(1), 1);
 }
 
 void init (panda::websocket::HTTPResponseSP THIS, HV* params) {
     SV** ref;
     if ((ref = hv_fetchs(params, "code", 0)))    THIS->code = SvIV(*ref);
     if ((ref = hv_fetchs(params, "message", 0))) THIS->message = sv2string(aTHX_ *ref);
-    xs::call_super(cv, &ST(0), items);
+    xs::call_super(aTHX_ cv, &ST(0), items);
 }
 
 int code (panda::websocket::HTTPResponseSP THIS, SV* newval = NULL) {

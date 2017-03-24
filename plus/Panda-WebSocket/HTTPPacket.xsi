@@ -2,7 +2,7 @@ MODULE = Panda::WebSocket                PACKAGE = Panda::WebSocket::HTTPPacket
 PROTOTYPES: DISABLE
 
 BOOT {
-    xs::register_package("Panda::WebSocket::HTTPPacket", "Panda::WebSocket");
+    xs::register_package(aTHX_ "Panda::WebSocket::HTTPPacket", "Panda::WebSocket");
 }
 
 void init (panda::websocket::HTTPPacketSP THIS, HV* params) {
@@ -55,10 +55,10 @@ string header (panda::websocket::HTTPPacketSP THIS, string_view name, SV* val = 
 
 SV* body (panda::websocket::HTTPPacketSP THIS, SV* newval = NULL) {
     if (newval) {
-        http_packet_set_body(THIS, newval);
+        http_packet_set_body(aTHX_ THIS, newval);
         XSRETURN_UNDEF;
     }
-    RETVAL = strings_to_sv(THIS->body);
+    RETVAL = strings_to_sv(aTHX_ THIS->body);
 }
 
 void clear (panda::websocket::HTTPPacketSP THIS) {

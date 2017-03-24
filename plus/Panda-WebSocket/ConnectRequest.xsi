@@ -2,14 +2,14 @@ MODULE = Panda::WebSocket                PACKAGE = Panda::WebSocket::ConnectRequ
 PROTOTYPES: DISABLE
 
 BOOT {
-    xs::register_package("Panda::WebSocket::ConnectRequest", "Panda::WebSocket");
-    xs::inherit_package("Panda::WebSocket::ConnectRequest", "Panda::WebSocket::HTTPRequest");
+    xs::register_package(aTHX_ "Panda::WebSocket::ConnectRequest", "Panda::WebSocket");
+    xs::inherit_package(aTHX_ "Panda::WebSocket::ConnectRequest", "Panda::WebSocket::HTTPRequest");
 }
 
 SV* new (SV* CLASS, HV* params = NULL) {
     auto res = new ConnectRequest();
     RETVAL = typemap_outcast<panda::websocket::ConnectRequestSP, SV* CLASS>(res, CLASS);
-    if (params) xs::call_method_void(RETVAL, "init", 4, &ST(1), 1);
+    if (params) xs::call_method_void(aTHX_ RETVAL, "init", 4, &ST(1), 1);
 }
 
 void init (panda::websocket::ConnectRequestSP THIS, HV* params) {
@@ -26,7 +26,7 @@ void init (panda::websocket::ConnectRequestSP THIS, HV* params) {
         THIS->ws_extensions(exts);
     }
     
-    xs::call_super(cv, &ST(0), items);
+    xs::call_super(aTHX_ cv, &ST(0), items);
 }
 
 string ws_key (panda::websocket::ConnectRequestSP THIS, SV* newval = NULL) {
