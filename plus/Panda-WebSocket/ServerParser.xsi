@@ -15,6 +15,8 @@ size_t panda::websocket::ServerParser::max_handshake_size (SV* newval = NULL) {
     RETVAL = THIS->max_handshake_size;
 }
 
+bool panda::websocket::ServerParser::accept_parsed ()
+
 bool panda::websocket::ServerParser::accepted ()
 
 panda::websocket::ConnectRequestSP panda::websocket::ServerParser::accept (SV* bufsv) {

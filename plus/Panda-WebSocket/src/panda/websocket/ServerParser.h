@@ -16,7 +16,8 @@ public:
 
     ServerParser () : Parser(true), max_handshake_size(0) {}
 
-    bool accepted () const { return _state[STATE_ACCEPTED]; }
+    bool accept_parsed () const { return _state[STATE_ACCEPT_PARSED]; }
+    bool accepted      () const { return _state[STATE_ACCEPTED]; }
 
     ConnectRequestSP accept (string& buf);
 

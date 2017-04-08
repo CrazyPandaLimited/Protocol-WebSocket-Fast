@@ -14,6 +14,7 @@ subtest 'bad http' => sub {
     ok($creq, "request returned");
     ok($creq->error, "error present");
     is($creq->header('connection'), "Upgrade", "parsed");
+    ok($p->accept_parsed, "accept parsed");
     ok(!$p->accepted, "not accepted");
     ok(!$p->established, "not established");
     my $ans = $p->accept_error;
@@ -28,6 +29,7 @@ subtest 'bad websocket http' => sub {
     ok($creq, "request returned");
     ok($creq->error, "error present");
     is($creq->header('connection'), "Upgrade", "parsed");
+    ok($p->accept_parsed, "accept parsed");
     ok(!$p->accepted, "not accepted");
     my $ans = $p->accept_error;
     like($ans, qr/^HTTP\/1\.1 400 Bad Request\r\n/, "answer ok");
@@ -41,6 +43,7 @@ subtest 'bad websocket version' => sub {
     ok($creq, "request returned");
     ok($creq->error, "error present");
     is($creq->header('connection'), "Upgrade", "parsed");
+    ok($p->accept_parsed, "accept parsed");
     ok(!$p->accepted, "not accepted");
     my $ans = $p->accept_error;
     like($ans, qr/^HTTP\/1\.1 426 Upgrade Required\r\n/, "answer ok");
@@ -52,6 +55,7 @@ subtest 'custom error override ignored when request error' => sub {
     my $data = accept_packet();
     $data =~ s/Upgrade: websocket\r\n/Upgrade: fuckoff\r\n/;
     $p->accept($data);
+    ok($p->accept_parsed, "accept parsed");
     ok(!$p->accepted, "not accepted");
     my $ans = $p->accept_error({code => 404});
     like($ans, qr/^HTTP\/1\.1 400 Bad Request\r\n/, "answer ok");
@@ -61,6 +65,7 @@ subtest 'custom error override ignored when request error' => sub {
 subtest 'custom error' => sub {
     my $data = accept_packet();
     $p->accept($data);
+    ok($p->accept_parsed, "accept parsed");
     ok($p->accepted, "accepted");
     my $ans = $p->accept_error({
         code    => 404,
@@ -77,6 +82,7 @@ subtest 'custom error' => sub {
 subtest 'custom error with body' => sub {
     my $data = accept_packet();
     $p->accept($data);
+    ok($p->accept_parsed, "accept parsed");
     ok($p->accepted, "accepted");
     my $ans = $p->accept_error({
         code    => 404,

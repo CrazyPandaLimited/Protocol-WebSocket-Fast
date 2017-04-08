@@ -9,6 +9,7 @@ my $p = new Panda::WebSocket::ServerParser;
 
 subtest 'parser create' => sub {
     ok($p, "parser created");
+    ok(!$p->accept_parsed, "not parsed accept");
     ok(!$p->accepted, "not accepted");
     ok(!$p->established, "not established");
 };
@@ -27,6 +28,7 @@ subtest 'accept chunks' => sub {
 };
 
 $p->reset();
+ok(!$p->accept_parsed, "not parsed accept after reset");
 ok(!$p->accepted, "not accepted after reset");
 
 subtest 'accept all' => sub {
