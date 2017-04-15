@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <cassert>
 #include <iostream>
+#include <panda/websocket/ParserError.h>
 
 namespace panda { namespace websocket {
 
@@ -18,8 +19,8 @@ void Parser::reset () {
 }
 
 FrameSP Parser::_get_frame () {
-    if (!_state[STATE_ESTABLISHED]) throw std::logic_error("not established");
-    if (_state[STATE_RECV_MESSAGE]) throw std::logic_error("message is being parsed");
+    if (!_state[STATE_ESTABLISHED]) throw ParserError("not established");
+    if (_state[STATE_RECV_MESSAGE]) throw ParserError("message is being parsed");
     if (_state[STATE_RECV_CLOSED]) { _buffer.clear(); return NULL; }
     if (!_buffer) return NULL;
 
@@ -56,8 +57,8 @@ FrameSP Parser::_get_frame () {
 }
 
 MessageSP Parser::_get_message () {
-    if (!_state[STATE_ESTABLISHED]) throw std::logic_error("not established");
-    if (_state[STATE_RECV_FRAME]) throw std::logic_error("frame mode active");
+    if (!_state[STATE_ESTABLISHED]) throw ParserError("not established");
+    if (_state[STATE_RECV_FRAME]) throw ParserError("frame mode active");
     if (_state[STATE_RECV_CLOSED]) { _buffer.clear(); return NULL; }
     if (!_buffer) return NULL;
 
@@ -103,9 +104,9 @@ MessageSP Parser::_get_message () {
 }
 
 FrameHeader Parser::_prepare_frame_header (bool final, Opcode opcode) {
-    if (!_state[STATE_ESTABLISHED]) throw std::logic_error("not established");
-    if (_state[STATE_SEND_MESSAGE]) throw std::logic_error("message is being sent");
-    if (_state[STATE_SEND_CLOSED]) throw std::logic_error("close sent, can't send anymore");
+    if (!_state[STATE_ESTABLISHED]) throw ParserError("not established");
+    if (_state[STATE_SEND_MESSAGE]) throw ParserError("message is being sent");
+    if (_state[STATE_SEND_CLOSED]) throw ParserError("close sent, can't send anymore");
 
     _state.set(STATE_SEND_FRAME);
 

@@ -2,6 +2,7 @@
 #include <ctime>
 #include <cstdlib>
 #include <exception>
+#include <panda/websocket/ParserError.h>
 
 namespace panda { namespace websocket {
 
@@ -13,15 +14,15 @@ static bool _init () {
 static const bool _inited = _init();
 
 string ClientParser::connect_request (ConnectRequestSP& req) {
-    if (_state[STATE_CONNECTION_REQUESTED]) throw std::logic_error("already requested connection");
+    if (_state[STATE_CONNECTION_REQUESTED]) throw ParserError("already requested connection");
     _state.set(STATE_CONNECTION_REQUESTED);
     _connect_request = req;
     return req->to_string();
 }
 
 ConnectResponseSP ClientParser::connect (string& buf) {
-    if (!_state[STATE_CONNECTION_REQUESTED]) throw std::logic_error("has not requested connection");
-    if (_state[STATE_CONNECTION_RESPONSE_PARSED]) throw std::logic_error("already parsed connect response");
+    if (!_state[STATE_CONNECTION_REQUESTED]) throw ParserError("has not requested connection");
+    if (_state[STATE_CONNECTION_RESPONSE_PARSED]) throw ParserError("already parsed connect response");
 
     if (!_connect_response) {
         _connect_response = new ConnectResponse();

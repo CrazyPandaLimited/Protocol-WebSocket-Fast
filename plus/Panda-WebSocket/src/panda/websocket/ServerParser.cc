@@ -1,10 +1,11 @@
 #include <panda/websocket/ServerParser.h>
 #include <exception>
+#include <panda/websocket/ParserError.h>
 
 namespace panda { namespace websocket {
 
 ConnectRequestSP ServerParser::accept (string& buf) {
-    if (_state[STATE_ACCEPT_PARSED]) throw std::logic_error("already parsed accept");
+    if (_state[STATE_ACCEPT_PARSED]) throw ParserError("already parsed accept");
 
     if (!_connect_request) {
         _connect_request = new ConnectRequest();
@@ -24,9 +25,9 @@ ConnectRequestSP ServerParser::accept (string& buf) {
 }
 
 string ServerParser::accept_error () {
-    if (!_state[STATE_ACCEPT_PARSED]) throw std::logic_error("accept not parsed yet");
-    if (established()) throw std::logic_error("already established");
-    if (!_connect_request->error) throw std::logic_error("no errors found");
+    if (!_state[STATE_ACCEPT_PARSED]) throw ParserError("accept not parsed yet");
+    if (established()) throw ParserError("already established");
+    if (!_connect_request->error) throw ParserError("no errors found");
 
     HTTPResponse res;
     res.headers.emplace("Content-Type", "text/plain");
@@ -55,8 +56,8 @@ string ServerParser::accept_error () {
 }
 
 string ServerParser::accept_error (HTTPResponse* res) {
-    if (!_state[STATE_ACCEPT_PARSED]) throw std::logic_error("accept not parsed yet");
-    if (established()) throw std::logic_error("already established");
+    if (!_state[STATE_ACCEPT_PARSED]) throw ParserError("accept not parsed yet");
+    if (established()) throw ParserError("already established");
     if (_connect_request->error) return accept_error();
 
     if (!res->code) {
@@ -75,8 +76,8 @@ string ServerParser::accept_error (HTTPResponse* res) {
 }
 
 string ServerParser::accept_response (ConnectResponse* res) {
-    if (!accepted()) throw std::logic_error("client has not been accepted");
-    if (established()) throw std::logic_error("already established");
+    if (!accepted()) throw ParserError("client has not been accepted");
+    if (established()) throw ParserError("already established");
 
     res->_ws_key = _connect_request->ws_key;
     if (!res->ws_protocol) res->ws_protocol = _connect_request->ws_protocol;
