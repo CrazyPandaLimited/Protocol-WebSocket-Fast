@@ -1,9 +1,8 @@
 #include <xs/websocket.h>
-#include <xs/lib.h>
 
 namespace xs { namespace websocket {
 
-using xs::lib::sv2string;
+using xs::sv2string;
 
 void av_to_header_values (pTHX_ AV* av, HTTPPacket::HeaderValues* vals) {
     if (!av) return;

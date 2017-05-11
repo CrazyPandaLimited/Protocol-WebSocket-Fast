@@ -1,5 +1,4 @@
 #include <xs/websocket.h>
-#include <xs/lib.h>
 #include <xs/uri.h>
 #include <xs/export.h>
 
@@ -14,7 +13,7 @@ using xs::exp::create_constants;
 
 using panda::string;
 using std::string_view;
-using xs::lib::sv2string;
+using xs::sv2string;
 using xs::my_perl;
 
 using namespace xs::websocket;
