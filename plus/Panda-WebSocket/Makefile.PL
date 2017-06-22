@@ -8,7 +8,7 @@ write_makefile(
     CPLUS         => 1,
     CCFLAGS       => '-fno-omit-frame-pointer',
     BIN_DEPS      => ['Panda::Export', 'Panda::URI', 'Panda::Encode::Base2N'],
-    LIBS          => '-lssl -L/usr/local/opt/openssl/lib',
+    LIBS          => '-lcrypto -L/usr/local/opt/openssl/lib',
     SRC           => 'src',
     INC           => '-Isrc -I/usr/local/opt/openssl/include',
     TYPEMAPS      => 'typemap',
