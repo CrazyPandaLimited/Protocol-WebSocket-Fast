@@ -35,12 +35,12 @@ void crypt_mask (char* str, size_t len, uint32_t mask, uint64_t bytes_received) 
     auto cstr  = (unsigned char*)str64;
     auto cmask = (const unsigned char*)&mask64;
     switch (len & 7) {
-        case 7: *cstr++ ^= *cmask++;
-        case 6: *cstr++ ^= *cmask++;
-        case 5: *cstr++ ^= *cmask++;
-        case 4: *cstr++ ^= *cmask++;
-        case 3: *cstr++ ^= *cmask++;
-        case 2: *cstr++ ^= *cmask++;
+        case 7: *cstr++ ^= *cmask++; // fallthrough
+        case 6: *cstr++ ^= *cmask++; // fallthrough
+        case 5: *cstr++ ^= *cmask++; // fallthrough
+        case 4: *cstr++ ^= *cmask++; // fallthrough
+        case 3: *cstr++ ^= *cmask++; // fallthrough
+        case 2: *cstr++ ^= *cmask++; // fallthrough
         case 1: *cstr++ ^= *cmask++;
     };
 }
