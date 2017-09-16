@@ -55,4 +55,18 @@ DISTFILES += \
     Parser.xsi \
     ServerParser.xsi \
     typemap \
-    WebSocket.xs
+    WebSocket.xs \
+    t/00-Panda-WebSocket.t \
+    t/ClientParser-connect.t \
+    t/ClientParser-connect_request.t \
+    t/Parser-get_frames.t \
+    t/Parser-get_messages.t \
+    t/Parser-get-mixed-mode.t \
+    t/Parser-send_control.t \
+    t/Parser-send_frame.t \
+    t/Parser-send_message.t \
+    t/ServerParser-accept.t \
+    t/ServerParser-accept_error.t \
+    t/ServerParser-accept_response.t \
+    t/zleaks.t \
+    Makefile.PL
