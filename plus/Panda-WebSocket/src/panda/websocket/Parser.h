@@ -138,7 +138,7 @@ public:
         return send_frame(true, payload, opcode);
     }
 
-    template <class It, typename = typename std::enable_if<std::is_same<decltype(*It()), string&>::value>::type>
+    template <class It, typename = typename std::enable_if<std::is_same<typename It::value_type, string>::value>::type>
     StringChain<It> send_message (It payload_begin, It payload_end, Opcode opcode = Opcode::BINARY) {
         return send_frame(true, payload_begin, payload_end, opcode);
     }
