@@ -23,6 +23,7 @@ uint32_t string_hash32_ci (const char *key, size_t len) {
 }
 
 static inline uint32_t rotate_shift (uint32_t x, unsigned shift) {
+    if (shift % 32 == 0) return x;
     return am_i_little ? ((x >> shift) | (x << (sizeof(x)*8 - shift))) :
                          ((x << shift) | (x >> (sizeof(x)*8 - shift)));
 }
