@@ -112,7 +112,9 @@ FrameHeader Parser::_prepare_frame_header (bool final, Opcode opcode) {
         throw ParserError("not established");
     }
     if (_state[STATE_SEND_MESSAGE]) throw ParserError("message is being sent");
-    if (_state[STATE_SEND_CLOSED]) throw ParserError("close sent, can't send anymore");
+    if (_state[STATE_SEND_CLOSED])  {
+        throw ParserError("close sent, can't send anymore");
+    }
 
     _state.set(STATE_SEND_FRAME);
 
