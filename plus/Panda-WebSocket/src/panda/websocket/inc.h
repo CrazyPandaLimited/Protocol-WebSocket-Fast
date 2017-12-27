@@ -13,6 +13,8 @@ enum class Opcode : uint8_t {
 };
 
 enum class CloseCode : uint16_t {
+    NO_ERROR = 0,
+
     DONE             = 1000,
     AWAY             = 1001,
     PROTOCOL_ERROR   = 1002,
@@ -25,6 +27,11 @@ enum class CloseCode : uint16_t {
     EXTENSION_NEEDED = 1010, // FOR SENDING BY CLIENT ONLY
     INTERNAL_ERROR   = 1011,
     TLS              = 1015, // NOT FOR SENDING
+
+    W_WRONG_FORMAT = 4000,
+    W_CONN_NOT_ESTABLISHED = 4001,
+    W_WRONG_STATE = 4002,
+    W_TIMEOUT = 4003
 };
 
 }}

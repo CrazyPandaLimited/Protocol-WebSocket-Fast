@@ -17,6 +17,6 @@ write_makefile(
         TYPEMAPS => {'typemap' => ''},
     },
     CCFLAGS => '-Wall -Wextra',
-    OPTIMIZE => '-O2 -g0',
+    #OPTIMIZE => '-O2 -g0',
     #CC => 'clang++',
 );

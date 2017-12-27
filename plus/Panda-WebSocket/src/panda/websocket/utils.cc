@@ -1,9 +1,12 @@
 #include <panda/websocket/utils.h>
+#include <panda/websocket/iterator.h>
 
 namespace panda { namespace websocket {
 
 union _check_endianess { unsigned x; unsigned char c; };
 static const bool am_i_little = (_check_endianess{1}).c;
+
+string StringPairIterator::global_empty = "";
 
 // case-insensitive jenkins_one_at_a_time_hash
 uint32_t string_hash32_ci (const char *key, size_t len) {
@@ -20,6 +23,7 @@ uint32_t string_hash32_ci (const char *key, size_t len) {
 }
 
 static inline uint32_t rotate_shift (uint32_t x, unsigned shift) {
+    if (shift % 32 == 0) return x;
     return am_i_little ? ((x >> shift) | (x << (sizeof(x)*8 - shift))) :
                          ((x << shift) | (x >> (sizeof(x)*8 - shift)));
 }
