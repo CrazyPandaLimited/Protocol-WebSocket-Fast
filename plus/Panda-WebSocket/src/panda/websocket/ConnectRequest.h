@@ -31,6 +31,6 @@ private:
     bool         _ws_version_supported;
 };
 
-typedef panda::shared_ptr<ConnectRequest> ConnectRequestSP;
+using ConnectRequestSP = panda::iptr<ConnectRequest>;
 
 }}

@@ -2,40 +2,39 @@ MODULE = Panda::WebSocket                PACKAGE = Panda::WebSocket::Message
 PROTOTYPES: DISABLE
 
 BOOT {
-    xs::register_package(aTHX_ "Panda::WebSocket::Message", "Panda::WebSocket");
+    Stash message_stash("Panda::WebSocket::Message");
+    message_stash.mark_as_loaded(main_stash);
 }
 
-string error (panda::websocket::MessageSP THIS) {
+string error (MessageSP THIS) {
     if (!THIS->error) XSRETURN_UNDEF;
     RETVAL = THIS->error;
 }
 
-int opcode (panda::websocket::MessageSP THIS) {
+int opcode (MessageSP THIS) {
     RETVAL = (int)THIS->opcode();
 }
 
-bool is_control (panda::websocket::MessageSP THIS) {
+bool is_control (MessageSP THIS) {
     RETVAL = THIS->is_control();
 }
 
-size_t payload_length (panda::websocket::MessageSP THIS) {
+size_t payload_length (MessageSP THIS) {
     RETVAL = THIS->payload_length();
 }
 
-SV* payload (panda::websocket::MessageSP THIS) {
+Simple payload (MessageSP THIS) {
     RETVAL = strings_to_sv(aTHX_ THIS->payload);
 }
 
-uint16_t close_code (panda::websocket::MessageSP THIS) {
+uint16_t close_code (MessageSP THIS) {
     RETVAL = THIS->close_code();
 }
 
-string close_message (panda::websocket::MessageSP THIS) {
+string close_message (MessageSP THIS) {
     RETVAL = THIS->close_message();
 }
 
-int frame_count (panda::websocket::MessageSP THIS) {
+int frame_count (MessageSP THIS) {
     RETVAL = THIS->frame_count;
 }
-
-void DESTROY (panda::websocket::MessageSP THIS) {}

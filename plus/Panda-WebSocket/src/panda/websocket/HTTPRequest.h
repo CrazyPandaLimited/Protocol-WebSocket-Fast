@@ -9,8 +9,8 @@ using panda::uri::URI;
 
 class HTTPRequest : public HTTPPacket {
 public:
-    string          method;
-    shared_ptr<URI> uri;
+    string    method;
+    iptr<URI> uri;
 
     virtual void clear ();
 
@@ -19,6 +19,6 @@ protected:
     virtual void _to_string    (string& str);
 };
 
-typedef panda::shared_ptr<HTTPRequest> HTTPRequestSP;
+using HTTPRequestSP = panda::iptr<HTTPRequest>;
 
 }}

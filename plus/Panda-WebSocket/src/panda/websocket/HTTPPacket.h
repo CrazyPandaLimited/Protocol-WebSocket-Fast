@@ -14,7 +14,7 @@ using panda::string;
 
 static auto fndr = panda::ranges::make_kmp_finder("\r\n\r\n");
 
-class HTTPPacket : public virtual panda::RefCounted {
+class HTTPPacket : public virtual panda::Refcnt {
 public:
     typedef panda::unordered_string_multimap<string, string, string_hash_ci, string_equal_ci> Headers;
     typedef panda::unordered_string_map<string, string>                                       HeaderValueParams;
@@ -87,6 +87,6 @@ private:
     }
 };
 
-typedef shared_ptr<HTTPPacket> HTTPPacketSP;
+using HTTPPacketSP = panda::iptr<HTTPPacket>;
 
 }}

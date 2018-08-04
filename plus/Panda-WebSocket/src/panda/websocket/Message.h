@@ -8,7 +8,7 @@ namespace panda { namespace websocket {
 
 using panda::string;
 
-class Message : public virtual panda::RefCounted {
+class Message : public virtual panda::Refcnt {
 public:
     string              error;
     std::vector<string> payload;
@@ -36,6 +36,6 @@ private:
 
 };
 
-typedef panda::shared_ptr<Message> MessageSP;
+using MessageSP = panda::iptr<Message>;
 
 }}

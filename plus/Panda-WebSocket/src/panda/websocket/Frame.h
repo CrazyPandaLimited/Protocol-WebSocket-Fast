@@ -12,7 +12,7 @@ namespace panda { namespace websocket {
 
 using panda::string;
 
-class Frame : public virtual panda::RefCounted, public panda::lib::AllocatedObject<Frame> {
+class Frame : public virtual panda::Refcnt, public panda::lib::AllocatedObject<Frame> {
 public:
     string              error;
     std::vector<string> payload;
@@ -80,6 +80,6 @@ private:
 
 };
 
-typedef panda::shared_ptr<Frame> FrameSP;
+using FrameSP = panda::iptr<Frame>;
 
 }}

@@ -17,6 +17,6 @@ protected:
 
 };
 
-typedef panda::shared_ptr<HTTPResponse> HTTPResponseSP;
+using HTTPResponseSP = panda::iptr<HTTPResponse>;
 
 }}

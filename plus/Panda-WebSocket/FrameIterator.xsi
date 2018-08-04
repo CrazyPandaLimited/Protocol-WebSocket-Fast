@@ -2,23 +2,16 @@ MODULE = Panda::WebSocket                PACKAGE = Panda::WebSocket::FrameIterat
 PROTOTYPES: DISABLE
 
 BOOT {
-    xs::register_package(aTHX_ "Panda::WebSocket::FrameIterator", "Panda::WebSocket");
+    Stash frame_iterator_stash("Panda::WebSocket::FrameIterator");
+    frame_iterator_stash.mark_as_loaded(main_stash);
 }
 
-panda::websocket::FrameSP xs::websocket::XSFrameIterator::next () {
-    const char* CLASS = "Panda::WebSocket::Frame";
-    PXS_TRY({
-        RETVAL = THIS->next(); // iterator over frames is a lazy-parser and may throw exceptions
-    });
+FrameSP XSFrameIterator::next () {
+    RETVAL = THIS->next();
 }
 
-xs::websocket::XSMessageIterator* xs::websocket::XSFrameIterator::get_messages () {
-    const char* CLASS = "Panda::WebSocket::MessageIterator";
-    PXS_TRY({
-        auto messages = THIS->get_messages();
-        if (messages.begin() == messages.end()) XSRETURN_UNDEF;
-        RETVAL = new XSMessageIterator(messages.begin());
-    });
+XSMessageIterator* XSFrameIterator::get_messages () {
+    auto messages = THIS->get_messages();
+    if (messages.begin() == messages.end()) XSRETURN_UNDEF;
+    RETVAL = new XSMessageIterator(messages.begin());
 }
-
-void xs::websocket::XSFrameIterator::DESTROY () {}

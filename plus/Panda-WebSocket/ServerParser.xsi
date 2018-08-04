@@ -2,46 +2,41 @@ MODULE = Panda::WebSocket                PACKAGE = Panda::WebSocket::ServerParse
 PROTOTYPES: DISABLE
 
 BOOT {
-    xs::register_package(aTHX_ "Panda::WebSocket::ServerParser", "Panda::WebSocket");
-    xs::inherit_package(aTHX_ "Panda::WebSocket::ServerParser", "Panda::WebSocket::Parser");
+    Stash server_parser_stash("Panda::WebSocket::ServerParser");
+    server_parser_stash.mark_as_loaded(main_stash);
+    server_parser_stash.inherit(parser_stash);
 }
 
-panda::websocket::ServerParser* panda::websocket::ServerParser::new () {
+ServerParser* new (SV* CLASS) {
     RETVAL = new ServerParser();
+    PROTO = Stash::from_name(CLASS).bless();
 }
 
-size_t panda::websocket::ServerParser::max_handshake_size (SV* newval = NULL) {
+size_t ServerParser::max_handshake_size (SV* newval = NULL) {
     if (newval) THIS->max_handshake_size = SvUV(newval);
     RETVAL = THIS->max_handshake_size;
 }
 
-bool panda::websocket::ServerParser::accept_parsed ()
+bool ServerParser::accept_parsed ()
 
-bool panda::websocket::ServerParser::accepted ()
+bool ServerParser::accepted ()
 
-panda::websocket::ConnectRequestSP panda::websocket::ServerParser::accept (SV* bufsv) {
-    const char* CLASS = "Panda::WebSocket::ConnectRequest";
-    string buf = sv2string(aTHX_ bufsv);
-    PXS_TRY({ RETVAL = THIS->accept(buf); });
-    if (!RETVAL) XSRETURN_UNDEF;
+ConnectRequestSP ServerParser::accept (string buf) {
+    RETVAL = THIS->accept(buf);
 }
 
-string panda::websocket::ServerParser::accept_error (SV* res_sv = NULL) {
-    PXS_TRY({
-        if (!res_sv) RETVAL = THIS->accept_error();
-        else {
-            if (!sv_isobject(res_sv)) res_sv = xs::call_method_scalar(aTHX_ http_response_class, "new", 3, &res_sv, 1); // from hash params
-            RETVAL = THIS->accept_error(typemap_incast<panda::websocket::HTTPResponseSP>(res_sv));
-        }
-    });
+string ServerParser::accept_error (Scalar res = Scalar()) {
+    if (!res) RETVAL = THIS->accept_error();
+    else {
+        if (!res.is_object_ref()) res = http_response_stash.call("new", res);
+        RETVAL = THIS->accept_error(xs::in<HTTPResponseSP>(res));
+    }
 }
 
-string panda::websocket::ServerParser::accept_response (SV* res_sv = NULL) {
-    PXS_TRY({
-        if (!res_sv) RETVAL = THIS->accept_response();
-        else {
-            if (!sv_isobject(res_sv)) res_sv = xs::call_method_scalar(aTHX_ connect_response_class, "new", 3, &res_sv, 1); // from hash params
-            RETVAL = THIS->accept_response(typemap_incast<panda::websocket::ConnectResponseSP>(res_sv));
-        }
-    });
+string ServerParser::accept_response (Scalar res = Scalar()) {
+    if (!res) RETVAL = THIS->accept_response();
+    else {
+        if (!res.is_object_ref()) res = connect_response_stash.call("new", res); // from hash params
+        RETVAL = THIS->accept_response(xs::in<ConnectResponseSP>(res));
+    }
 }

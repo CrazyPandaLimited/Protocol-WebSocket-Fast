@@ -2,87 +2,67 @@
 
 namespace xs { namespace websocket {
 
-using xs::sv2string;
-
-void av_to_header_values (pTHX_ AV* av, HTTPPacket::HeaderValues* vals) {
-    if (!av) return;
-    auto len = AvFILLp(av)+1;
-    if (!len) return;
-    vals->reserve(len);
-    XS_AV_ITER_NU(av, {
-        if (!SvROK(elem) || SvTYPE(SvRV(elem)) != SVt_PVAV) continue;
-        auto elemav = (AV*)SvRV(elem);
-        SV** ref = av_fetch(elemav, 0, 0);
-        if (!ref) continue;
+void av_to_header_values (pTHX_ const Array& av, HTTPPacket::HeaderValues* vals) {
+    if (!av.size()) return;
+    vals->reserve(av.size());
+    for (const auto& sv : av) {
+        const Array subav(sv);
+        if (!subav) continue;
+        auto namesv = subav.fetch(0);
+        if (!namesv) continue;
         HTTPPacket::HeaderValue elem;
-        elem.name = sv2string(aTHX_ *ref);
-        ref = av_fetch(elemav, 1, 0);
-        if (ref && SvROK(*ref) && SvTYPE(SvRV(*ref)) == SVt_PVHV) {
-            auto arghv = (HV*)SvRV(*ref);
-            if (arghv) XS_HV_ITER(arghv, {
-                STRLEN klen;
-                char* key = HePV(he, klen);
-                elem.params.emplace(string(key, klen), sv2string(aTHX_ HeVAL(he)));
-            });
-        }
+        elem.name = xs::in<string>(aTHX_ namesv);
+        Hash args = subav.fetch(1);
+        if (args) for (const auto& row : args) elem.params.emplace(string(row.key()), xs::in<string>(aTHX_ row.value()));
         vals->push_back(std::move(elem));
-    });
+    }
 }
 
-AV* header_values_to_av (pTHX_ const HTTPPacket::HeaderValues& vals) {
-    if (!vals.size()) return NULL;
-    auto ret = newAV();
+Array header_values_to_av (pTHX_ const HTTPPacket::HeaderValues& vals) {
+    if (!vals.size()) return Array();
+    auto ret = Array::create(vals.size());
     for (const auto& elem : vals) {
-        auto elemav = newAV();
-        av_push(elemav, newSVpvn(elem.name.data(), elem.name.length()));
+        auto elemav = Array::create(2);
+        elemav[0] = xs::out(elem.name);
         if (elem.params.size()) {
-            auto phv = newHV();
-            for (const auto& param : elem.params)
-                hv_store(phv, param.first.data(), param.first.length(), newSVpvn(param.second.data(), param.second.length()), 0);
-            av_push(elemav, newRV_noinc((SV*)phv));
+            auto args = Hash::create(elem.params.size());
+            for (const auto& param : elem.params) args.store(param.first, xs::out(param.second));
+            elemav[1] = Ref::create(args);
         }
-        av_push(ret, newRV_noinc((SV*)elemav));
+        ret.push(Ref::create(elemav));
     }
     return ret;
 }
 
-void http_packet_set_headers (pTHX_ HTTPPacket* p, HV* hv) {
+void http_packet_set_headers (pTHX_ HTTPPacket* p, const Hash& hv) {
     p->headers.clear();
-    if (!hv) return;
-    XS_HV_ITER(hv, {
-        STRLEN klen;
-        char* key = HePV(he, klen);
-        p->headers.emplace(string(key, klen), sv2string(aTHX_ HeVAL(he)));
-    });
+    for (const auto& row : hv) p->headers.emplace(string(row.key()), xs::in<string>(aTHX_ row.value()));
 }
 
-void http_packet_set_body (pTHX_ HTTPPacket* p, SV* sv) {
+void http_packet_set_body (pTHX_ HTTPPacket* p, const Simple& sv) {
     p->body.clear();
-    string newbody = sv2string(aTHX_ sv);
+    auto newbody = xs::in<string>(aTHX_ sv);
     if (newbody.length()) p->body.push_back(newbody);
 }
 
-SV* strings_to_sv (pTHX_ const string& s1, const string& s2) {
+Simple strings_to_sv (pTHX_ const string& s1, const string& s2) {
     auto len = s1.length() + s2.length();
-    if (!len) return &PL_sv_undef;
+    if (!len) return Simple::undef;
 
-    SV* ret = newSV(len+1);
-    SvPOK_on(ret);
+    auto ret = Simple::create(len);
     char* dest = SvPVX(ret);
     std::memcpy(dest, s1.data(), s1.length());
     std::memcpy(dest + s1.length(), s2.data(), s2.length());
     dest[len] = 0;
-    SvCUR_set(ret, len);
-
+    ret.length(len);
     return ret;
 }
 
-void av_to_vstring (pTHX_ AV* av, std::vector<string>& v) {
-    XS_AV_ITER_NU(av, {
-        STRLEN len;
-        char* ptr = SvPV(elem, len);
-        v.push_back(string(ptr, len));
-    });
+void av_to_vstring (pTHX_ const Array& av, std::vector<string>& v) {
+    for (const auto& elem : av) {
+        if (!elem.defined()) continue;
+        v.push_back(xs::in<string>(aTHX_ elem));
+    }
 }
 
 }}

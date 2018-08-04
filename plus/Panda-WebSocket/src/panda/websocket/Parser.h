@@ -11,10 +11,9 @@
 namespace panda { namespace websocket {
 
 using panda::string;
-using panda::shared_ptr;
 using panda::IteratorPair;
 
-class Parser : public virtual panda::RefCounted {
+class Parser : public virtual panda::Refcnt {
 public:
 
     class MessageIterator : public std::iterator<std::input_iterator_tag, MessageSP> {
@@ -208,10 +207,10 @@ private:
 
 };
 
-typedef Parser::FrameIteratorPair   FrameIteratorPair;
-typedef Parser::FrameIterator       FrameIterator;
-typedef Parser::MessageIteratorPair MessageIteratorPair;
-typedef Parser::MessageIterator     MessageIterator;
-typedef shared_ptr<Parser>          ParserSP;
+using FrameIteratorPair   = Parser::FrameIteratorPair;
+using FrameIterator       = Parser::FrameIterator;
+using MessageIteratorPair = Parser::MessageIteratorPair;
+using MessageIterator     = Parser::MessageIterator;
+using ParserSP            = panda::iptr<Parser>;
 
 }}

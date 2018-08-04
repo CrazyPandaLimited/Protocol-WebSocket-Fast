@@ -4,26 +4,21 @@
 
 #include <iostream>
 
-using std::cout;
-using std::endl;
-
+using namespace xs;
 using xs::exp::constant_t;
 using xs::exp::create_constant;
 using xs::exp::create_constants;
 
 using panda::string;
 using std::string_view;
-using xs::sv2string;
 using xs::my_perl;
 
 using namespace xs::websocket;
 using namespace panda::websocket;
 
-static inline SV* new_sv_shared (const char* str) { return newSVpvn_share(str, strlen(str), 0); }
-
-static SV*const http_response_class    = new_sv_shared("Panda::WebSocket::HTTPResponse");
-static SV*const connect_response_class = new_sv_shared("Panda::WebSocket::ConnectResponse");
-static SV*const connect_request_class  = new_sv_shared("Panda::WebSocket::ConnectRequest");
+static thread_local const auto http_response_stash    = Stash("Panda::WebSocket::HTTPResponse", GV_ADD);
+static thread_local const auto connect_response_stash = Stash("Panda::WebSocket::ConnectResponse", GV_ADD);
+static thread_local const auto connect_request_stash  = Stash("Panda::WebSocket::ConnectRequest", GV_ADD);
 
 MODULE = Panda::WebSocket                PACKAGE = Panda::WebSocket
 PROTOTYPES: DISABLE
@@ -52,8 +47,8 @@ BOOT {
 
         {NULL, 0, NULL}
     };
-    HV* stash = gv_stashpvs("Panda::WebSocket", GV_ADD);
-    create_constants(aTHX_ stash, clist);
+    Stash main_stash("Panda::WebSocket", GV_ADD);
+    create_constants(aTHX_ main_stash, clist);
 }
 
 INCLUDE: Parser.xsi

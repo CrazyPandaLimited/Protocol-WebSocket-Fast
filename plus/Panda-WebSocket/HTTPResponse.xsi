@@ -2,24 +2,25 @@ MODULE = Panda::WebSocket                PACKAGE = Panda::WebSocket::HTTPRespons
 PROTOTYPES: DISABLE
 
 BOOT {
-    xs::register_package(aTHX_ "Panda::WebSocket::HTTPResponse", "Panda::WebSocket");
-    xs::inherit_package(aTHX_ "Panda::WebSocket::HTTPResponse", "Panda::WebSocket::HTTPPacket");
+    Stash http_response_stash("Panda::WebSocket::HTTPResponse");
+    http_response_stash.mark_as_loaded(main_stash);
+    http_response_stash.inherit(http_packet_stash);
 }
 
-SV* new (SV* CLASS, HV* params = NULL) {
+Object new (SV* CLASS, Hash params = Hash()) {
     auto res = new HTTPResponse();
-    RETVAL = typemap_outcast<panda::websocket::HTTPResponseSP, SV* CLASS>(res, CLASS);
-    if (params) xs::call_method_void(aTHX_ RETVAL, "init", 4, &ST(1), 1);
+    RETVAL = xs::out<HTTPResponseSP>(res, Stash::from_name(CLASS).bless());
+    if (params) RETVAL.call("init", ST(1));
 }
 
-void init (panda::websocket::HTTPResponseSP THIS, HV* params) {
-    SV** ref;
-    if ((ref = hv_fetchs(params, "code", 0)))    THIS->code = SvIV(*ref);
-    if ((ref = hv_fetchs(params, "message", 0))) THIS->message = sv2string(aTHX_ *ref);
-    xs::call_super(aTHX_ cv, &ST(0), items);
+void init (HTTPResponseSP THIS, Hash params) {
+    Scalar val;
+    if ((val = params.fetch("code")))    THIS->code = SvIV(val);
+    if ((val = params.fetch("message"))) THIS->message = xs::in<string>(aTHX_ val);
+    Object(ST(0)).call_super(cv, &ST(1), items-1);
 }
 
-int code (panda::websocket::HTTPResponseSP THIS, SV* newval = NULL) {
+int code (HTTPResponseSP THIS, SV* newval = NULL) {
     if (newval) {
         THIS->code = SvIV(newval);
         XSRETURN_UNDEF;
@@ -27,9 +28,9 @@ int code (panda::websocket::HTTPResponseSP THIS, SV* newval = NULL) {
     RETVAL = THIS->code;
 }
 
-string message (panda::websocket::HTTPResponseSP THIS, SV* newval = NULL) {
+string message (HTTPResponseSP THIS, SV* newval = NULL) {
     if (newval) {
-        THIS->message = sv2string(aTHX_ newval);
+        THIS->message = xs::in<string>(aTHX_ newval);
         XSRETURN_UNDEF;
     }
     RETVAL = THIS->message;

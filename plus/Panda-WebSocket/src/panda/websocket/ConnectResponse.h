@@ -38,6 +38,6 @@ private:
     string _calc_accept_key (string ws_key);
 };
 
-typedef panda::shared_ptr<ConnectResponse> ConnectResponseSP;
+using ConnectResponseSP = panda::iptr<ConnectResponse>;
 
 }}

@@ -8,7 +8,6 @@
 namespace panda { namespace websocket {
 
 using panda::string;
-using panda::shared_ptr;
 
 class ServerParser : public Parser {
 public:
