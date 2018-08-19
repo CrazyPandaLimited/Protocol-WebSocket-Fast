@@ -1,6 +1,6 @@
 #pragma once
+#include <xs.h>
 #include <panda/websocket.h>
-#include <xs/xs.h>
 
 namespace xs { namespace websocket {
 

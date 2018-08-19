@@ -1,9 +1,8 @@
 use 5.020;
-use Panda::Install;
+use XS::Install;
 
 write_makefile(
     NAME          => 'Panda::WebSocket',
-    VERSION_FROM  => 'lib/Panda/WebSocket.pm',
     ABSTRACT_FROM => 'lib/Panda/WebSocket.pod',
     CPLUS         => 1,
     BIN_DEPS      => ['Panda::Export', 'Panda::URI', 'Panda::Encode::Base2N'],

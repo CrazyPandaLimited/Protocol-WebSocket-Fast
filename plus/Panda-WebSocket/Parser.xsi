@@ -42,34 +42,34 @@ void Parser::get_messages (string buf = string()) {
     }
 }
 
-SvIPtr Parser::send_frame (bool final, string payload, int opcode = (int)Opcode::BINARY) {
+Simple Parser::send_frame (bool final, string payload, int opcode = (int)Opcode::BINARY) {
     auto range = THIS->send_frame(final, payload, (Opcode)opcode);
     RETVAL = strings_to_sv(aTHX_ range);
 }
 
-SvIPtr Parser::send_frame_av (bool final, Array payload, int opcode = (int)Opcode::BINARY) {
+Simple Parser::send_frame_av (bool final, Array payload, int opcode = (int)Opcode::BINARY) {
     std::vector<string> list;
     av_to_vstring(aTHX_ payload, list);
     auto range = THIS->send_frame(final, list.begin(), list.end(), (Opcode)opcode);
     RETVAL = strings_to_sv(aTHX_ range);
 }
 
-SvIPtr Parser::send_control (int opcode, string payload = string()) {
+Simple Parser::send_control (int opcode, string payload = string()) {
     auto range = THIS->send_control((Opcode)opcode, payload);
     RETVAL = strings_to_sv(aTHX_ range);
 }
 
-SvIPtr Parser::send_ping (string payload = string()) {
+Simple Parser::send_ping (string payload = string()) {
     auto range = THIS->send_ping(payload);
     RETVAL = strings_to_sv(aTHX_ range);
 }
 
-SvIPtr Parser::send_pong (string payload = string()) {
+Simple Parser::send_pong (string payload = string()) {
     auto range = THIS->send_pong(payload);
     RETVAL = strings_to_sv(aTHX_ range);
 }
 
-SvIPtr Parser::send_close (SV* code = NULL, string message = string()) {
+Simple Parser::send_close (SV* code = NULL, string message = string()) {
     if (code) {
         auto range = THIS->send_close((uint16_t)SvUV(code), message);
         RETVAL = strings_to_sv(aTHX_ range);
@@ -77,19 +77,19 @@ SvIPtr Parser::send_close (SV* code = NULL, string message = string()) {
     else RETVAL = xs::out(THIS->send_close());
 }
 
-SvIPtr Parser::send_message (string payload, int opcode = (int)Opcode::BINARY) {
+Simple Parser::send_message (string payload, int opcode = (int)Opcode::BINARY) {
     auto range = THIS->send_message(payload, (Opcode)opcode);
     RETVAL = strings_to_sv(aTHX_ range);
 }
 
-SvIPtr Parser::send_message_av (AV* payload, int opcode = (int)Opcode::BINARY) {
+Simple Parser::send_message_av (AV* payload, int opcode = (int)Opcode::BINARY) {
     std::vector<string> list;
     av_to_vstring(aTHX_ payload, list);
     auto range = THIS->send_message(list.begin(), list.end(), (Opcode)opcode);
     RETVAL = strings_to_sv(aTHX_ range);
 }
 
-SvIPtr Parser::send_message_multiframe (Array payloads, int opcode = (int)Opcode::BINARY) {
+Simple Parser::send_message_multiframe (Array payloads, int opcode = (int)Opcode::BINARY) {
     std::vector<std::vector<string>> cont;
     for (const auto& payload : payloads) {
         if (!payload.defined()) continue;
