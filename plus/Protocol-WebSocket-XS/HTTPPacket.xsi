@@ -1,0 +1,61 @@
+MODULE = Protocol::WebSocket::XS                PACKAGE = Protocol::WebSocket::XS::HTTPPacket
+PROTOTYPES: DISABLE
+
+BOOT {
+    Stash http_packet_stash("Protocol::WebSocket::XS::HTTPPacket", GV_ADD);
+    http_packet_stash.mark_as_loaded(main_stash);
+}
+
+void HTTPPacket::init (Hash params) {
+    Scalar val;
+    if ((val = params.fetch("headers"))) http_packet_set_headers(aTHX_ THIS, xs::in<Hash>(val));
+    if ((val = params.fetch("body")))    http_packet_set_body(aTHX_ THIS, val);
+}
+
+string HTTPPacket::error () {
+    RETVAL = THIS->error;
+    if (!RETVAL) XSRETURN_UNDEF;
+}
+
+bool HTTPPacket::header_ok ()
+
+size_t HTTPPacket::content_length ()
+
+Hash HTTPPacket::headers (Hash new_headers = Hash()) {
+    if (new_headers) {
+        http_packet_set_headers(aTHX_ THIS, new_headers);
+        XSRETURN_UNDEF;
+    }
+    
+    RETVAL = Hash::create(THIS->headers.size());
+    for (const auto& elem : THIS->headers) {
+        auto len = elem.first.length();
+        char key[len];
+        std::transform(elem.first.data(), elem.first.data() + len, key, ::tolower);
+        RETVAL.store(string_view(key, len), xs::out(elem.second));
+    }
+}
+
+string HTTPPacket::header (string_view name, SV* val = NULL) {
+    if (val) {
+        string value = xs::in<string>(aTHX_ val);
+        auto it = THIS->headers.find(name);
+        if (it == THIS->headers.cend()) THIS->headers.emplace(string(name), value);
+        else it->second = value;
+        XSRETURN_UNDEF;
+    }
+    
+    auto it = THIS->headers.find(name);
+    if (it == THIS->headers.cend()) XSRETURN_UNDEF;
+    RETVAL = it->second;
+}
+
+Simple HTTPPacket::body (Simple newval = NULL) {
+    if (newval) {
+        http_packet_set_body(aTHX_ THIS, newval);
+        XSRETURN_UNDEF;
+    }
+    RETVAL = strings_to_sv(aTHX_ THIS->body);
+}
+
+void HTTPPacket::clear ()
