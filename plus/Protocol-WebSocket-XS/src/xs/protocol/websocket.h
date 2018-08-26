@@ -97,8 +97,8 @@ namespace xs {
     };
 
     template <class TYPE>
-    struct Typemap<panda::protocol::websocket::HTTPResponseSP, panda::iptr<TYPE>> : Typemap<panda::protocol::websocket::HTTPResponse*, TYPE*> {
-        using Super = Typemap<panda::protocol::websocket::HTTPResponse*, TYPE*>;
+    struct Typemap<panda::protocol::websocket::HTTPResponseSP, panda::iptr<TYPE>> : Typemap<TYPE*> {
+        using Super = Typemap<TYPE*>;
         panda::iptr<TYPE> in (pTHX_ SV* arg) {
             Object obj = arg;
             if (!obj && SvOK(arg)) obj = Super::default_stash().call("new", arg);
@@ -112,8 +112,8 @@ namespace xs {
     };
 
     template <class TYPE>
-    struct Typemap<panda::protocol::websocket::ConnectRequestSP, panda::iptr<TYPE>> : Typemap<panda::protocol::websocket::ConnectRequest*, TYPE*> {
-        using Super = Typemap<panda::protocol::websocket::ConnectRequest*, TYPE*>;
+    struct Typemap<panda::protocol::websocket::ConnectRequestSP, panda::iptr<TYPE>> : Typemap<TYPE*> {
+        using Super = Typemap<TYPE*>;
         panda::iptr<TYPE> in (pTHX_ SV* arg) {
             Object obj = arg;
             if (!obj && SvOK(arg)) obj = Super::default_stash().call("new", arg);
@@ -127,8 +127,8 @@ namespace xs {
     };
 
     template <class TYPE>
-    struct Typemap<panda::protocol::websocket::ConnectResponseSP, panda::iptr<TYPE>> : Typemap<panda::protocol::websocket::ConnectResponse*, TYPE*> {
-        using Super = Typemap<panda::protocol::websocket::ConnectResponse*, TYPE*>;
+    struct Typemap<panda::protocol::websocket::ConnectResponseSP, panda::iptr<TYPE>> : Typemap<TYPE*> {
+        using Super = Typemap<TYPE*>;
         panda::iptr<TYPE> in (pTHX_ SV* arg) {
             Object obj = arg;
             if (!obj && SvOK(arg)) obj = Super::default_stash().call("new", arg);
