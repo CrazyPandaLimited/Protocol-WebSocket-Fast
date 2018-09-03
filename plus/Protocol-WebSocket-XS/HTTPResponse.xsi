@@ -2,9 +2,7 @@ MODULE = Protocol::WebSocket::XS                PACKAGE = Protocol::WebSocket::X
 PROTOTYPES: DISABLE
 
 BOOT {
-    Stash http_response_stash("Protocol::WebSocket::XS::HTTPResponse", GV_ADD);
-    http_response_stash.mark_as_loaded(main_stash);
-    http_response_stash.inherit(http_packet_stash);
+    Stash(__PACKAGE__).inherit("Protocol::WebSocket::XS::HTTPPacket");
 }
 
 Object new (SV* CLASS, Hash params = Hash()) {

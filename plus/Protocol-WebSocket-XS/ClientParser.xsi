@@ -2,9 +2,7 @@ MODULE = Protocol::WebSocket::XS                PACKAGE = Protocol::WebSocket::X
 PROTOTYPES: DISABLE
 
 BOOT {
-    Stash client_parser_stash("Protocol::WebSocket::XS::ClientParser", GV_ADD);
-    client_parser_stash.mark_as_loaded(main_stash);
-    client_parser_stash.inherit(parser_stash);
+    Stash(__PACKAGE__).inherit("Protocol::WebSocket::XS::Parser");
 }
 
 ClientParser* new (SV* CLASS) {

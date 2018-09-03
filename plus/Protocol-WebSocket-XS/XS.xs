@@ -43,8 +43,7 @@ BOOT {
 
         {NULL, 0, NULL}
     };
-    Stash main_stash("Protocol::WebSocket::XS", GV_ADD);
-    create_constants(aTHX_ main_stash, clist);
+    create_constants(aTHX_ Stash(__PACKAGE__), clist);
 }
 
 INCLUDE: Parser.xsi
