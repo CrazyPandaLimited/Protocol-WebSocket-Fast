@@ -1,1 +1,1 @@
-use Protocol::WebSocket::XS;
+use Protocol::WebSocket::XS; 1;
