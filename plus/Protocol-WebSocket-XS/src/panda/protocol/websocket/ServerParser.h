@@ -4,6 +4,7 @@
 #include <panda/protocol/websocket/HTTPResponse.h>
 #include <panda/protocol/websocket/ConnectRequest.h>
 #include <panda/protocol/websocket/ConnectResponse.h>
+#include <panda/protocol/websocket/DeflateExt.h>
 
 namespace panda { namespace protocol { namespace websocket {
 
@@ -38,6 +39,7 @@ private:
     static const int STATE_ACCEPTED      = STATE_ACCEPT_PARSED + 1;
 
     ConnectRequestSP _connect_request;
+    DeflateExtSP _deflate_ext;
 };
 
 }}}

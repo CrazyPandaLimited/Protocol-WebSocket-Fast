@@ -86,8 +86,13 @@ string ServerParser::accept_response (ConnectResponse* res) {
     const auto& exts = res->ws_extensions();
 
     if (exts.size()) {
+        HTTPPacket::HeaderValues used_extensions;
         // filter extensions
-        res->ws_extensions(HTTPPacket::HeaderValues()); // for now no extensions supported
+        auto deflate_matches = DeflateExt::select(exts);
+        if (deflate_matches) {
+            _deflate_ext = DeflateExt::uplift(*deflate_matches, used_extensions);
+        }
+        res->ws_extensions(std::move(used_extensions));
     }
 
     _state.set(STATE_ESTABLISHED);
