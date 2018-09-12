@@ -1,8 +1,8 @@
 use 5.020;
 use warnings;
-use lib 't/lib'; use WSTest;
+use lib 't'; use MyTest;
 
-*accept_packet = \&WSTest::accept_packet;
+*accept_packet = \&MyTest::accept_packet;
 
 my $p = new Protocol::WebSocket::XS::ServerParser;
 

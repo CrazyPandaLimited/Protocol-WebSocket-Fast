@@ -1,12 +1,10 @@
 use 5.020;
 use warnings;
-use lib 't/lib'; use WSTest;
+use lib 't'; use MyTest;
 
-my $has_binary = eval { require Test::BinaryData; Test::BinaryData->import(); 1 };
+*gen_frame = \&MyTest::gen_frame;
 
-*gen_frame = \&WSTest::gen_frame;
-
-my $p = WSTest::get_established_server();
+my $p = MyTest::get_established_server();
 
 subtest 'small server2client frame' => sub {
     my $payload = "preved"; # must be <= 125
@@ -30,7 +28,7 @@ subtest 'big server2client frame' => sub {
     is_bin($bin, gen_frame({mask => 0, fin => 1, opcode => OPCODE_BINARY, data => $payload}), "frame ok");
 };
 
-$p = WSTest::get_established_client();
+$p = MyTest::get_established_client();
 
 subtest 'small client2server frame' => sub {
     my $payload = "preved"; # must be <= 125
@@ -59,7 +57,7 @@ subtest 'empty frame still masked' => sub {
     is_bin($bin, gen_frame({mask => substr($bin, 2, 4), fin => 1, opcode => OPCODE_BINARY}), "frame ok");
 };
 
-$p = WSTest::get_established_server();
+$p = MyTest::get_established_server();
 
 subtest 'opcode CONTINUE is forced for fragment frames of message (including final frame)' => sub {
     my $bin = $p->send_frame(0, "frame1");
@@ -81,7 +79,7 @@ subtest 'control frame send' => sub {
     is_bin($bin, gen_frame({fin => 1, opcode => OPCODE_PONG, data => "mypong"}), "pong ok");
     $bin = $p->send_frame(1, "myclose", OPCODE_CLOSE);
     is_bin($bin, gen_frame({fin => 1, opcode => OPCODE_CLOSE, data => "myclose"}), "close ok");
-    WSTest::reset($p);
+    MyTest::reset($p);
 };
 
 subtest 'frame count survives control message in the middle' => sub {
@@ -99,7 +97,7 @@ subtest 'frame count survives control message in the middle' => sub {
 
 subtest 'control frame cannot be sent being non-final' => sub {
     ok(!eval { $p->send_frame(0, "", OPCODE_PING) }, "exception thrown");
-    WSTest::reset($p);
+    MyTest::reset($p);
 };
 
 
@@ -108,5 +106,6 @@ done_testing();
 sub is_bin {
     my ($got, $expected, $name) = @_;
     return if our $leak_test;
+    state $has_binary = eval { require Test::BinaryData; Test::BinaryData->import(); 1 };
     $has_binary ? is_binary($got, $expected, $name) : is($got, $expected, $name);
 }

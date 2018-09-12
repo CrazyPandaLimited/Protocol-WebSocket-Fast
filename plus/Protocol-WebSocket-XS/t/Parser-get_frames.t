@@ -1,10 +1,10 @@
 use 5.020;
 use warnings;
-use lib 't/lib'; use WSTest;
+use lib 't'; use MyTest;
 
-*gen_frame = \&WSTest::gen_frame;
+*gen_frame = \&MyTest::gen_frame;
 
-my $p = WSTest::get_established_server();
+my $p = MyTest::get_established_server();
 
 ok(!eval { Protocol::WebSocket::XS::ServerParser->new->get_frames('asdasd'); }, "server parser cant get frames until established");
 ok(!eval { Protocol::WebSocket::XS::ClientParser->new->get_frames('asdasd'); }, "client parser cant get frames until established");
@@ -40,18 +40,18 @@ subtest 'close' => sub {
     
     my ($frame) = $p->get_frames(gen_frame({opcode => OPCODE_TEXT, mask => 1, fin => 1}));
     ok(!$frame, "no more frames available after close");
-    WSTest::reset($p);
+    MyTest::reset($p);
     
     subtest 'code' => \&test_frame, {opcode => OPCODE_CLOSE, mask => 1, fin => 1, close_code => CLOSE_DONE};
-    WSTest::reset($p);
+    MyTest::reset($p);
     subtest 'message' => \&test_frame, {opcode => OPCODE_CLOSE, mask => 1, fin => 1, close_code => CLOSE_AWAY, data => "walk"};
-    WSTest::reset($p);
+    MyTest::reset($p);
     subtest 'invalid payload' => \&test_frame, {opcode => OPCODE_CLOSE, mask => 1, fin => 1, data => "a"}, "control frame CLOSE contains invalid data";
-    WSTest::reset($p);
+    MyTest::reset($p);
     subtest 'fragmented' => \&test_frame, {opcode => OPCODE_CLOSE, mask => 1, fin => 0}, "control frame can't be fragmented";
-    WSTest::reset($p);
+    MyTest::reset($p);
     subtest 'long' => \&test_frame, {opcode => OPCODE_CLOSE, mask => 1, fin => 1, close_code => CLOSE_AWAY, data => ("1" x 1000)}, "control frame payload is too big";
-    WSTest::reset($p);
+    MyTest::reset($p);
 };
 
 subtest '2 frames via it->next' => sub {
@@ -105,10 +105,10 @@ subtest 'fragment frame in message without CONTINUE' => sub {
 
 subtest 'unmasked frame in server parser'       => \&test_frame, {opcode => OPCODE_TEXT, mask => 0, fin => 1, data => "jopa"}, "frame is not masked";
 subtest 'unmasked empty frame in server parser' => \&test_frame, {opcode => OPCODE_TEXT, mask => 0, fin => 1};
-$p = WSTest::get_established_client();
+$p = MyTest::get_established_client();
 subtest 'masked frame in client parser'   => \&test_frame, {opcode => OPCODE_TEXT, mask => 1, fin => 1, data => "jopa"};
 subtest 'unmasked frame in client parser' => \&test_frame, {opcode => OPCODE_TEXT, mask => 0, fin => 1, data => "jopa"};
-$p = WSTest::get_established_server();
+$p = MyTest::get_established_server();
 
 sub test_frame {
     my ($frame_data, $error) = @_;
@@ -127,14 +127,14 @@ sub test_frame {
         ok(scalar(@frames) == 1 && $frame, "one frame returned");
         if ($error) {
             cmp_deeply($frame->error, $error, "frame parsing error: $error");
-            WSTest::reset($p);
+            MyTest::reset($p);
         } else {
             is($frame->error, undef, "no errors");
             cmp_deeply($frame, methods(%$check_data), "frame properties ok");
         }
     };
     
-    WSTest::reset($p) if $check_data->{opcode} == OPCODE_CLOSE;
+    MyTest::reset($p) if $check_data->{opcode} == OPCODE_CLOSE;
         
     subtest 'buffer by char' => sub {
         my $it;
@@ -144,7 +144,7 @@ sub test_frame {
         
         if ($error) {
             cmp_deeply($frame->error, $error, "frame parsing error: $error");
-            WSTest::reset($p);
+            MyTest::reset($p);
         } else {
             is($frame->error, undef, "no errors");
             cmp_deeply($frame, methods(%$check_data), "frame properties ok");

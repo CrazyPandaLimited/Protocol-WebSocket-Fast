@@ -118,7 +118,10 @@ public:
     }
 
     string     send_control (Opcode opcode)                  { return send_frame(true, opcode); }
-    StringPair send_control (Opcode opcode, string& payload) { return send_frame(true, payload, opcode); }
+    StringPair send_control (Opcode opcode, string& payload) {
+        if (payload.length() > Frame::MAX_CONTROL_PAYLOAD) throw std::invalid_argument("control frame payload is too long");
+        return send_frame(true, payload, opcode);
+    }
 
     string     send_ping  ()                { return send_control(Opcode::PING); }
     StringPair send_ping  (string& payload) { return send_control(Opcode::PING, payload); }
