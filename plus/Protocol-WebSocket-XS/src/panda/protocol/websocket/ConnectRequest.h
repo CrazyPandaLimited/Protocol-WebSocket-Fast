@@ -23,7 +23,7 @@ public:
 
     void ws_extensions (const HeaderValues& new_extensions) { _ws_extensions = new_extensions; }
 
-    void add_deflate(const DeflateExt::config_t& cfg);
+    void add_deflate(const DeflateExt::Config& cfg);
 
 protected:
     virtual void _parse_header (StringRange range);

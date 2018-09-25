@@ -44,6 +44,10 @@ BOOT {
         {NULL, 0, NULL}
     };
     create_constants(aTHX_ Stash(__PACKAGE__), clist);
+    auto err = panda::protocol::websocket::DeflateExt::bootstrap();
+    if (err) {
+        throw *err;
+    }
 }
 
 INCLUDE: Parser.xsi
@@ -63,6 +67,8 @@ INCLUDE: ConnectRequest.xsi
 INCLUDE: ConnectResponse.xsi
 
 INCLUDE: Frame.xsi
+
+INCLUDE: FrameBuilder.xsi
 
 INCLUDE: FrameIterator.xsi
 

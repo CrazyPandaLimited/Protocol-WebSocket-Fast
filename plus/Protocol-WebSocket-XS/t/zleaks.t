@@ -1,6 +1,6 @@
 use 5.020;
 use warnings;
-use lib 't', 't/lib'; use WSTest;
+use lib 't', 't/lib'; use MyTest;
 use Benchmark ':hireswallclock';
 use Test::Builder;
 

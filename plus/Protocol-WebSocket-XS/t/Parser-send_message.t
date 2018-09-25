@@ -1,12 +1,10 @@
 use 5.020;
 use warnings;
-use lib 't/lib'; use WSTest;
+use lib 't'; use MyTest;
 
-my $has_binary = eval { require Test::BinaryData; Test::BinaryData->import(); 1 };
+*gen_frame = \&MyTest::gen_frame;
 
-*gen_frame = \&WSTest::gen_frame;
-
-my $p = WSTest::get_established_server();
+my $p = MyTest::get_established_server();
 
 subtest 'one frame message' => sub {
     my $payload = "preved"; # must be <= 125
@@ -30,5 +28,6 @@ done_testing();
 sub is_bin {
     my ($got, $expected, $name) = @_;
     return if our $leak_test;
+    state $has_binary = eval { require Test::BinaryData; Test::BinaryData->import(); 1 };
     $has_binary ? is_binary($got, $expected, $name) : is($got, $expected, $name);
 }

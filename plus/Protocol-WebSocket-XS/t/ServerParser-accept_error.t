@@ -1,10 +1,10 @@
 use 5.020;
 use warnings;
-use lib 't/lib'; use WSTest;
+use lib 't'; use MyTest;
 
 my $p = new Protocol::WebSocket::XS::ServerParser;
 
-*accept_packet = \&WSTest::accept_packet;
+*accept_packet = \&MyTest::accept_packet;
 
 subtest 'bad http' => sub {
     my @data = accept_packet();

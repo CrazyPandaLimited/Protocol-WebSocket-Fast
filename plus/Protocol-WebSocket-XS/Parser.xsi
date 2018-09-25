@@ -37,16 +37,14 @@ void Parser::get_messages (string buf = string()) {
     }
 }
 
-Simple Parser::send_frame (bool final, string payload, int opcode = (int)Opcode::BINARY) {
-    auto range = THIS->send_frame(final, payload, (Opcode)opcode);
-    RETVAL = strings_to_sv(aTHX_ range);
-}
-
-Simple Parser::send_frame_av (bool final, Array payload, int opcode = (int)Opcode::BINARY) {
-    std::vector<string> list;
-    av_to_vstring(aTHX_ payload, list);
-    auto range = THIS->send_frame(final, list.begin(), list.end(), (Opcode)opcode);
-    RETVAL = strings_to_sv(aTHX_ range);
+XSFrameBuilder* Parser::start_message(SV* config = NULL) {
+    RETVAL = new XSFrameBuilder(THIS->start_message());
+    if (config) {
+        Hash settings(config);
+        if(settings.exists("deflate")) RETVAL->deflate(SvTRUE(settings.at("deflate")));
+        if(settings.exists("final"))   RETVAL->final  (SvTRUE(settings.at("final")));
+        if(settings.exists("opcode"))  RETVAL->opcode ((Opcode)SvIV(settings.at("opcode")));
+    }
 }
 
 Simple Parser::send_control (int opcode, string payload = string()) {
@@ -110,7 +108,7 @@ int Parser::test_parse_frame (string buf) {
 int Parser::test_send_frame (string pl) {
     int cnt = 0;
     for (int i = 0; i < 1000; ++i) {
-        auto range = THIS->send_frame(1, pl);
+        auto range = THIS->start_message().final(true).send(pl);
         for (const string& s : range) cnt += s.length();
     }
     RETVAL = cnt;

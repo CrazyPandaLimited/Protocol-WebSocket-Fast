@@ -90,7 +90,7 @@ string ServerParser::accept_response (ConnectResponse* res) {
         // filter extensions
         auto deflate_matches = DeflateExt::select(exts);
         if (deflate_matches) {
-            _deflate_ext = DeflateExt::uplift(*deflate_matches, used_extensions);
+            _deflate_ext.reset(DeflateExt::uplift(*deflate_matches, used_extensions, DeflateExt::Role::SERVER));
         }
         res->ws_extensions(std::move(used_extensions));
     }

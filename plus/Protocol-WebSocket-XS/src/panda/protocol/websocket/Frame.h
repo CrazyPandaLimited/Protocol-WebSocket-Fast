@@ -14,6 +14,8 @@ using panda::string;
 
 class Frame : public virtual panda::Refcnt, public panda::lib::AllocatedObject<Frame> {
 public:
+    static constexpr int MAX_CONTROL_PAYLOAD = 125;
+
     string              error;
     std::vector<string> payload;
 

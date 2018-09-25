@@ -107,7 +107,7 @@ MessageSP Parser::_get_message () {
     return ret;
 }
 
-FrameHeader Parser::_prepare_frame_header (bool final, Opcode opcode) {
+FrameHeader Parser::_prepare_frame_header (bool final, bool deflate, Opcode opcode) {
     if (!_state[STATE_ESTABLISHED]) {
         throw ParserError("not established");
     }
@@ -131,7 +131,8 @@ FrameHeader Parser::_prepare_frame_header (bool final, Opcode opcode) {
         else ++_sent_frame_count;
     }
 
-    return FrameHeader(opcode, final, 0, 0, 0, !_recv_mask_required, _recv_mask_required ? 0 : (uint32_t)std::rand());
+    bool rsv1 = deflate;
+    return FrameHeader(opcode, final, rsv1, 0, 0, !_recv_mask_required, _recv_mask_required ? 0 : (uint32_t)std::rand());
 }
 
 }}}

@@ -86,7 +86,7 @@ void ConnectRequest::_to_string (string& str) {
     HTTPRequest::_to_string(str);
 }
 
-void ConnectRequest::add_deflate(const DeflateExt::config_t& cfg) {
+void ConnectRequest::add_deflate(const DeflateExt::Config& cfg) {
     DeflateExt::request(_ws_extensions, cfg);
 }
 

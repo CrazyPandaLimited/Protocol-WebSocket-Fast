@@ -1,11 +1,11 @@
 use 5.020;
 use warnings;
-use lib 't/lib'; use WSTest;
+use lib 't'; use MyTest;
 
-*gen_frame   = \&WSTest::gen_frame;
-*gen_message = \&WSTest::gen_message;
+*gen_frame   = \&MyTest::gen_frame;
+*gen_message = \&MyTest::gen_message;
 
-my $p = WSTest::get_established_server();
+my $p = MyTest::get_established_server();
 
 subtest 'frame + message' => sub {
     my $bin = gen_message({mask => 1, data => "iframe"}).
@@ -53,7 +53,7 @@ subtest '1x2 frame + message' => sub {
         my $f1 = $fit->next;
         cmp_deeply($f1, methods(opcode => OPCODE_TEXT, payload => "part1"), "frame ok");
         ok(!eval {$fit->get_messages}, "exception when trying to get messages");
-        WSTest::reset($p);
+        MyTest::reset($p);
     };
 };
 
@@ -84,7 +84,7 @@ subtest '1x2 frame + control in the middle + message' => sub {
         cmp_deeply($f1, methods(opcode => OPCODE_TEXT, payload => "fpart1"), "frame ok");
         cmp_deeply($cl, methods(opcode => OPCODE_PING), "control ok");
         ok(!eval {$fit->get_messages}, "exception when trying to get messages");
-        WSTest::reset($p);
+        MyTest::reset($p);
     };
 };
 
@@ -108,7 +108,7 @@ subtest '1x2 message + frame' => sub {
         my $mit = $p->get_messages($m1bin1);
         is($mit, undef, "not yet");
         ok(!eval { $p->get_frames($m1bin2) }, "exception when trying to get frames");
-        WSTest::reset($p);
+        MyTest::reset($p);
     };
 };
 
@@ -139,7 +139,7 @@ subtest '1x2 message + control in the middle + frame' => sub {
         my $m = $mit->next;
         cmp_deeply($m, methods(opcode => OPCODE_PONG), "control ok");
         ok(!eval { $p->get_frames($m1bin2) }, "exception when trying to get frames");
-        WSTest::reset($p);
+        MyTest::reset($p);
     };
 };
 

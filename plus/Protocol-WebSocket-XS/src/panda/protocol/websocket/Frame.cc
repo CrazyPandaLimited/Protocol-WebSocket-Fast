@@ -7,8 +7,6 @@ namespace panda { namespace protocol { namespace websocket {
 using std::cout;
 using std::endl;
 
-static const int MAX_CONTROL_PAYLOAD = 125;
-
 bool Frame::parse (string& buf) {
     assert(_state != State::DONE);
 

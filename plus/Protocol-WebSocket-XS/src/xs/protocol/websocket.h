@@ -68,6 +68,15 @@ private:
     bool nexted;
 };
 
+class XSFrameBuilder: public FrameBuilder {
+public:
+    XSFrameBuilder(FrameBuilder&& fb): FrameBuilder(std::move(fb)) {
+        // keep link to make XSFrameBuilder perl-safe
+        _parser.retain();
+    }
+    ~XSFrameBuilder() { _parser.release(); }
+};
+
 }}}
 
 namespace xs {
@@ -155,5 +164,11 @@ namespace xs {
     struct Typemap<xs::protocol::websocket::XSMessageIterator*, TYPE> : TypemapObject<xs::protocol::websocket::XSMessageIterator*, TYPE, ObjectTypePtr, ObjectStorageMG> {
         std::string package () { return "Protocol::WebSocket::XS::MessageIterator"; }
     };
+
+    template <class TYPE>
+    struct Typemap<xs::protocol::websocket::XSFrameBuilder*, TYPE> : TypemapObject<xs::protocol::websocket::XSFrameBuilder*, TYPE, ObjectTypePtr, ObjectStorageMG> {
+        std::string package () { return "Protocol::WebSocket::XS::FrameBuilder"; }
+    };
+
 
 }

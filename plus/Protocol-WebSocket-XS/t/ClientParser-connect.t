@@ -1,6 +1,6 @@
 use 5.020;
 use warnings;
-use lib 't/lib'; use WSTest;
+use lib 't'; use MyTest;
 
 subtest 'simple connect' => sub {
     test_connect({
@@ -86,7 +86,7 @@ subtest 'frame just after handshake is reachable' => sub {
     my $sp = new Protocol::WebSocket::XS::ServerParser;
     $sp->accept($str);
     my $res_str = $sp->accept_response;
-    $res_str .= WSTest::gen_message({mask => 1, data => "hello!!"});
+    $res_str .= MyTest::gen_message({mask => 1, data => "hello!!"});
     my $cres = $p->connect($res_str);
     ok($p->established, "established");
     my ($msg) = $p->get_messages;

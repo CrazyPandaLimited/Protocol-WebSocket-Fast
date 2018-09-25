@@ -14,6 +14,8 @@ public:
 
     ClientParser () : Parser(false), max_handshake_size(0) {}
 
+    void use_deflate (const DeflateExt::Config& conf);
+
     string connect_request (ConnectRequestSP& req);
 
     ConnectResponseSP connect (string& buf);

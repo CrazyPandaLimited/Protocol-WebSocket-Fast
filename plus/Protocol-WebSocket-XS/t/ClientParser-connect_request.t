@@ -1,6 +1,6 @@
 use 5.020;
 use warnings;
-use lib 't/lib'; use WSTest;
+use lib 't'; use MyTest;
 
 subtest 'parser create' => sub {
     my $p = new Protocol::WebSocket::XS::ClientParser;
