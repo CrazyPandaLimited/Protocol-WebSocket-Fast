@@ -131,10 +131,13 @@ string& DeflateExt::compress(string& str, bool final) {
     tx_stream.avail_in = static_cast<uInt>(in_copy.length());
     tx_stream.next_out = reinterpret_cast<Bytef*>(str.shared_buf());
     tx_stream.avail_out = static_cast<uInt>(sz);
-    auto flush = final ? flush_policy() : Z_NO_FLUSH;
+    auto flush = final ? flush_policy() : Z_SYNC_FLUSH;
     do {
         auto r = deflate(&tx_stream, flush);
-        if (r == Z_STREAM_END) break;
+        if (r == Z_STREAM_END) {
+            assert(final);
+            reset_tx();
+        }
         else if(r == Z_OK && final) {
             assert(!tx_stream.avail_out);
             sz += 6;
@@ -142,14 +145,22 @@ string& DeflateExt::compress(string& str, bool final) {
             str.reserve(sz);
             str.length(sz);
         }
-    } while(!tx_stream.avail_out);
+        else if( r < 0) {
+            if (r != Z_BUF_ERROR) {
+                panda::string err = panda::string("zlib::deflate error ");
+                err += tx_stream.msg;
+                throw std::runtime_error(err);
+            }
+        }
+    } while(!tx_stream.avail_out || tx_stream.avail_out == sz);
 
     sz -= tx_stream.avail_out;
-    // remove tail empty-frame 0x00 0x00 0xff 0xff
+    // remove tail empty-frame 0x00 0x00 0xff 0xff for final messages only
+    assert(sz);
     if (final) sz -= 4;
     str.length(sz);
 
-    if(final && reset_after_message) reset_tx();
+    //if(final && reset_after_message) reset_tx();
     return str;
 }
 

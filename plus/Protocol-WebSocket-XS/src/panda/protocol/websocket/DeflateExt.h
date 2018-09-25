@@ -41,7 +41,7 @@ public:
     string& compress(string& str, bool final);
 
     inline int flush_policy() const noexcept {
-        //return Z_SYNC_FLUSH; // Z_FULL_FLUSH - if no_context_takeover
+        //return Z_SYNC_FLUSH; // Z_FULL_FLUSH - if no_context_takeover ?
         return Z_FINISH;
     }
 
@@ -57,7 +57,11 @@ public:
             string chunk_in = *it_in;
             tx_stream.next_in = reinterpret_cast<Bytef*>(chunk_in.buf());
             tx_stream.avail_in = static_cast<uInt>(chunk_in.length());
-            auto flush = (it_next == payload_end) && final ? flush_policy() : Z_NO_FLUSH;
+            // for last fragment we either complete frame(Z_SYNC_FLUSH) or message(flush_policy())
+            // otherwise no flush it perfromed
+            auto flush = (it_next == payload_end)
+                ? final ? flush_policy() : Z_SYNC_FLUSH
+                : Z_NO_FLUSH;
             auto avail_out = tx_stream.avail_out;
             do {
                 do {
@@ -88,23 +92,27 @@ public:
             chunk_out->length(chunk_out->length() + tx_out);
             it_in = it_next;
         }
-        // remove tail empty-frame 0x00 0x00 0xff 0xff
-        size_t tail_left = 4;
-        while(tail_left){
-            --it_out;
-            int delta = it_out->length() - tail_left;
-            if (delta >= 0) {
-                it_out->length(delta);
-                tail_left = 0;
+        if(final) {
+            // remove tail empty-frame 0x00 0x00 0xff 0xff
+            size_t tail_left = 4;
+            while(tail_left){
+                --it_out;
+                int delta = it_out->length() - tail_left;
+                if (delta >= 0) {
+                    it_out->length(delta);
+                    tail_left = 0;
+                }
+                else {
+                    tail_left -= it_out->length();
+                    it_out->length(0);
+                }
             }
-            else {
-                tail_left -= it_out->length();
-                it_out->length(0);
-            }
+            ++it_out;
+            // may be this will be non needed with Z_FULL_FLUSH ?
+            reset_tx();
         }
 
-        if(final && reset_after_message) reset_tx();
-        return it_out + 1;
+        return it_out;
     }
 
 private:
