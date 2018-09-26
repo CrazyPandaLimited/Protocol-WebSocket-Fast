@@ -135,4 +135,7 @@ FrameHeader Parser::_prepare_frame_header (bool final, bool deflate, Opcode opco
     return FrameHeader(opcode, final, rsv1, 0, 0, !_recv_mask_required, _recv_mask_required ? 0 : (uint32_t)std::rand());
 }
 
+MessageBuilder Parser::message() { return MessageBuilder(*this); }
+
+
 }}}

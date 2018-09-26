@@ -9,12 +9,15 @@
 #include <panda/protocol/websocket/iterator.h>
 #include <panda/protocol/websocket/DeflateExt.h>
 #include <panda/protocol/websocket/FrameBuilder.h>
+#include <panda/protocol/websocket/MessageBuilder.h>
 #include <panda/protocol/websocket/ParserError.h>
 
 namespace panda { namespace protocol { namespace websocket {
 
 using panda::string;
 using panda::IteratorPair;
+
+class MessageBuilder;
 
 class Parser : public virtual panda::Refcnt {
 public:
@@ -99,6 +102,8 @@ public:
         return FrameBuilder(*this);
     }
 
+    MessageBuilder message();
+
     string     send_control (Opcode opcode)                  { return send_control_frame(opcode); }
     StringPair send_control (Opcode opcode, string& payload) {
         if (payload.length() > Frame::MAX_CONTROL_PAYLOAD) throw std::invalid_argument("control frame payload is too long");
@@ -114,37 +119,6 @@ public:
     StringPair send_close (uint16_t code, const string& payload = string()) {
         string frpld = FrameHeader::compile_close_payload(code, payload);
         return send_control(Opcode::CLOSE, frpld);
-    }
-
-    StringPair send_message (string& payload, Opcode opcode = Opcode::BINARY) {
-        return start_message().final(true).opcode(opcode).send(payload);
-    }
-
-    template <class It, typename = typename std::enable_if<std::is_same<typename It::value_type, string>::value>::type>
-    StringChain<It> send_message (It payload_begin, It payload_end, Opcode opcode = Opcode::BINARY) {
-        return start_message().final(true).opcode(opcode).send(payload_begin, payload_end);
-    }
-
-    template <class ContIt, typename = typename std::enable_if<std::is_same<decltype(*((*ContIt()).begin())), string&>::value>::type>
-    std::vector<string> send_message (ContIt cont_begin, ContIt cont_end, Opcode opcode = Opcode::BINARY) {
-        std::vector<string> ret;
-
-        size_t sz = 0;
-        auto cont_range = IteratorPair<ContIt>(cont_begin, cont_end);
-        for (const auto& range : cont_range) sz += range.end() - range.begin();
-
-        ret.reserve(sz);
-
-        size_t cont_size = cont_end - cont_begin;
-        auto fb = start_message();
-        fb.opcode(opcode);
-        for (size_t i = 0; i < cont_size; ++i) {
-            auto& range = cont_begin[i];
-            auto frame_range = fb.final(i == cont_size - 1).send(range.begin(), range.end());
-            for (const auto& s : frame_range) ret.push_back(s);
-        }
-
-        return ret;
     }
 
     virtual void reset ();
@@ -234,6 +208,55 @@ StringChain<It> FrameBuilder::send(It payload_begin, It payload_end) {
     _finished = _final;
     return _parser.send_frame(payload_begin, payload_end, *this);
 }
+
+class MessageBuilder {
+public:
+
+    Opcode opcode() const noexcept;
+    MessageBuilder& opcode(Opcode value) noexcept { _opcode = value; return *this; }
+
+    MessageBuilder& deflate(bool value) noexcept { _deflate = value; return *this; }
+    bool deflate() const noexcept { return _deflate;}
+
+    StringPair send(string& payload) {
+        return _parser.start_message().final(true).opcode(_opcode).deflate(_deflate).send(payload);
+    }
+
+    template <class It, typename = typename std::enable_if<std::is_same<typename It::value_type, string>::value>::type>
+    StringChain<It> send(It payload_begin, It payload_end) {
+        return _parser.start_message().final(true).opcode(_opcode).deflate(_deflate).send(payload_begin, payload_end);
+    }
+
+    template <class ContIt, typename = typename std::enable_if<std::is_same<decltype(*((*ContIt()).begin())), string&>::value>::type>
+    std::vector<string> send(ContIt cont_begin, ContIt cont_end) {
+        std::vector<string> ret;
+
+        size_t sz = 0;
+        auto cont_range = IteratorPair<ContIt>(cont_begin, cont_end);
+        for (const auto& range : cont_range) sz += range.end() - range.begin();
+
+        ret.reserve(sz);
+
+        size_t cont_size = cont_end - cont_begin;
+        auto fb = _parser.start_message();
+        fb.opcode(_opcode);
+        fb.deflate(_deflate);
+        for (size_t i = 0; i < cont_size; ++i) {
+            auto& range = cont_begin[i];
+            auto frame_range = fb.final(i == cont_size - 1).send(range.begin(), range.end());
+            for (const auto& s : frame_range) ret.push_back(s);
+        }
+
+        return ret;
+    }
+
+private:
+    MessageBuilder(Parser& parser):_parser{parser}{}
+    Parser& _parser;
+    bool _deflate = true;
+    Opcode _opcode = Opcode::BINARY;
+    friend class Parser;
+};
 
 using FrameIteratorPair   = Parser::FrameIteratorPair;
 using FrameIterator       = Parser::FrameIterator;

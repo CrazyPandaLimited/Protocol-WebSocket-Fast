@@ -70,19 +70,39 @@ Simple Parser::send_close (SV* code = NULL, string message = string()) {
     else RETVAL = xs::out(THIS->send_close());
 }
 
-Simple Parser::send_message (string payload, int opcode = (int)Opcode::BINARY) {
-    auto range = THIS->send_message(payload, (Opcode)opcode);
+Simple Parser::send_message (Hash settings) {
+    auto builder = THIS->message();
+    if(settings.exists("deflate")) builder.deflate(SvTRUE(settings.at("deflate")));
+    if(settings.exists("opcode"))  builder.opcode ((Opcode)SvIV(settings.at("opcode")));
+    Simple payload = settings.at("payload");
+    auto payload_string = payload.as_string();
+    auto range = builder.send(payload_string);
     RETVAL = strings_to_sv(aTHX_ range);
 }
 
-Simple Parser::send_message_av (AV* payload, int opcode = (int)Opcode::BINARY) {
+Simple Parser::send_message_av (Hash settings) {
+    auto builder = THIS->message();
+    if(settings.exists("deflate")) builder.deflate(SvTRUE(settings.at("deflate")));
+    if(settings.exists("opcode"))  builder.opcode ((Opcode)SvIV(settings.at("opcode")));
+
+    Array payload(settings.at("payload"));
+    if (!payload) throw "invalid argument (payload must point to array)";
+
     std::vector<string> list;
     av_to_vstring(aTHX_ payload, list);
-    auto range = THIS->send_message(list.begin(), list.end(), (Opcode)opcode);
+
+    auto range = builder.send(list.begin(), list.end());
     RETVAL = strings_to_sv(aTHX_ range);
 }
 
-Simple Parser::send_message_multiframe (Array payloads, int opcode = (int)Opcode::BINARY) {
+Simple Parser::send_message_multiframe (Hash settings) {
+    auto builder = THIS->message();
+    if(settings.exists("deflate")) builder.deflate(SvTRUE(settings.at("deflate")));
+    if(settings.exists("opcode"))  builder.opcode ((Opcode)SvIV(settings.at("opcode")));
+
+    Array payloads(settings.at("payloads"));
+    if (!payloads) throw "invalid argument (payloads must point to array)";
+
     std::vector<std::vector<string>> cont;
     for (const auto& payload : payloads) {
         if (!payload.defined()) continue;
@@ -90,7 +110,8 @@ Simple Parser::send_message_multiframe (Array payloads, int opcode = (int)Opcode
         tmp.push_back(xs::in<string>(aTHX_ payload));
         cont.push_back(std::move(tmp));
     }
-    auto range = THIS->send_message(cont.begin(), cont.end(), (Opcode)opcode);
+
+    auto range = builder.send(cont.begin(), cont.end());
     RETVAL = strings_to_sv(aTHX_ range);
 }
 
