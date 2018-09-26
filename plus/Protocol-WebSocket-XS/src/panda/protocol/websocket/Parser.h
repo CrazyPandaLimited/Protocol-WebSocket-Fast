@@ -13,15 +13,12 @@ namespace panda { namespace protocol { namespace websocket {
 using panda::string;
 using panda::IteratorPair;
 
-class Parser : public virtual panda::Refcnt {
-public:
+struct Parser : virtual panda::Refcnt {
 
-    class MessageIterator : public std::iterator<std::input_iterator_tag, MessageSP> {
-    public:
+    struct MessageIterator : std::iterator<std::input_iterator_tag, MessageSP> {
         typedef IteratorPair<MessageIterator> MessageIteratorPair;
 
-        class FrameIterator : public std::iterator<std::input_iterator_tag, FrameSP> {
-        public:
+        struct FrameIterator : std::iterator<std::input_iterator_tag, FrameSP> {
             FrameIterator (Parser* parser, const FrameSP& start_frame) : parser(parser), cur(start_frame) {}
             FrameIterator (const FrameIterator& oth)                   : parser(oth.parser), cur(oth.cur) {}
 
@@ -66,6 +63,7 @@ public:
 
     struct OutputIterator : std::iterator<std::input_iterator_tag, string> {};
 
+    size_t max_handshake_size;
     size_t max_frame_size;
     size_t max_message_size;
 
@@ -182,14 +180,8 @@ protected:
     string          _buffer;
 
     Parser (bool recv_mask_required) :
-        max_frame_size(0),
-        max_message_size(0),
-        _state(0),
-        _recv_mask_required(recv_mask_required),
-        _frame_count(0),
-        _message_frame(_recv_mask_required, max_frame_size),
-        _sent_frame_count(0)
-    {}
+        max_handshake_size(0), max_frame_size(0), max_message_size(0), _state(0), _recv_mask_required(recv_mask_required),
+        _frame_count(0), _message_frame(_recv_mask_required, max_frame_size), _sent_frame_count(0) {}
 
 private:
     bool      _recv_mask_required;

@@ -9,11 +9,9 @@ namespace panda { namespace protocol { namespace websocket {
 
 using panda::string;
 
-class ServerParser : public Parser {
-public:
-    size_t max_handshake_size;
+struct ServerParser : Parser {
 
-    ServerParser () : Parser(true), max_handshake_size(0) {}
+    ServerParser () : Parser(true) {}
 
     bool accept_parsed () const { return _state[STATE_ACCEPT_PARSED]; }
     bool accepted      () const { return _state[STATE_ACCEPTED]; }

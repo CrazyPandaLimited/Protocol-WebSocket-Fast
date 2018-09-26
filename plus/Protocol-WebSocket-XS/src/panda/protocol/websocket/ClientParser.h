@@ -8,11 +8,9 @@ namespace panda { namespace protocol { namespace websocket {
 
 using panda::string;
 
-class ClientParser : public Parser {
-public:
-    size_t max_handshake_size;
+struct ClientParser : Parser {
 
-    ClientParser () : Parser(false), max_handshake_size(0) {}
+    ClientParser () : Parser(false) {}
 
     string connect_request (ConnectRequestSP& req);
 
