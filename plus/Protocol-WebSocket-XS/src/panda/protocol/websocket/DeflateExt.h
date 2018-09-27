@@ -3,6 +3,7 @@
 #include <panda/refcnt.h>
 #include <panda/optional.h>
 #include <panda/protocol/websocket/HTTPRequest.h>
+#include <panda/protocol/websocket/Frame.h>
 #include <zlib.h>
 
 namespace panda { namespace protocol { namespace websocket {
@@ -21,17 +22,13 @@ public:
         size_t compression_threshold = 0;
     };
 
-    struct ServerConfig : public Config {
-
-    };
-
     enum class Role { CLIENT, SERVER };
 
     static const char* extension_name;
 
     static panda::optional<panda::string> bootstrap();
 
-    static const HTTPPacket::HeaderValue* select(const HTTPPacket::HeaderValues& values);
+    static const HTTPPacket::HeaderValue* select(const HTTPPacket::HeaderValues& values, const Config& cfg, Role role);
     static void request(HTTPPacket::HeaderValues& ws_extensions, const Config& cfg);
     static DeflateExt* uplift(const HTTPPacket::HeaderValue& deflate_extension, HTTPPacket::HeaderValues& extensions, Role role);
 
@@ -114,6 +111,8 @@ public:
 
         return it_out;
     }
+
+    bool uncompress(Frame& frame);
 
 private:
 

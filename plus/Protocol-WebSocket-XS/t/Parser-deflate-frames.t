@@ -27,6 +27,7 @@ my $create_server = sub {
     local $Test::Builder::Level = $Test::Builder::Level + 1;
     my $handshake_message = shift;
     my $p = Protocol::WebSocket::XS::ServerParser->new;
+    $p->use_deflate;
     ok $p->accept($handshake_message);
     $p->accept_response;
     ok $p->established;

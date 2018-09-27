@@ -84,16 +84,16 @@ string ServerParser::accept_response (ConnectResponse* res) {
     if (!res->ws_extensions_set()) res->ws_extensions(_connect_request->ws_extensions());
 
     const auto& exts = res->ws_extensions();
-
-    if (exts.size()) {
-        HTTPPacket::HeaderValues used_extensions;
+    HTTPPacket::HeaderValues used_extensions;
+    if (_deflate_cfg && exts.size()) {
         // filter extensions
-        auto deflate_matches = DeflateExt::select(exts);
+        auto role = DeflateExt::Role::SERVER;
+        auto deflate_matches = DeflateExt::select(exts, *_deflate_cfg, role);
         if (deflate_matches) {
-            _deflate_ext.reset(DeflateExt::uplift(*deflate_matches, used_extensions, DeflateExt::Role::SERVER));
+            _deflate_ext.reset(DeflateExt::uplift(*deflate_matches, used_extensions, role));
         }
-        res->ws_extensions(std::move(used_extensions));
     }
+    res->ws_extensions(std::move(used_extensions));
 
     _state.set(STATE_ESTABLISHED);
     _connect_request = NULL;

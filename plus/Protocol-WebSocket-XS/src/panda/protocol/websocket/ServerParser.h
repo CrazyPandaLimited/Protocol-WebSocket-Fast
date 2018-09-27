@@ -1,5 +1,6 @@
 #pragma once
 #include <panda/string.h>
+#include <panda/optional.h>
 #include <panda/protocol/websocket/Parser.h>
 #include <panda/protocol/websocket/HTTPResponse.h>
 #include <panda/protocol/websocket/ConnectRequest.h>
@@ -14,8 +15,6 @@ public:
     size_t max_handshake_size;
 
     ServerParser () : Parser(true), max_handshake_size(0) {}
-
-    void use_deflate (const DeflateExt::ServerConfig& conf);
 
     bool accept_parsed () const { return _state[STATE_ACCEPT_PARSED]; }
     bool accepted      () const { return _state[STATE_ACCEPTED]; }

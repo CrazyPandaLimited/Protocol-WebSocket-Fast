@@ -24,6 +24,7 @@ public:
     bool     is_control     () const { return _header.is_control(); }
     Opcode   opcode         () const { return _header.opcode; }
     bool     final          () const { return _header.fin; }
+    bool     rsv1           () const { return _header.rsv1; }
     size_t   payload_length () const { return _header.length; }
     uint16_t close_code     () const { return _close_code; }
     string   close_message  () const { return _close_message; }

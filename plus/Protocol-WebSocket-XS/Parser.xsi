@@ -17,6 +17,8 @@ bool Parser::recv_closed ()
 
 bool Parser::send_closed ()
 
+bool Parser::is_deflate_active ()
+
 void Parser::get_frames (string buf = string()) {
     auto frames = buf ? THIS->get_frames(buf) : THIS->get_frames();
     if (GIMME_V == G_ARRAY) for (auto frame : frames) mXPUSHs(xs::out(frame).detach());
@@ -116,6 +118,26 @@ Simple Parser::send_message_multiframe (Hash settings) {
 }
 
 void Parser::reset ()
+
+void Parser::use_deflate(SV* params = NULL) {
+    DeflateExt::Config cfg;
+    if (params) {
+        Hash settings(params);
+        if (settings) {
+            Scalar val;
+            if ((val = settings.fetch("server_max_window_bits")))     cfg.server_max_window_bits     = static_cast<std::uint8_t>(SvIV(val));
+            if ((val = settings.fetch("client_max_window_bits")))     cfg.client_max_window_bits     = static_cast<std::uint8_t>(SvIV(val));
+            if ((val = settings.fetch("client_no_context_takeover"))) cfg.client_no_context_takeover = SvTRUE(val);
+            if ((val = settings.fetch("server_no_context_takeover"))) cfg.server_no_context_takeover = SvTRUE(val);
+            if ((val = settings.fetch("mem_level")))                  cfg.mem_level                  = SvIV(val);
+            if ((val = settings.fetch("compression_level")))          cfg.compression_level          = SvIV(val);
+            if ((val = settings.fetch("strategy")))                   cfg.strategy                   = SvIV(val);
+            if ((val = settings.fetch("compression_threshold")))      cfg.compression_threshold      = SvUV(val);
+        }
+    }
+    THIS->use_deflate(cfg);
+}
+
 
 int Parser::test_parse_frame (string buf) {
     int cnt = 0;

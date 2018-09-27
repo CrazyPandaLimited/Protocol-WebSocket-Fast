@@ -4,6 +4,7 @@
 #include <iterator>
 #include <panda/refcnt.h>
 #include <panda/string.h>
+#include <panda/optional.h>
 #include <panda/protocol/websocket/Frame.h>
 #include <panda/protocol/websocket/Message.h>
 #include <panda/protocol/websocket/iterator.h>
@@ -69,8 +70,6 @@ public:
     typedef MessageIterator::MessageIteratorPair MessageIteratorPair;
     typedef MessageIterator::FrameIteratorPair   FrameIteratorPair;
 
-    struct OutputIterator : std::iterator<std::input_iterator_tag, string> {};
-
     size_t max_frame_size;
     size_t max_message_size;
 
@@ -121,7 +120,12 @@ public:
         return send_control(Opcode::CLOSE, frpld);
     }
 
+    void use_deflate (const DeflateExt::Config& conf) { _deflate_cfg = conf; }
+
+
     virtual void reset ();
+
+    bool is_deflate_active() { return (bool)_deflate_ext; }
 
     virtual ~Parser () {}
 
@@ -148,6 +152,8 @@ protected:
         _message_frame(_recv_mask_required, max_frame_size),
         _sent_frame_count(0)
     {}
+
+    panda::optional<DeflateExt::Config> _deflate_cfg;
 
 private:
     string send_control_frame (Opcode opcode = Opcode::BINARY) {
@@ -200,6 +206,7 @@ private:
 
     FrameHeader _prepare_frame_header (bool final, bool deflate, Opcode opcode);
     friend class FrameBuilder;
+
 };
 
 template<typename It>

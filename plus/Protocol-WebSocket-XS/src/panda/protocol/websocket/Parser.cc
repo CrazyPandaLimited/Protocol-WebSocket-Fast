@@ -33,8 +33,8 @@ FrameSP Parser::_get_frame () {
         _buffer.clear();
         return NULL;
     }
-
     _frame->check(_frame_count);
+    if (_deflate_ext && _frame->rsv1()) _deflate_ext->uncompress(*_frame);
 
     if (_frame->error) {
         _buffer.clear();
