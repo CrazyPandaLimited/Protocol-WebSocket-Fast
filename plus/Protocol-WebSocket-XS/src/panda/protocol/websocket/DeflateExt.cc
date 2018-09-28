@@ -116,17 +116,33 @@ DeflateExt::DeflateExt(const DeflateExt::Config& cfg, Role role) {
         throw std::runtime_error(err);
     }
 
-    reset_after_message =
+    reset_after_tx =
                (role == Role::CLIENT && cfg.client_no_context_takeover)
             || (role == Role::SERVER && cfg.server_no_context_takeover);
+    reset_after_rx =
+               (role == Role::CLIENT && cfg.server_no_context_takeover)
+            || (role == Role::SERVER && cfg.client_no_context_takeover);
 }
 
 void DeflateExt::reset_tx() {
     if (deflateReset(&tx_stream) != Z_OK) {
-        panda::string err = panda::string("zlib::deflateReset error ") + tx_stream.msg;
+        panda::string err = panda::string("zlib::deflateEnd error ");
+        if (tx_stream.msg) {
+            err += tx_stream.msg;
+        }
         throw std::runtime_error(err);
     }
 }
+
+void DeflateExt::reset_rx() {
+    if (inflateReset(&rx_stream) != Z_OK) {
+        panda::string err = panda::string("zlib::inflateEnd error ");
+        if(rx_stream.msg) {
+            err += rx_stream.msg;
+        }
+    }
+}
+
 
 DeflateExt::~DeflateExt(){
     if (deflateEnd(&tx_stream) != Z_OK) {
@@ -175,7 +191,7 @@ string& DeflateExt::compress(string& str, bool final) {
     if (final) sz -= 4;
     str.length(sz);
 
-    if(final && reset_after_message) reset_tx();
+    if(final && reset_after_tx) reset_tx();
     return str;
 }
 
@@ -191,40 +207,47 @@ bool DeflateExt::uncompress(Frame& frame) {
 
     bool final = frame.final();
     rx_stream.next_out = reinterpret_cast<Bytef*>(acc.buf());
-    rx_stream.avail_out = static_cast<uInt>(sz);
+    rx_stream.avail_out = static_cast<uInt>(acc.capacity());
     do {
         string& chunk_in = *it_in;
         It it_next = ++it_in;
-        rx_stream.next_in = reinterpret_cast<Bytef*>(chunk_in.buf());
-        rx_stream.avail_in = static_cast<uInt>(chunk_in.length());
         if (it_next == end && final) {
             // append empty-frame 0x00 0x00 0xff 0xff
             unsigned char trailer[4] = { 0x00,  0x00, 0xFF, 0xFF };
             chunk_in.append(reinterpret_cast<char*>(trailer), 4);
             rx_stream.avail_in += 4;
         }
+        rx_stream.next_in = reinterpret_cast<Bytef*>(chunk_in.buf());
+        rx_stream.avail_in = static_cast<uInt>(chunk_in.length());
         auto flush = (it_next == end) ? Z_SYNC_FLUSH : Z_NO_FLUSH;
+        bool has_more_output = true;
         do {
+            has_more_output = !rx_stream.avail_out;
             auto r = inflate(&rx_stream, flush);
             if (r == Z_OK && !rx_stream.avail_out) {
-                acc.length(sz);
-                acc.reserve(sz * 2);
-                rx_stream.next_out = reinterpret_cast<Bytef*>(acc.buf() + sz);
-                rx_stream.avail_out = static_cast<uInt>(sz);
-                sz *= 2;
+                auto l = acc.capacity();
+                acc.length(l);
+                acc.reserve(l * 2);
+                rx_stream.next_out = reinterpret_cast<Bytef*>(acc.buf() + l);
+                rx_stream.avail_out = static_cast<uInt>(acc.capacity() - l);
+                has_more_output = true;
                 continue;
             }
-            else if (r == Z_STREAM_END) break;
             else if (r < 0) {
                 assert(0);
+            } else {
+                has_more_output = false;
             }
-        } while(!rx_stream.avail_out);
+        } while(has_more_output);
         it_in = it_next;
     } while(it_in != end);
+
+    acc.length(acc.capacity() - rx_stream.avail_out);
 
     frame.payload.resize(1);
     frame.payload.at(0) = std::move(acc);
 
+    if(final && reset_after_rx) reset_rx();
     return true;
 }
 

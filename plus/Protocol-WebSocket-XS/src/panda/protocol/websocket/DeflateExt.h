@@ -35,6 +35,10 @@ public:
     ~DeflateExt();
 
     void reset_tx();
+    void reset() {
+        reset_rx();
+        reset_tx();
+    }
     string& compress(string& str, bool final);
 
     template<typename It>
@@ -75,12 +79,6 @@ public:
                     if (r < 0) {
                         assert(0);
                     }
-                    /*
-                    if (r == Z_STREAM_ERROR) {
-                        panda::string err = panda::string("zlib::deflate error ") + tx_stream.msg;
-                        throw std::runtime_error(err);
-                    }
-                    */
                 } while(tx_stream.avail_out == 0);
             } while(tx_stream.avail_in);
             auto tx_out = avail_out - tx_stream.avail_out;
@@ -103,7 +101,7 @@ public:
                 }
             }
             ++it_out;
-            if(reset_after_message) reset_tx();
+            if(reset_after_tx) reset_tx();
         }
 
         return it_out;
@@ -112,11 +110,13 @@ public:
     bool uncompress(Frame& frame);
 
 private:
+    void reset_rx();
 
     DeflateExt(const Config& cfg, Role role);
     z_stream rx_stream;
     z_stream tx_stream;
-    bool reset_after_message;
+    bool reset_after_tx;
+    bool reset_after_rx;
 };
 
 }}}

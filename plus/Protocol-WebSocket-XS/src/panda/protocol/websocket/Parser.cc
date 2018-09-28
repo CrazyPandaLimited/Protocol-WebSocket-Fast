@@ -16,6 +16,7 @@ void Parser::reset () {
     _frame_count = 0;
     _message = NULL;
     _message_frame.reset();
+    if (_deflate_ext) _deflate_ext->reset();
 }
 
 FrameSP Parser::_get_frame () {
@@ -92,6 +93,7 @@ MessageSP Parser::_get_message () {
         }
 
         _message_frame.check(_message->frame_count);
+        if (_deflate_ext && _message_frame.rsv1()) _deflate_ext->uncompress(_message_frame);
         bool done = _message->add_frame(_message_frame);
         _message_frame.reset();
 

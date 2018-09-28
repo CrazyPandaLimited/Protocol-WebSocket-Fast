@@ -10,7 +10,6 @@
 #include <panda/protocol/websocket/iterator.h>
 #include <panda/protocol/websocket/DeflateExt.h>
 #include <panda/protocol/websocket/FrameBuilder.h>
-#include <panda/protocol/websocket/MessageBuilder.h>
 #include <panda/protocol/websocket/ParserError.h>
 
 namespace panda { namespace protocol { namespace websocket {
