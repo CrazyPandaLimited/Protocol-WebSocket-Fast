@@ -88,7 +88,7 @@ DeflateExt* DeflateExt::uplift(const HTTPPacket::HeaderValue& deflate_extension,
 }
 
 
-DeflateExt::DeflateExt(const DeflateExt::Config& cfg, Role role): _cfg{cfg} {
+DeflateExt::DeflateExt(const DeflateExt::Config& cfg, Role role) {
     auto rx_window = role == Role::CLIENT ? cfg.server_max_window_bits : cfg.client_max_window_bits;
     auto tx_window = role == Role::CLIENT ? cfg.client_max_window_bits : cfg.server_max_window_bits;
 
@@ -116,8 +116,9 @@ DeflateExt::DeflateExt(const DeflateExt::Config& cfg, Role role): _cfg{cfg} {
         throw std::runtime_error(err);
     }
 
-    if (role == Role::CLIENT && cfg.client_no_context_takeover) reset_after_message = true;
-    if (role == Role::SERVER && cfg.server_no_context_takeover) reset_after_message = true;
+    reset_after_message =
+               (role == Role::CLIENT && cfg.client_no_context_takeover)
+            || (role == Role::SERVER && cfg.server_no_context_takeover);
 }
 
 void DeflateExt::reset_tx() {
@@ -152,28 +153,21 @@ string& DeflateExt::compress(string& str, bool final) {
     tx_stream.avail_in = static_cast<uInt>(in_copy.length());
     tx_stream.next_out = reinterpret_cast<Bytef*>(str.shared_buf());
     tx_stream.avail_out = static_cast<uInt>(sz);
-    auto flush = final ? flush_policy() : Z_SYNC_FLUSH;
+    auto flush = Z_SYNC_FLUSH;
     do {
-        auto r = deflate(&tx_stream, flush);
-        if (r == Z_STREAM_END) {
-            assert(final);
-            reset_tx();
-        }
-        else if(r == Z_OK && final) {
-            assert(!tx_stream.avail_out);
+        if (!tx_stream.avail_out) {
             sz += 6;
             tx_stream.avail_out += 6;
             str.reserve(sz);
             str.length(sz);
         }
-        else if( r < 0) {
-            if (r != Z_BUF_ERROR) {
-                panda::string err = panda::string("zlib::deflate error ");
-                err += tx_stream.msg;
-                throw std::runtime_error(err);
-            }
+        auto r = deflate(&tx_stream, flush);
+        if(r < 0 && r != Z_BUF_ERROR) {
+            panda::string err = panda::string("zlib::deflate error ");
+            err += tx_stream.msg;
+            throw std::runtime_error(err);
         }
-    } while(!tx_stream.avail_out || tx_stream.avail_out == sz);
+    } while(!tx_stream.avail_out);
 
     sz -= tx_stream.avail_out;
     // remove tail empty-frame 0x00 0x00 0xff 0xff for final messages only
@@ -181,7 +175,7 @@ string& DeflateExt::compress(string& str, bool final) {
     if (final) sz -= 4;
     str.length(sz);
 
-    //if(final && reset_after_message) reset_tx();
+    if(final && reset_after_message) reset_tx();
     return str;
 }
 
@@ -199,16 +193,17 @@ bool DeflateExt::uncompress(Frame& frame) {
     rx_stream.next_out = reinterpret_cast<Bytef*>(acc.buf());
     rx_stream.avail_out = static_cast<uInt>(sz);
     do {
-        It it_next = ++it_in;
         string& chunk_in = *it_in;
-        if (it_next == end && final) {
-            // append empty-frame 0x00 0x00 0xff 0xff
-        }
+        It it_next = ++it_in;
         rx_stream.next_in = reinterpret_cast<Bytef*>(chunk_in.buf());
         rx_stream.avail_in = static_cast<uInt>(chunk_in.length());
-        auto flush = (it_next == end)
-            ? final ? flush_policy() : Z_SYNC_FLUSH
-            : Z_NO_FLUSH;
+        if (it_next == end && final) {
+            // append empty-frame 0x00 0x00 0xff 0xff
+            unsigned char trailer[4] = { 0x00,  0x00, 0xFF, 0xFF };
+            chunk_in.append(reinterpret_cast<char*>(trailer), 4);
+            rx_stream.avail_in += 4;
+        }
+        auto flush = (it_next == end) ? Z_SYNC_FLUSH : Z_NO_FLUSH;
         do {
             auto r = inflate(&rx_stream, flush);
             if (r == Z_OK && !rx_stream.avail_out) {
@@ -232,6 +227,7 @@ bool DeflateExt::uncompress(Frame& frame) {
 
     return true;
 }
+
 
 
 }}}

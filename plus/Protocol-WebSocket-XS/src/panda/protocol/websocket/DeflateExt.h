@@ -37,11 +37,6 @@ public:
     void reset_tx();
     string& compress(string& str, bool final);
 
-    inline int flush_policy() const noexcept {
-        //return Z_SYNC_FLUSH; // Z_FULL_FLUSH - if no_context_takeover ?
-        return Z_FINISH;
-    }
-
     template<typename It>
     It compress(It payload_begin, It payload_end, bool final) {
         It it_in = payload_begin;
@@ -56,9 +51,7 @@ public:
             tx_stream.avail_in = static_cast<uInt>(chunk_in.length());
             // for last fragment we either complete frame(Z_SYNC_FLUSH) or message(flush_policy())
             // otherwise no flush it perfromed
-            auto flush = (it_next == payload_end)
-                ? final ? flush_policy() : Z_SYNC_FLUSH
-                : Z_NO_FLUSH;
+            auto flush = (it_next == payload_end) ? Z_SYNC_FLUSH : Z_NO_FLUSH;
             auto avail_out = tx_stream.avail_out;
             do {
                 do {
@@ -79,10 +72,15 @@ public:
                         }
                     }
                     auto r = deflate(&tx_stream, flush);
+                    if (r < 0) {
+                        assert(0);
+                    }
+                    /*
                     if (r == Z_STREAM_ERROR) {
                         panda::string err = panda::string("zlib::deflate error ") + tx_stream.msg;
                         throw std::runtime_error(err);
                     }
+                    */
                 } while(tx_stream.avail_out == 0);
             } while(tx_stream.avail_in);
             auto tx_out = avail_out - tx_stream.avail_out;
@@ -105,8 +103,7 @@ public:
                 }
             }
             ++it_out;
-            // may be this will be non needed with Z_FULL_FLUSH ?
-            reset_tx();
+            if(reset_after_message) reset_tx();
         }
 
         return it_out;
@@ -120,7 +117,6 @@ private:
     z_stream rx_stream;
     z_stream tx_stream;
     bool reset_after_message;
-    Config _cfg;
 };
 
 }}}

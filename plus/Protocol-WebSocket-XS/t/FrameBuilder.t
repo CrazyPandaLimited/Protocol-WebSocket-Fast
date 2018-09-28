@@ -4,32 +4,6 @@ use lib 't'; use MyTest;
 use Encode::Base2N qw/encode_base64pad/;
 use Test::Fatal;
 
-*gen_frame = \&MyTest::gen_frame;
-
-{
-     no warnings 'redefine';
-     *MyTest::accept_packet = sub {
-         my @data = (
-             "GET /?encoding=text HTTP/1.1\r\n",
-             "Host: dev.crazypanda.ru:4680\r\n",
-             "Connection: Upgrade\r\n",
-             "Pragma: no-cache\r\n",
-             "Cache-Control: no-cache\r\n",
-             "Upgrade: websocket\r\n",
-             "Origin: http://www.websocket.org\r\n",
-             "Sec-WebSocket-Version: 13\r\n",
-             "User-Agent: Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36\r\n",
-             "Accept-Encoding: gzip, deflate, sdch\r\n",
-             "Accept-Language: ru-RU,ru;q=0.8,en-US;q=0.6,en;q=0.4\r\n",
-             "Cookie: _ga=GA1.2.1700804447.1456741171\r\n",
-             "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n",
-             "Sec-WebSocket-Extensions: permessage-deflate\r\n",
-             "\r\n",
-         );
-         return wantarray ? @data : join('', @data);
-    };
-};
-
 subtest 'settings' => sub {
     subtest "defaults" => sub {
         my $server = MyTest::get_established_server();
