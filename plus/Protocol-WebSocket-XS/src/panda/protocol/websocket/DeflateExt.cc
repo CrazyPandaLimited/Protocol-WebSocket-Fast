@@ -180,7 +180,7 @@ string& DeflateExt::compress(string& str, bool final) {
         auto r = deflate(&tx_stream, flush);
         if(r < 0 && r != Z_BUF_ERROR) {
             panda::string err = panda::string("zlib::deflate error ");
-            err += tx_stream.msg;
+            if (tx_stream.msg) err += tx_stream.msg;
             throw std::runtime_error(err);
         }
     } while(!tx_stream.avail_out);
@@ -234,8 +234,14 @@ bool DeflateExt::uncompress(Frame& frame) {
                 continue;
             }
             else if (r < 0) {
-                assert(0);
-            } else {
+                string err = "zlib::inflate error ";
+                if (rx_stream.msg) err += rx_stream.msg;
+                else err += to_string(r);
+                frame.error = err;
+                reset_rx();
+                return false;
+            }
+            else {
                 has_more_output = false;
             }
         } while(has_more_output);

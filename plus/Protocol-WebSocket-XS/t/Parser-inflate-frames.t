@@ -172,5 +172,33 @@ subtest '2 messages, 2 frames, server_context_takeover = false = client_context_
     is $m2->payload, $payload;
 };
 
+subtest 'corrupted frame' => sub {
+    my @payload = ('0') x (1923);
+    my $payload = join('', @payload);
+    my ($c, $s) = $create_pair->();
+    my $bin             = $s->start_message({final => 1})->send($payload);
+    my $deflate_payload = substr($bin, 2);
+    my $forged_bin      = substr($bin, 0, 2) . "xx" . substr($deflate_payload, 2);
+    my ($f) = $c->get_frames($forged_bin);
+    like $f->error, qr/zlib::inflate error/;
+};
+
+subtest 'corrupted 2nd frame from 3' => sub {
+    my @payload = ('0') x (1923);
+    my $payload = join('', @payload, @payload, @payload);
+    my ($c, $s) = $create_pair->();
+    my $builder = $s->start_message;
+    my $bin_1   = $builder->send_av(\@payload);
+    my $bin_2   = $builder->send_av(\@payload);
+    my $bin_3   = $builder->final(1)->send_av(\@payload);
+
+    my $bin_2_payload = substr($bin_2, 2);
+    my $bin_2_forged  = substr($bin_2, 0, 2) . substr($bin_2_payload, 0, 2) . 'xx' . substr($bin_2_payload, 4);
+    #$bin_2_forged = $bin_2;
+    my ($m) = $c->get_messages($bin_1 . $bin_2_forged . $bin_3);
+    ok $m;
+    like $m->error, qr/zlib::inflate error/;
+};
+
 
 done_testing;
