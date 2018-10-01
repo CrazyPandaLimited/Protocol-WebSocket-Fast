@@ -194,10 +194,25 @@ subtest 'corrupted 2nd frame from 3' => sub {
 
     my $bin_2_payload = substr($bin_2, 2);
     my $bin_2_forged  = substr($bin_2, 0, 2) . substr($bin_2_payload, 0, 2) . 'xx' . substr($bin_2_payload, 4);
-    #$bin_2_forged = $bin_2;
     my ($m) = $c->get_messages($bin_1 . $bin_2_forged . $bin_3);
     ok $m;
     like $m->error, qr/zlib::inflate error/;
+};
+
+subtest "compression threshold" => sub {
+    my ($c, $s) = $create_pair->(sub {
+        my ($c, $s) = @_;
+        $s->use_deflate({ compression_threshold => 5 });
+    });
+    my $payload_1 = "1234";
+    my $bin_1 = $s->send_message({payload => $payload_1});
+    note $bin_1;
+    is( substr($bin_1, 2), $payload_1);
+
+    my $payload_2 = "12345";
+    my $bin_2 = $s->send_message({payload => $payload_2});
+    note $bin_2;
+    isnt( substr($bin_2, 2), $payload_2);
 };
 
 

@@ -205,6 +205,7 @@ private:
 
     FrameHeader _prepare_frame_header (bool final, bool deflate, Opcode opcode);
     friend class FrameBuilder;
+    friend class MessageBuilder;
 
 };
 
@@ -225,12 +226,14 @@ public:
     bool deflate() const noexcept { return _deflate;}
 
     StringPair send(string& payload) {
-        return _parser.start_message().final(true).opcode(_opcode).deflate(_deflate).send(payload);
+        bool apply_deflate = maybe_deflate(payload.length());
+        return _parser.start_message().final(true).opcode(_opcode).deflate(apply_deflate).send(payload);
     }
 
     template <class It, typename = typename std::enable_if<std::is_same<typename It::value_type, string>::value>::type>
     StringChain<It> send(It payload_begin, It payload_end) {
-        return _parser.start_message().final(true).opcode(_opcode).deflate(_deflate).send(payload_begin, payload_end);
+        bool apply_deflate = maybe_deflate(std::distance(payload_begin, payload_end));
+        return _parser.start_message().final(true).opcode(_opcode).deflate(apply_deflate).send(payload_begin, payload_end);
     }
 
     template <class ContIt, typename = typename std::enable_if<std::is_same<decltype(*((*ContIt()).begin())), string&>::value>::type>
@@ -246,7 +249,7 @@ public:
         size_t cont_size = cont_end - cont_begin;
         auto fb = _parser.start_message();
         fb.opcode(_opcode);
-        fb.deflate(_deflate);
+        fb.deflate(maybe_deflate(sz));
         for (size_t i = 0; i < cont_size; ++i) {
             auto& range = cont_begin[i];
             auto frame_range = fb.final(i == cont_size - 1).send(range.begin(), range.end());
@@ -257,6 +260,10 @@ public:
     }
 
 private:
+    bool maybe_deflate(size_t payload_length) {
+        return _deflate && _parser._deflate_cfg && _parser._deflate_cfg->compression_threshold <= payload_length;
+    }
+
     MessageBuilder(Parser& parser):_parser{parser}{}
     Parser& _parser;
     bool _deflate = true;
