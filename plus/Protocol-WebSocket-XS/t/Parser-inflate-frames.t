@@ -215,5 +215,15 @@ subtest "compression threshold" => sub {
     isnt( substr($bin_2, 2), $payload_2);
 };
 
+subtest "no_deflate" => sub {
+    my ($c, $s) = $create_pair->();
+    $s->no_deflate;
+    my $payload = "1234";
+
+    my $bin = $s->send_message({payload => $payload});
+    note $bin;
+    is( substr($bin, 2), $payload);
+};
+
 
 done_testing;

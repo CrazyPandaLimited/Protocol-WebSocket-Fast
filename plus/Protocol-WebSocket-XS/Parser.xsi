@@ -1,14 +1,13 @@
 MODULE = Protocol::WebSocket::XS                PACKAGE = Protocol::WebSocket::XS::Parser
 PROTOTYPES: DISABLE
 
-size_t Parser::max_frame_size (SV* newval = NULL) {
-    if (newval) THIS->max_frame_size = SvUV(newval);
-    RETVAL = THIS->max_frame_size;
-}
-
-size_t Parser::max_message_size (SV* newval = NULL) {
-    if (newval) THIS->max_message_size = SvUV(newval);
-    RETVAL = THIS->max_message_size;
+void Parser::configure(Hash settings) {
+    Parser::Config cfg;
+    Scalar val;
+    if ((val = settings.fetch("max_frame_size")))     cfg.max_frame_size     = Simple(val);
+    if ((val = settings.fetch("max_message_size")))   cfg.max_message_size   = Simple(val);
+    if ((val = settings.fetch("max_handshake_size"))) cfg.max_handshake_size = Simple(val);
+    THIS->configure(cfg);
 }
 
 bool Parser::established ()
@@ -133,6 +132,7 @@ void Parser::use_deflate(Hash settings = Hash()) {
     THIS->use_deflate(cfg);
 }
 
+void Parser::no_deflate()
 
 int Parser::test_parse_frame (string buf) {
     int cnt = 0;

@@ -48,12 +48,10 @@ subtest 'close' => sub {
 };
 
 subtest 'max message size' => sub {
-    $p->max_frame_size(2000);
-    $p->max_message_size(1000);
+    $p->configure({max_frame_size => 2000, max_message_size => 1000});
     subtest 'allowed' => \&test_message, {opcode => OPCODE_TEXT, mask => 1, fin => 1, data => ("1" x 1000)};
     subtest 'exceeds' => \&test_message, {opcode => OPCODE_TEXT, mask => 1, fin => 1, data => ("1" x 1001)}, "max message size exceeded";
-    $p->max_frame_size(0);
-    $p->max_message_size(0);
+    $p->configure({max_frame_size => 0, max_message_size => 0});
 };
 
 subtest '2 messages via it->next' => sub {

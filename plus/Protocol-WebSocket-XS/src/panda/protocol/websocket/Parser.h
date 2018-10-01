@@ -69,8 +69,12 @@ public:
     typedef MessageIterator::MessageIteratorPair MessageIteratorPair;
     typedef MessageIterator::FrameIteratorPair   FrameIteratorPair;
 
-    size_t max_frame_size;
-    size_t max_message_size;
+    struct Config {
+        Config():max_frame_size{0}, max_message_size{0}, max_handshake_size{0} {}
+        size_t max_frame_size;
+        size_t max_message_size;
+        size_t max_handshake_size;
+    };
 
     bool established () const { return _state[STATE_ESTABLISHED]; }
     bool recv_closed () const { return _state[STATE_RECV_CLOSED]; }
@@ -119,7 +123,14 @@ public:
         return send_control(Opcode::CLOSE, frpld);
     }
 
+    void configure(const Config& cfg) {
+        max_frame_size      = cfg.max_frame_size;
+        max_message_size    = cfg.max_message_size;
+        max_handshake_size  = cfg.max_handshake_size;
+    }
+
     void use_deflate (const DeflateExt::Config& conf) { _deflate_cfg = conf; }
+    void no_deflate() { _deflate_cfg = panda::optional<DeflateExt::Config>(); }
 
 
     virtual void reset ();
@@ -138,13 +149,18 @@ protected:
     static const int STATE_SEND_CLOSED  = 7;
     static const int STATE_LAST         = STATE_SEND_CLOSED;
 
+    size_t max_frame_size;
+    size_t max_message_size;
+    size_t max_handshake_size;
+
     std::bitset<32> _state;
     string          _buffer;
     std::unique_ptr<DeflateExt> _deflate_ext;
 
-    Parser (bool recv_mask_required) :
-        max_frame_size(0),
-        max_message_size(0),
+    Parser (bool recv_mask_required, Config cfg = Config()) :
+        max_frame_size{cfg.max_frame_size},
+        max_message_size{cfg.max_message_size},
+        max_handshake_size{cfg.max_handshake_size},
         _state(0),
         _recv_mask_required(recv_mask_required),
         _frame_count(0),

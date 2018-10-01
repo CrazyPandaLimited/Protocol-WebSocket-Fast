@@ -15,10 +15,10 @@ subtest 'big frame'    => \&test_frame, {opcode => OPCODE_TEXT,   mask => 1, fin
 subtest 'empty frame'  => \&test_frame, {opcode => OPCODE_TEXT,   mask => 1, fin => 1};
 
 subtest 'max frame size' => sub {
-    $p->max_frame_size(1000);
+    $p->configure({max_frame_size => 1000});
     subtest 'allowed' => \&test_frame, {opcode => OPCODE_TEXT, mask => 1, fin => 1, data => ("1" x 1000)};
     subtest 'exceeds' => \&test_frame, {opcode => OPCODE_TEXT, mask => 1, fin => 1, data => ("1" x 1001)}, "max frame size exceeded";
-    $p->max_frame_size(0);
+    $p->configure({max_frame_size => 0});
 };
 
 subtest 'ping' => sub {
