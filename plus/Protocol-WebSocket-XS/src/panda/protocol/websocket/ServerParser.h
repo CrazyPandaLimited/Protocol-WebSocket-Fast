@@ -10,8 +10,7 @@ namespace panda { namespace protocol { namespace websocket {
 
 using panda::string;
 
-class ServerParser : public Parser {
-public:
+struct ServerParser : Parser {
     ServerParser () : Parser(true) {}
 
     bool accept_parsed () const { return _state[STATE_ACCEPT_PARSED]; }

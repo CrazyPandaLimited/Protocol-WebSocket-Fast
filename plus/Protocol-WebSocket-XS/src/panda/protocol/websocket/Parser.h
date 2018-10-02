@@ -19,14 +19,13 @@ using panda::IteratorPair;
 
 class MessageBuilder;
 
-class Parser : public virtual panda::Refcnt {
+struct Parser : virtual panda::Refcnt {
 public:
-    class MessageIterator : public std::iterator<std::input_iterator_tag, MessageSP> {
+    struct MessageIterator : std::iterator<std::input_iterator_tag, MessageSP> {
     public:
         typedef IteratorPair<MessageIterator> MessageIteratorPair;
 
-        class FrameIterator : public std::iterator<std::input_iterator_tag, FrameSP> {
-        public:
+        struct FrameIterator : std::iterator<std::input_iterator_tag, FrameSP> {
             FrameIterator (Parser* parser, const FrameSP& start_frame) : parser(parser), cur(start_frame) {}
             FrameIterator (const FrameIterator& oth)                   : parser(oth.parser), cur(oth.cur) {}
 

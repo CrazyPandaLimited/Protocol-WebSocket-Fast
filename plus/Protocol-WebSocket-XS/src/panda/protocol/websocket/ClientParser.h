@@ -8,8 +8,8 @@ namespace panda { namespace protocol { namespace websocket {
 
 using panda::string;
 
-class ClientParser : public Parser {
-public:
+struct ClientParser : Parser {
+
     ClientParser () : Parser(false) {}
 
     string connect_request (ConnectRequestSP& req);
