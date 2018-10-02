@@ -49,6 +49,7 @@ ConnectResponseSP ClientParser::connect (string& buf) {
             if (deflate_matches) {
                 _deflate_ext.reset(DeflateExt::uplift(*deflate_matches, used_extensions, role));
             }
+            _connect_response->ws_extensions(used_extensions);
         }
     }
 

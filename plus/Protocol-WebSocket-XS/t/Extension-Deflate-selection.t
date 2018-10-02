@@ -10,25 +10,25 @@ my $req = {
 subtest "permessage-deflate extension in request" => sub {
     subtest "no deflate enabled => no extension" => sub {
         my $client = Protocol::WebSocket::XS::ClientParser->new;
+        $client->no_deflate;
         my $str = $client->connect_request($req);
         unlike $str, qr/permessage-deflate/;
     };
 
     subtest "deflate enabled => extension is present" => sub {
         my $client = Protocol::WebSocket::XS::ClientParser->new;
-        $client->use_deflate;
         my $str = $client->connect_request($req);
         like $str, qr/permessage-deflate/;
     };
 
     subtest "deflate enabled(custom params) => extension is present" => sub {
         my $client = Protocol::WebSocket::XS::ClientParser->new;
-        $client->use_deflate({
+        $client->configure({deflate => {
             client_no_context_takeover => 1,
             server_no_context_takeover => 1,
             server_max_window_bits     => 13,
             client_max_window_bits     => 14,
-        });
+        }});
         my $str = $client->connect_request($req);
         like $str, qr/permessage-deflate/;
         like $str, qr/client_no_context_takeover/;
@@ -42,6 +42,7 @@ subtest "permessage-deflate extension in server reply" => sub {
 
     subtest "no deflate enabled => no extension" => sub {
         my $client = Protocol::WebSocket::XS::ClientParser->new;
+        $client->no_deflate;
         my $str = $client->connect_request($req);
         my $server = Protocol::WebSocket::XS::ServerParser->new;
         my $creq = $server->accept($str) or die "should not happen";
@@ -51,9 +52,9 @@ subtest "permessage-deflate extension in server reply" => sub {
 
     subtest "client deflate: on, server deflate: off => extension: off" => sub {
         my $client = Protocol::WebSocket::XS::ClientParser->new;
-        $client->use_deflate;
         my $str = $client->connect_request($req);
         my $server = Protocol::WebSocket::XS::ServerParser->new;
+        $server->no_deflate;
         my $creq = $server->accept($str) or die "should not happen";
         my $res_str = $creq->error ? $server->accept_error : $server->accept_response;
         like $str, qr/permessage-deflate/;
@@ -64,10 +65,7 @@ subtest "permessage-deflate extension in server reply" => sub {
 
     subtest "client deflate: on, server deflate: on => extension: on" => sub {
         my $client = Protocol::WebSocket::XS::ClientParser->new;
-        $client->use_deflate;
-
         my $server = Protocol::WebSocket::XS::ServerParser->new;
-        $server->use_deflate;
 
         my $str = $client->connect_request($req);
         my $creq = $server->accept($str) or die "should not happen";
@@ -83,10 +81,7 @@ subtest "permessage-deflate extension in server reply" => sub {
 
     subtest "client deflate: on (empty client_max_window_bits), server deflate: on => extension: on" => sub {
         my $client = Protocol::WebSocket::XS::ClientParser->new;
-        $client->use_deflate;
-
         my $server = Protocol::WebSocket::XS::ServerParser->new;
-        $server->use_deflate;
 
         my $str = $client->connect_request($req);
         $str =~ s/(client_max_window_bits)=15/$1/;
@@ -102,14 +97,13 @@ subtest "permessage-deflate extension in server reply" => sub {
         ok $client->is_deflate_active;
     };
 
-    subtest "client deflate: on (wrong params), server deflate: off => extension: off" => sub {
+    subtest "client deflate: on (wrong params), server deflate: on => extension: off" => sub {
 
         subtest "too small window" => sub {
             my $server = Protocol::WebSocket::XS::ServerParser->new;
-            $server->use_deflate;
 
             my $client = Protocol::WebSocket::XS::ClientParser->new;
-            $client->use_deflate({ client_max_window_bits => 3});
+            $client->configure({ deflate => { client_max_window_bits => 3}});
 
             my $str = $client->connect_request($req);
             my $creq = $server->accept($str) or die "should not happen";
@@ -125,10 +119,8 @@ subtest "permessage-deflate extension in server reply" => sub {
 
         subtest "too big window" => sub {
             my $server = Protocol::WebSocket::XS::ServerParser->new;
-            $server->use_deflate;
-
             my $client = Protocol::WebSocket::XS::ClientParser->new;
-            $client->use_deflate({ client_max_window_bits => 30});
+            $client->configure({deflate => { client_max_window_bits => 30}});
 
             my $str = $client->connect_request($req);
             my $creq = $server->accept($str) or die "should not happen";
@@ -151,10 +143,9 @@ subtest "permessage-deflate extension in server reply" => sub {
 
 
             my $server = Protocol::WebSocket::XS::ServerParser->new;
-            $server->use_deflate;
 
             my $client = Protocol::WebSocket::XS::ClientParser->new;
-            # $client->use_deflate(); - manually set up bu client
+            $client->no_deflate;    # manually set up by client in request
 
             my $str = $client->connect_request($req);
             my $creq = $server->accept($str) or die "should not happen";
@@ -176,10 +167,9 @@ subtest "permessage-deflate extension in server reply" => sub {
             };
 
             my $server = Protocol::WebSocket::XS::ServerParser->new;
-            $server->use_deflate;
 
             my $client = Protocol::WebSocket::XS::ClientParser->new;
-            # $client->use_deflate(); - manually set up by client
+            $client->no_deflate;    # manually set up by client in request
 
             my $str = $client->connect_request($req);
             my $creq = $server->accept($str) or die "should not happen";
@@ -198,7 +188,6 @@ subtest "permessage-deflate extension in server reply" => sub {
     subtest "client deflate: on, server deflate: on (wrong params) => extension: off" => sub {
         subtest "offected other windows size" => sub {
             my $client = Protocol::WebSocket::XS::ClientParser->new;
-            $client->use_deflate();
 
             my $str = $client->connect_request($req);
             my $res_str =<<END;
@@ -217,7 +206,6 @@ END
 
         subtest "offected garbage windows size" => sub {
             my $client = Protocol::WebSocket::XS::ClientParser->new;
-            $client->use_deflate();
 
             my $str = $client->connect_request($req);
             my $res_str =<<END;
@@ -236,7 +224,6 @@ END
 
         subtest "offected garbage extension parameter" => sub {
             my $client = Protocol::WebSocket::XS::ClientParser->new;
-            $client->use_deflate();
 
             my $str = $client->connect_request($req);
             my $res_str =<<END;

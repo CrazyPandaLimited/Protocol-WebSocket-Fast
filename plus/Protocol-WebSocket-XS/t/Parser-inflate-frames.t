@@ -11,11 +11,8 @@ my $create_pair = sub {
 
     local $Test::Builder::Level = $Test::Builder::Level + 1;
     my $client = Protocol::WebSocket::XS::ClientParser->new;
-    #$client->use_deflate({server_no_context_takeover => 1});
-    $client->use_deflate;
-
     my $server = Protocol::WebSocket::XS::ServerParser->new;
-    $server->use_deflate;
+
     $configure->($client, $server) if $configure;
 
     my $str = $client->connect_request($req);
@@ -117,7 +114,7 @@ subtest '2 messages, 2 frames, server_context_takeover = false, medium payload' 
     my $payload = join('', @payload);
     my ($c, $s) = $create_pair->(sub {
         my ($c, $s) = @_;
-        $c->use_deflate({server_no_context_takeover => 1});
+        $c->configure({deflate => {server_no_context_takeover => 1}});
     });
     my $bin1 = $s->start_message->final(1)->send_av(\@payload);
     my $bin2 = $s->start_message->final(1)->send_av(\@payload);
@@ -135,7 +132,7 @@ subtest '2 messages, 2 frames, client_context_takeover = false, medium payload' 
     my $payload = join('', @payload);
     my ($c, $s) = $create_pair->(sub {
         my ($c, $s) = @_;
-        $c->use_deflate({client_no_context_takeover => 1});
+        $c->configure({deflate => {client_no_context_takeover => 1}});
     });
     my $bin1 = $c->start_message->final(1)->send_av(\@payload);
     my $bin2 = $c->start_message->final(1)->send_av(\@payload);
@@ -153,13 +150,13 @@ subtest '2 messages, 2 frames, server_context_takeover = false = client_context_
     my $payload = join('', @payload);
     my ($c, $s) = $create_pair->(sub {
         my ($c, $s) = @_;
-        $c->use_deflate({
+        $c->configure({deflate => {
             client_no_context_takeover => 1,
             server_no_context_takeover => 1,
             client_max_window_bits     => 10,
             server_max_window_bits     => 11,
             compression_level          => 1,
-        });
+        }});
     });
     my $bin1 = $c->start_message->final(1)->send_av(\@payload);
     my $bin2 = $c->start_message->final(1)->send_av(\@payload);
@@ -202,7 +199,7 @@ subtest 'corrupted 2nd frame from 3' => sub {
 subtest "compression threshold" => sub {
     my ($c, $s) = $create_pair->(sub {
         my ($c, $s) = @_;
-        $s->use_deflate({ compression_threshold => 5 });
+        $s->configure({deflate => { compression_threshold => 5 }});
     });
     my $payload_1 = "1234";
     my $bin_1 = $s->send_message({payload => $payload_1});

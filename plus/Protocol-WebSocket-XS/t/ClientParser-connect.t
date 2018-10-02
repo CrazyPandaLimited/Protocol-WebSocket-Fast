@@ -13,14 +13,14 @@ subtest 'simple connect' => sub {
         message       => 'Switching Protocols',
         ws_accept_key => 's3pPLMBiTxaQ9kYGzzhZRbK+xOo=',
         ws_protocol   => 'killme',
-        #ws_extensions => [ [ 'permessage-deflate', { 'client_max_window_bits' => '' } ] ], # TODO: commented out for now as parser does not support these extensions for now
+        ws_extensions => [ [ 'permessage-deflate', , { 'client_max_window_bits' => '' } ] ],
         headers       => {
             'connection'               => 'Upgrade',
             'upgrade'                  => 'websocket',
             'sec-websocket-accept'     => 's3pPLMBiTxaQ9kYGzzhZRbK+xOo=',
             'sec-websocket-protocol'   => 'killme',
             'server'                   => ignore(),
-            #'sec-websocket-extensions' => 'permessage-deflate; client_max_window_bits', # TODO: commented out for now as parser does not support these extensions for now
+            'sec-websocket-extensions' => 'permessage-deflate; client_max_window_bits',
         },
     });
 };
@@ -95,7 +95,8 @@ subtest 'frame just after handshake is reachable' => sub {
 
 sub test_connect {
     my ($req, $check) = @_;
-    
+    local $Test::Builder::Level = $Test::Builder::Level + 1;
+
     subtest 'whole data' => sub {
         my $p = new Protocol::WebSocket::XS::ClientParser;
         my $str = $p->connect_request($req);
@@ -106,7 +107,6 @@ sub test_connect {
         cmp_deeply($cres, methods(%$check), "response ok");
         $cres->error ? ok(!$p->established, "not established on error") : ok($p->established, "established");
     };
-    
     subtest 'chunks' => sub {
         my $p = new Protocol::WebSocket::XS::ClientParser;
         my $str = $p->connect_request($req);

@@ -70,10 +70,11 @@ public:
     typedef MessageIterator::FrameIteratorPair   FrameIteratorPair;
 
     struct Config {
-        Config():max_frame_size{0}, max_message_size{0}, max_handshake_size{0} {}
+        Config():max_frame_size{0}, max_message_size{0}, max_handshake_size{0}, deflate_config{} {}
         size_t max_frame_size;
         size_t max_message_size;
         size_t max_handshake_size;
+        DeflateExt::Config deflate_config;
     };
 
     bool established () const { return _state[STATE_ESTABLISHED]; }
@@ -127,9 +128,9 @@ public:
         max_frame_size      = cfg.max_frame_size;
         max_message_size    = cfg.max_message_size;
         max_handshake_size  = cfg.max_handshake_size;
+        _deflate_cfg        = cfg.deflate_config;
     }
 
-    void use_deflate (const DeflateExt::Config& conf) { _deflate_cfg = conf; }
     void no_deflate() { _deflate_cfg = panda::optional<DeflateExt::Config>(); }
 
 
@@ -162,6 +163,7 @@ protected:
         max_message_size{cfg.max_message_size},
         max_handshake_size{cfg.max_handshake_size},
         _state(0),
+        _deflate_cfg{cfg.deflate_config},
         _recv_mask_required(recv_mask_required),
         _frame_count(0),
         _message_frame(_recv_mask_required, max_frame_size),
