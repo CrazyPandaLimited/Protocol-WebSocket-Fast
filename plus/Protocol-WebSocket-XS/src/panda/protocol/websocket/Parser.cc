@@ -28,7 +28,7 @@ FrameSP Parser::_get_frame () {
     if (!_buffer) return NULL;
 
     _state.set(STATE_RECV_FRAME);
-    if (!_frame) _frame = new Frame(_recv_mask_required, max_frame_size);
+    if (!_frame) _frame = new Frame(_recv_mask_required, _max_frame_size);
 
     if (!_frame->parse(_buffer)) {
         _buffer.clear();
@@ -68,7 +68,7 @@ MessageSP Parser::_get_message () {
     if (!_buffer) return NULL;
 
     _state.set(STATE_RECV_MESSAGE);
-    if (!_message) _message = new Message(max_message_size);
+    if (!_message) _message = new Message(_max_message_size);
 
     while (1) {
         if (!_message_frame.parse(_buffer)) {
@@ -84,7 +84,7 @@ MessageSP Parser::_get_message () {
                 _state.set(STATE_RECV_CLOSED);
             }
             if (_message->frame_count) {
-                auto cntl_msg = new Message(max_message_size);
+                auto cntl_msg = new Message(_max_message_size);
                 bool done = cntl_msg->add_frame(_message_frame);
                 assert(done);
                 _message_frame.reset();

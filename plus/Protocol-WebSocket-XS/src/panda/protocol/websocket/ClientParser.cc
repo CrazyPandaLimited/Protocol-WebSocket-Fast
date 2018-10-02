@@ -29,7 +29,7 @@ ConnectResponseSP ClientParser::connect (string& buf) {
 
     if (!_connect_response) {
         _connect_response = new ConnectResponse();
-        _connect_response->max_headers_size = max_handshake_size;
+        _connect_response->max_headers_size = _max_handshake_size;
         _connect_response->_ws_key = _connect_request->ws_key;
     }
 

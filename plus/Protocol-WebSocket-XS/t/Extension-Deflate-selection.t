@@ -244,4 +244,32 @@ END
 
 };
 
+
+subtest "configuration getters" => sub {
+    my $client = Protocol::WebSocket::XS::ClientParser->new;
+    my $deflate_cfg = {
+        client_no_context_takeover => 1,
+        server_no_context_takeover => 1,
+        server_max_window_bits     => 13,
+        client_max_window_bits     => 14,
+        mem_level                  => 3,
+        compression_level          => 2,
+        strategy                   => 1,
+        compression_threshold      => 1000,
+    };
+    $client->configure({
+        max_frame_size     => 7,
+        max_message_size   => 8,
+        max_handshake_size => 9,
+        deflate =>         => $deflate_cfg,
+    });
+    is $client->max_frame_size, 7;
+    is $client->max_message_size, 8;
+    is $client->max_handshake_size, 9;
+    is_deeply $client->deflate_config, $deflate_cfg;
+
+    $client->no_deflate;
+    is $client->deflate_config, undef;
+};
+
 done_testing;

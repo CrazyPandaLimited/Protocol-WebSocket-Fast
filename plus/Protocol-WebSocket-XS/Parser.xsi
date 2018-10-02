@@ -23,6 +23,30 @@ void Parser::configure(Hash settings) {
     THIS->configure(cfg);
 }
 
+size_t Parser::max_frame_size()
+
+size_t Parser::max_message_size()
+
+size_t Parser::max_handshake_size()
+
+Scalar Parser::deflate_config() {
+    auto deflate_cfg = THIS->deflate_config();
+    if (deflate_cfg) {
+        Hash settings = Hash::create();
+        settings.store("server_max_window_bits",     Simple(deflate_cfg->server_max_window_bits));
+        settings.store("client_max_window_bits",     Simple(deflate_cfg->client_max_window_bits));
+        settings.store("client_no_context_takeover", Simple(deflate_cfg->client_no_context_takeover));
+        settings.store("server_no_context_takeover", Simple(deflate_cfg->server_no_context_takeover));
+        settings.store("mem_level",                  Simple(deflate_cfg->mem_level));
+        settings.store("compression_level",          Simple(deflate_cfg->compression_level));
+        settings.store("strategy",                   Simple(deflate_cfg->strategy));
+        settings.store("compression_threshold",      Simple(deflate_cfg->compression_threshold));
+
+        RETVAL = Ref::create(settings);
+    }
+    else XSRETURN_UNDEF;
+}
+
 bool Parser::established ()
 
 bool Parser::recv_closed ()

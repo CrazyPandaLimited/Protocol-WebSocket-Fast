@@ -9,7 +9,7 @@ ConnectRequestSP ServerParser::accept (string& buf) {
 
     if (!_connect_request) {
         _connect_request = new ConnectRequest();
-        _connect_request->max_headers_size = max_handshake_size;
+        _connect_request->max_headers_size = _max_handshake_size;
     }
 
     if (!_connect_request->parse(buf)) return NULL;

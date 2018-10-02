@@ -68,6 +68,7 @@ public:
     typedef MessageIterator::FrameIterator       FrameIterator;
     typedef MessageIterator::MessageIteratorPair MessageIteratorPair;
     typedef MessageIterator::FrameIteratorPair   FrameIteratorPair;
+    typedef panda::optional<DeflateExt::Config>  DeflateConfigOption;
 
     struct Config {
         Config():max_frame_size{0}, max_message_size{0}, max_handshake_size{0}, deflate_config{} {}
@@ -125,14 +126,21 @@ public:
     }
 
     void configure(const Config& cfg) {
-        max_frame_size      = cfg.max_frame_size;
-        max_message_size    = cfg.max_message_size;
-        max_handshake_size  = cfg.max_handshake_size;
-        _deflate_cfg        = cfg.deflate_config;
+        _max_frame_size     = cfg.max_frame_size;
+        _max_message_size   = cfg.max_message_size;
+        _max_handshake_size = cfg.max_handshake_size;
+
+        if (!_state[STATE_ESTABLISHED]) _deflate_cfg = cfg.deflate_config;
     }
 
-    void no_deflate() { _deflate_cfg = panda::optional<DeflateExt::Config>(); }
+    size_t max_frame_size()     const { return  _max_frame_size; }
+    size_t max_message_size()   const { return  _max_message_size; }
+    size_t max_handshake_size() const { return  _max_handshake_size; }
 
+    const DeflateConfigOption& deflate_config() const { return _deflate_cfg; }
+    void no_deflate() {
+        if (!_state[STATE_ESTABLISHED]) _deflate_cfg = DeflateConfigOption();
+    }
 
     virtual void reset ();
 
@@ -150,27 +158,27 @@ protected:
     static const int STATE_SEND_CLOSED  = 7;
     static const int STATE_LAST         = STATE_SEND_CLOSED;
 
-    size_t max_frame_size;
-    size_t max_message_size;
-    size_t max_handshake_size;
+    size_t _max_frame_size;
+    size_t _max_message_size;
+    size_t _max_handshake_size;
 
     std::bitset<32> _state;
     string          _buffer;
     std::unique_ptr<DeflateExt> _deflate_ext;
 
     Parser (bool recv_mask_required, Config cfg = Config()) :
-        max_frame_size{cfg.max_frame_size},
-        max_message_size{cfg.max_message_size},
-        max_handshake_size{cfg.max_handshake_size},
+        _max_frame_size{cfg.max_frame_size},
+        _max_message_size{cfg.max_message_size},
+        _max_handshake_size{cfg.max_handshake_size},
         _state(0),
         _deflate_cfg{cfg.deflate_config},
         _recv_mask_required(recv_mask_required),
         _frame_count(0),
-        _message_frame(_recv_mask_required, max_frame_size),
+        _message_frame(_recv_mask_required, _max_frame_size),
         _sent_frame_count(0)
     {}
 
-    panda::optional<DeflateExt::Config> _deflate_cfg;
+    DeflateConfigOption _deflate_cfg;
 
 private:
     string send_control_frame (Opcode opcode = Opcode::BINARY) {
@@ -240,8 +248,11 @@ public:
     Opcode opcode() const noexcept;
     MessageBuilder& opcode(Opcode value) noexcept { _opcode = value; return *this; }
 
-    MessageBuilder& deflate(bool value) noexcept { _deflate = value; return *this; }
-    bool deflate() const noexcept { return _deflate;}
+    MessageBuilder& deflate(bool value) noexcept {
+        _deflate = value ? apply_deflate_t::YES : apply_deflate_t::NO;
+        return *this;
+    }
+    bool deflate() const noexcept { return _deflate == apply_deflate_t::YES; }
 
     StringPair send(string& payload) {
         bool apply_deflate = maybe_deflate(payload.length());
@@ -278,13 +289,21 @@ public:
     }
 
 private:
+    enum class apply_deflate_t { YES, NO, BY_THRESHOLD };
+
     bool maybe_deflate(size_t payload_length) {
-        return _deflate && _parser._deflate_cfg && _parser._deflate_cfg->compression_threshold <= payload_length;
+        bool r = false;
+        switch (_deflate) {
+        case apply_deflate_t::NO:  r = false; break;
+        case apply_deflate_t::YES: r = true; break;
+        case apply_deflate_t::BY_THRESHOLD: r = _parser._deflate_cfg && _parser._deflate_cfg->compression_threshold <= payload_length; break;
+        }
+        return r;
     }
 
     MessageBuilder(Parser& parser):_parser{parser}{}
     Parser& _parser;
-    bool _deflate = true;
+    apply_deflate_t _deflate = apply_deflate_t::BY_THRESHOLD;
     Opcode _opcode = Opcode::BINARY;
     friend class Parser;
 };

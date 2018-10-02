@@ -18,13 +18,15 @@ my $create_pair = sub {
     my $str = $client->connect_request($req);
     my $creq = $server->accept($str) or die "should not happen";
     my $res_str = $creq->error ? $server->accept_error : $server->accept_response;
-    like $str, qr/permessage-deflate/;
-    like $res_str, qr/permessage-deflate/;
-    ok $server->is_deflate_active;
+
+    my $server_deflate = $client->deflate_config && $server->deflate_config;
+    like $str, qr/permessage-deflate/ if($client->deflate_config);
+    like $res_str, qr/permessage-deflate/ if($server->deflate_config);
+    ok $server->is_deflate_active if ($server_deflate);
 
     $client->connect($res_str);
     ok $client->established;
-    ok $client->is_deflate_active;
+    ok $client->is_deflate_active if ($server_deflate);
 
     return ($client, $server);
 };
@@ -213,8 +215,10 @@ subtest "compression threshold" => sub {
 };
 
 subtest "no_deflate" => sub {
-    my ($c, $s) = $create_pair->();
-    $s->no_deflate;
+    my ($c, $s) = $create_pair->(sub {
+        my ($c, $s) = @_;
+        $s->no_deflate;
+    });
     my $payload = "1234";
 
     my $bin = $s->send_message({payload => $payload});
