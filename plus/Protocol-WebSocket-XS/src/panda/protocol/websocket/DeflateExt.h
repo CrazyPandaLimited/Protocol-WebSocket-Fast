@@ -103,7 +103,6 @@ public:
             ++it_out;
             if(reset_after_tx) reset_tx();
         }
-
         return it_out;
     }
 

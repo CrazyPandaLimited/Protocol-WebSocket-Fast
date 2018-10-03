@@ -98,7 +98,8 @@ DeflateExt::DeflateExt(const DeflateExt::Config& cfg, Role role) {
     rx_stream.zfree = Z_NULL;
     rx_stream.opaque = Z_NULL;
 
-    auto r = inflateInit2(&rx_stream, rx_window);
+    // -1 is used as "raw deflate", i.e. do not emit header/trailers
+    auto r = inflateInit2(&rx_stream, -1 * rx_window);
     if (r != Z_OK) {
         panda::string err = panda::string("zlib::inflateInit2 error ") + rx_stream.msg;
         throw std::runtime_error(err);
@@ -110,7 +111,8 @@ DeflateExt::DeflateExt(const DeflateExt::Config& cfg, Role role) {
     tx_stream.zfree = Z_NULL;
     tx_stream.opaque = Z_NULL;
 
-    r = deflateInit2(&tx_stream, cfg.compression_level, Z_DEFLATED, tx_window, cfg.mem_level, cfg.strategy);
+    // -1 is used as "raw deflate", i.e. do not emit header/trailers
+    r = deflateInit2(&tx_stream, cfg.compression_level, Z_DEFLATED, -1 * tx_window , cfg.mem_level, cfg.strategy);
     if (r != Z_OK) {
         panda::string err = panda::string("zlib::deflateInit2 error ") +rx_stream.msg;
         throw std::runtime_error(err);
