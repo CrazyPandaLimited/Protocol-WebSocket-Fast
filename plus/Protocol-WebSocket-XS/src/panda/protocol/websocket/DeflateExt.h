@@ -90,14 +90,15 @@ public:
             size_t tail_left = 4;
             while(tail_left){
                 --it_out;
-                int delta = it_out->length() - tail_left;
+                string& chunk = *it_out;
+                int delta = chunk.length() - tail_left;
                 if (delta >= 0) {
-                    it_out->length(delta);
+                    chunk.length(delta);
                     tail_left = 0;
                 }
                 else {
-                    tail_left -= it_out->length();
-                    it_out->length(0);
+                    tail_left -= chunk.length();
+                    chunk.length(0);
                 }
             }
             ++it_out;
