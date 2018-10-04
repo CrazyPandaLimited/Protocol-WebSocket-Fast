@@ -8,8 +8,7 @@ namespace panda { namespace protocol { namespace websocket {
 
 using panda::string;
 
-class Message : public virtual panda::Refcnt {
-public:
+struct Message : virtual panda::Refcnt {
     string              error;
     std::vector<string> payload;
     uint32_t            frame_count;
