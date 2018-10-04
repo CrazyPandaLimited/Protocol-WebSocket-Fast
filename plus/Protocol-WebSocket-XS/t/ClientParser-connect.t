@@ -2,8 +2,36 @@ use 5.020;
 use warnings;
 use lib 't'; use MyTest;
 
+my $test_connect = sub {
+    my ($req, $check) = @_;
+    local $Test::Builder::Level = $Test::Builder::Level + 1;
+
+    subtest 'whole data' => sub {
+        my $p = new Protocol::WebSocket::XS::ClientParser;
+        my $str = $p->connect_request($req);
+        my $sp = new Protocol::WebSocket::XS::ServerParser;
+        my $creq = $sp->accept($str) or die "should not happen";
+        my $res_str = $creq->error ? $sp->accept_error : $sp->accept_response;
+        my $cres = $p->connect($res_str);
+        cmp_deeply($cres, methods(%$check), "response ok");
+        $cres->error ? ok(!$p->established, "not established on error") : ok($p->established, "established");
+    };
+    subtest 'chunks' => sub {
+        my $p = new Protocol::WebSocket::XS::ClientParser;
+        my $str = $p->connect_request($req);
+        my $sp = new Protocol::WebSocket::XS::ServerParser;
+        my $creq = $sp->accept($str) or die "should not happen";
+        my $res_str = $creq->error ? $sp->accept_error : $sp->accept_response;
+        my $cres;
+        while (length($res_str) && !$cres) { $cres = $p->connect(substr($res_str, 0, 5, '')) }
+        is(length($res_str), 0, "all chunks used");
+        cmp_deeply($cres, methods(%$check), "response ok");
+        $cres->error ? ok(!$p->established, "not established on error") : ok($p->established, "established");
+    };
+};
+
 subtest 'simple connect' => sub {
-    test_connect({
+    $test_connect->({
         uri           => "ws://crazypanda.ru",
         ws_key        => "dGhlIHNhbXBsZSBub25jZQ==",
         ws_protocol   => "killme",
@@ -37,7 +65,7 @@ subtest 'wrong accept key' => sub {
 };
 
 subtest 'version upgrade required' => sub {
-    test_connect({
+    $test_connect->({
         uri => "ws://a.ru",
         ws_version => 14
     }, {
@@ -92,33 +120,5 @@ subtest 'frame just after handshake is reachable' => sub {
     my ($msg) = $p->get_messages;
     cmp_deeply($msg, methods(payload => "hello!!"));
 };
-
-sub test_connect {
-    my ($req, $check) = @_;
-    local $Test::Builder::Level = $Test::Builder::Level + 1;
-
-    subtest 'whole data' => sub {
-        my $p = new Protocol::WebSocket::XS::ClientParser;
-        my $str = $p->connect_request($req);
-        my $sp = new Protocol::WebSocket::XS::ServerParser;
-        my $creq = $sp->accept($str) or die "should not happen";
-        my $res_str = $creq->error ? $sp->accept_error : $sp->accept_response;
-        my $cres = $p->connect($res_str);
-        cmp_deeply($cres, methods(%$check), "response ok");
-        $cres->error ? ok(!$p->established, "not established on error") : ok($p->established, "established");
-    };
-    subtest 'chunks' => sub {
-        my $p = new Protocol::WebSocket::XS::ClientParser;
-        my $str = $p->connect_request($req);
-        my $sp = new Protocol::WebSocket::XS::ServerParser;
-        my $creq = $sp->accept($str) or die "should not happen";
-        my $res_str = $creq->error ? $sp->accept_error : $sp->accept_response;
-        my $cres;
-        while (length($res_str) && !$cres) { $cres = $p->connect(substr($res_str, 0, 5, '')) }
-        is(length($res_str), 0, "all chunks used");
-        cmp_deeply($cres, methods(%$check), "response ok");
-        $cres->error ? ok(!$p->established, "not established on error") : ok($p->established, "established");
-    };
-}
 
 done_testing();

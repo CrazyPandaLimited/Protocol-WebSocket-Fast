@@ -19,7 +19,7 @@ sub import {
     my $caller = caller();
     foreach my $sym_name (qw/
         plan is is_deeply cmp_deeply ok done_testing skip isnt pass fail cmp_ok like isa_ok unlike ignore code all any noneof methods subtest dies_ok note
-        Dumper
+        Dumper is_bin
         OPCODE_CONTINUE OPCODE_TEXT OPCODE_BINARY OPCODE_CLOSE OPCODE_PING OPCODE_PONG
         CLOSE_DONE CLOSE_AWAY CLOSE_PROTOCOL_ERROR CLOSE_INVALID_DATA CLOSE_UNKNOWN CLOSE_ABNORMALLY CLOSE_INVALID_TEXT
         CLOSE_BAD_REQUEST CLOSE_MAX_SIZE CLOSE_EXTENSION_NEEDED CLOSE_INTERNAL_ERROR CLOSE_TLS
@@ -212,6 +212,14 @@ sub gen_message {
     }
     
     return wantarray ? @bin : join('', @bin);
+}
+
+
+sub is_bin {
+    my ($got, $expected, $name) = @_;
+    return if our $leak_test;
+    state $has_binary = eval { require Test::BinaryData; Test::BinaryData->import(); 1 };
+    $has_binary ? is_binary($got, $expected, $name) : is($got, $expected, $name);
 }
 
 1;

@@ -124,10 +124,3 @@ subtest 'control frames do not reset message state in frame mode' => sub {
 };
 
 done_testing();
-
-sub is_bin {
-    my ($got, $expected, $name) = @_;
-    return if our $leak_test;
-    state $has_binary = eval { require Test::BinaryData; Test::BinaryData->import(); 1 };
-    $has_binary ? is_binary($got, $expected, $name) : is($got, $expected, $name);
-}
