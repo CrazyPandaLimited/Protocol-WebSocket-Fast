@@ -288,21 +288,25 @@ public:
     }
 
 private:
-    enum class apply_deflate_t { YES, NO, BY_THRESHOLD };
+    enum class apply_deflate_t { YES, NO, TEXT_BY_THRESHOLD };
 
     bool maybe_deflate(size_t payload_length) {
         bool r = false;
         switch (_deflate) {
         case apply_deflate_t::NO:  r = false; break;
         case apply_deflate_t::YES: r = true; break;
-        case apply_deflate_t::BY_THRESHOLD: r = _parser._deflate_cfg && _parser._deflate_cfg->compression_threshold <= payload_length; break;
+        case apply_deflate_t::TEXT_BY_THRESHOLD: r
+                =  _opcode == Opcode::TEXT
+                && _parser._deflate_cfg
+                && _parser._deflate_cfg->compression_threshold <= payload_length;
+            break;
         }
         return r;
     }
 
     MessageBuilder(Parser& parser):_parser{parser}{}
     Parser& _parser;
-    apply_deflate_t _deflate = apply_deflate_t::BY_THRESHOLD;
+    apply_deflate_t _deflate = apply_deflate_t::TEXT_BY_THRESHOLD;
     Opcode _opcode = Opcode::BINARY;
     friend class Parser;
 };

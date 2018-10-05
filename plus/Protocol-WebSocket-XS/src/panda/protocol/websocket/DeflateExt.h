@@ -19,7 +19,7 @@ public:
         int mem_level = 8;
         int compression_level = Z_DEFAULT_COMPRESSION;
         int strategy = Z_DEFAULT_STRATEGY;
-        size_t compression_threshold = 0;
+        size_t compression_threshold = 1410;  // try to fit into TCP frame
     };
 
     enum class Role { CLIENT, SERVER };
