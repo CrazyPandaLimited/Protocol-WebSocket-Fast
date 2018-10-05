@@ -1,0 +1,27 @@
+MODULE = Protocol::WebSocket::XS                PACKAGE = Protocol::WebSocket::XS::Message
+PROTOTYPES: DISABLE
+
+string Message::error () {
+    if (!THIS->error) XSRETURN_UNDEF;
+    RETVAL = THIS->error;
+}
+
+int Message::opcode () {
+    RETVAL = (int)THIS->opcode();
+}
+
+bool Message::is_control ()
+
+size_t Message::payload_length ()
+
+Simple Message::payload () {
+    RETVAL = strings_to_sv(aTHX_ THIS->payload);
+}
+
+uint16_t Message::close_code ()
+
+string Message::close_message ()
+
+int Message::frame_count () {
+    RETVAL = THIS->frame_count;
+}
