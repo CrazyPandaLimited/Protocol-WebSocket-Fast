@@ -1,5 +1,5 @@
 #include "DeflateExt.h"
-#include <charconv>
+#include <panda/lib/from_chars.h>
 
 namespace panda { namespace protocol { namespace websocket {
 
