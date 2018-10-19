@@ -318,7 +318,7 @@ private:
     }
 
     MessageBuilder(Parser& parser):_parser{parser}{}
-    MessageBuilder(MessageBuilder&) = default;
+    MessageBuilder(MessageBuilder&) = delete;
     Parser& _parser;
     apply_deflate_t _deflate = apply_deflate_t::TEXT_BY_THRESHOLD;
     Opcode _opcode = Opcode::BINARY;
