@@ -6,7 +6,7 @@ write_makefile(
     ABSTRACT_FROM => 'lib/Protocol/WebSocket/XS.pod',
     CPLUS         => 11,
     TEST_REQUIRES => {'Test::Exception' => 0},
-    BIN_DEPS      => ['Panda::Export', 'URI::XS', 'Encode::Base2N'],
+    BIN_DEPS      => ['Panda::Export', 'URI::XS', 'Encode::Base2N', 'Test::Catch'],
     LIBS          => '-lcrypto -L/usr/local/opt/openssl/lib -lz',
     SRC           => 'src',
     INC           => '-Isrc -I/usr/local/opt/openssl/include',
@@ -15,5 +15,9 @@ write_makefile(
         INCLUDE  => {'src' => '/'},
     },
     CCFLAGS  => '-fno-omit-frame-pointer -Wall -Wextra',
-    OPTIMIZE => '-g',
+    OPTIMIZE => '-O2',
+    test     => {
+        SRC                  => 't',
+        RECURSIVE_TEST_FILES => 1,
+    },
 );

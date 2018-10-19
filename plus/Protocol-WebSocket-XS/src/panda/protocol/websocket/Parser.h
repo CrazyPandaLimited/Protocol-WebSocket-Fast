@@ -208,7 +208,8 @@ private:
 
     template<typename It>
     StringChain<It> send_frame(It payload_begin, It payload_end, const FrameBuilder& fb) {
-        bool use_deflate = fb.deflate() && _deflate_ext;
+        bool non_empty = payload_begin != payload_end;
+        bool use_deflate = fb.deflate() && _deflate_ext && non_empty;
         bool is_final = fb.final();
         auto header = _prepare_frame_header(is_final, use_deflate, fb.opcode());
         It frame_payload_end = use_deflate ? _deflate_ext->compress(payload_begin, payload_end, is_final) : payload_end;
@@ -244,6 +245,7 @@ StringChain<It> FrameBuilder::send(It payload_begin, It payload_end) {
 class MessageBuilder {
 public:
 
+    MessageBuilder(MessageBuilder&&) = default;
     Opcode opcode() const noexcept;
     MessageBuilder& opcode(Opcode value) noexcept { _opcode = value; return *this; }
 
@@ -268,19 +270,30 @@ public:
     std::vector<string> send(ContIt cont_begin, ContIt cont_end) {
         std::vector<string> ret;
 
-        size_t sz = 0;
+        size_t sz = 0, idx = 0, payload_sz = 0, last_nonempty = 0;
         auto cont_range = IteratorPair<ContIt>(cont_begin, cont_end);
-        for (const auto& range : cont_range) sz += range.end() - range.begin();
+        for (const auto& range : cont_range) {
+            auto piece_size = range.end() - range.begin();
+            sz += piece_size;
+            for(const auto& it: range) payload_sz += it.length();
+            if (payload_sz) last_nonempty = idx++;
+        };
+
+        auto fb = _parser.start_message();
+        fb.opcode(_opcode);
+
+        if (!payload_sz) {
+            ret.reserve(1);
+            ret.push_back(fb.deflate(false).final(true).send());
+            return ret;
+        }
 
         ret.reserve(sz);
 
-        size_t cont_size = cont_end - cont_begin;
-        auto fb = _parser.start_message();
-        fb.opcode(_opcode);
-        fb.deflate(maybe_deflate(sz));
-        for (size_t i = 0; i < cont_size; ++i) {
+        fb.deflate(maybe_deflate(payload_sz));
+        for (size_t i = 0; i <= last_nonempty; ++i) {
             auto& range = cont_begin[i];
-            auto frame_range = fb.final(i == cont_size - 1).send(range.begin(), range.end());
+            auto frame_range = fb.final(i == last_nonempty).send(range.begin(), range.end());
             for (const auto& s : frame_range) ret.push_back(s);
         }
 
@@ -305,6 +318,7 @@ private:
     }
 
     MessageBuilder(Parser& parser):_parser{parser}{}
+    MessageBuilder(MessageBuilder&) = default;
     Parser& _parser;
     apply_deflate_t _deflate = apply_deflate_t::TEXT_BY_THRESHOLD;
     Opcode _opcode = Opcode::BINARY;

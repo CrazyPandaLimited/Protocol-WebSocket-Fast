@@ -109,7 +109,7 @@ Simple Parser::send_close (SV* code = NULL, string message = string()) {
 }
 
 Simple Parser::send_message (Hash settings) {
-    auto builder = THIS->message();
+    auto builder{THIS->message()};
     if(settings.exists("deflate")) builder.deflate(SvTRUE(settings.at("deflate")));
     if(settings.exists("opcode"))  builder.opcode ((Opcode)SvIV(settings.at("opcode")));
     Simple payload = settings.at("payload");

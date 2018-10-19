@@ -43,6 +43,9 @@ public:
 
     template<typename It>
     It compress(It payload_begin, It payload_end, bool final) {
+        // we should not try to compress empty last piece
+        assert(!final && (payload_begin != payload_end));
+
         It it_in = payload_begin;
         It it_out = payload_begin;
         tx_stream.avail_out = 0;

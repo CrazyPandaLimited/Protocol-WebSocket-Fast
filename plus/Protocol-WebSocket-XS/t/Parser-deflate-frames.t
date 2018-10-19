@@ -3,6 +3,8 @@ use warnings;
 use lib 't'; use MyTest;
 use Encode::Base2N qw/encode_base64pad/;
 
+catch_run('[deflate-extension]');
+
 *gen_frame = \&MyTest::gen_frame;
 
 my $default_compression =<<END;

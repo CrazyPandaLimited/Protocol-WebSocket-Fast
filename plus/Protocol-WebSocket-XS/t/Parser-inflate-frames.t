@@ -171,6 +171,32 @@ subtest '2 messages, 2 frames, server_context_takeover = false = client_context_
     is $m2->payload, $payload;
 };
 
+subtest "multiframe message" => sub {
+    my $payloads = [qw/first second third/];
+    my ($c, $s) = $create_pair->();
+    my $bin = $c->send_message_multiframe({deflate => 1, payloads => $payloads});
+    my ($m) = $s->get_messages($bin);
+    is $m->payload, join('', @$payloads);
+};
+
+
+subtest "multiframe message (with empty pieces)" => sub {
+    my $payloads = ['', 'hello', ''];
+    my ($c, $s) = $create_pair->();
+    my $bin = $c->send_message_multiframe({deflate => 1, payloads => $payloads});
+    my ($m) = $s->get_messages($bin);
+    is $m->payload, join('', @$payloads);
+};
+
+subtest "multiframe message (empty)" => sub {
+    my $payloads = ['', '', ''];
+    my ($c, $s) = $create_pair->();
+    my $bin = $c->send_message_multiframe({deflate => 1, payloads => $payloads});
+    my ($m) = $s->get_messages($bin);
+    ok $m;
+    ok !$m->payload;
+};
+
 subtest 'corrupted frame' => sub {
     my @payload = ('0') x (1923);
     my $payload = join('', @payload);

@@ -12,6 +12,7 @@ public:
 
     FrameBuilder(FrameBuilder&& other);
     virtual ~FrameBuilder();
+    FrameBuilder(FrameBuilder&) = delete;
 
     Opcode opcode() const noexcept;
     FrameBuilder& opcode(Opcode value) noexcept { _opcode = value; return *this; }
