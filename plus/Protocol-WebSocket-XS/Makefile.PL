@@ -15,5 +15,4 @@ write_makefile(
         INCLUDE  => {'src' => '/'},
     },
     CCFLAGS  => '-fno-omit-frame-pointer -Wall -Wextra',
-    OPTIMIZE => '-O2',
 );
