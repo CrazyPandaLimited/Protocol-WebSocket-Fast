@@ -63,7 +63,7 @@ subtest 'max_handshake_size' => sub {
     
     $p->reset();
     
-    $p->max_handshake_size(1000);
+    $p->configure({max_handshake_size => 1000});
     $p->accept($_) for @data;
     $creq = $p->accept($big);
     ok($creq, "buffer limit exceeded");

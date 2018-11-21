@@ -23,11 +23,13 @@ Array header_values_to_av (pTHX_ const HTTPPacket::HeaderValues& vals) {
     auto ret = Array::create(vals.size());
     for (const auto& elem : vals) {
         auto elemav = Array::create(2);
-        elemav[0] = xs::out(elem.name);
+        elemav.push(xs::out(elem.name));
         if (elem.params.size()) {
             auto args = Hash::create(elem.params.size());
-            for (const auto& param : elem.params) args.store(param.first, xs::out(param.second));
-            elemav[1] = Ref::create(args);
+            for (const auto& param : elem.params) {
+                args.store(param.first, xs::out(param.second));
+            }
+            elemav.push(Ref::create(args));
         }
         ret.push(Ref::create(elemav));
     }

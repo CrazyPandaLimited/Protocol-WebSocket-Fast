@@ -19,6 +19,7 @@ string ClientParser::connect_request (ConnectRequestSP& req) {
     }
     _state.set(STATE_CONNECTION_REQUESTED);
     _connect_request = req;
+    if (_deflate_cfg) req->add_deflate(*_deflate_cfg);
     return req->to_string();
 }
 
@@ -28,7 +29,7 @@ ConnectResponseSP ClientParser::connect (string& buf) {
 
     if (!_connect_response) {
         _connect_response = new ConnectResponse();
-        _connect_response->max_headers_size = max_handshake_size;
+        _connect_response->max_headers_size = _max_handshake_size;
         _connect_response->_ws_key = _connect_request->ws_key;
     }
 
@@ -39,6 +40,17 @@ ConnectResponseSP ClientParser::connect (string& buf) {
     if (!_connect_response->error) {
         _buffer = buf;       // if something remains in buf, user can get it via get_frames() or get_messages() without buf param.
         _state.set(STATE_ESTABLISHED);
+
+        if (_deflate_cfg) {
+            auto& exts = _connect_response->ws_extensions();
+            HTTPPacket::HeaderValues used_extensions;
+            auto role = DeflateExt::Role::CLIENT;
+            auto deflate_matches = DeflateExt::select(exts, *_deflate_cfg, role);
+            if (deflate_matches) {
+                _deflate_ext.reset(DeflateExt::uplift(*deflate_matches, used_extensions, role));
+            }
+            _connect_response->ws_extensions(used_extensions);
+        }
     }
 
     ConnectResponseSP ret(_connect_response);

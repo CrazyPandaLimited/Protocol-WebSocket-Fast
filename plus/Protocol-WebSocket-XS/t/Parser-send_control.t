@@ -41,9 +41,9 @@ subtest 'send_control CLOSE' => sub {
         is_bin($bin, gen_frame({fin => 1, opcode => OPCODE_CLOSE}), "frame ok");
     };
     
-    ok(!eval { $p->send_frame(1, "asdf"); 1 }, "can't send after CLOSE sent");
+    ok(!eval { $p->start_message->final(1)->send("asdf"); 1 }, "can't send after CLOSE sent");
     MyTest::reset($p);
-    ok(eval { $p->send_frame(1, "asdf"); 1 }, "can send after reset");
+    ok(eval { $p->start_message->final(1)->send("asdf"); 1 }, "can send after reset");
     
     subtest 'with payload' => sub {
         my $bin = $p->send_control(OPCODE_CLOSE, "hi there");
@@ -106,27 +106,21 @@ subtest 'send_close' => sub {
 };
 
 subtest 'control frames do not reset message state in frame mode' => sub {
-    my $bin = $p->send_frame(0, "frame1");
+    my $builder = $p->start_message({deflate => 0});
+    my $bin = $builder->send("frame1");
     is_bin($bin, gen_frame({fin => 0, opcode => OPCODE_BINARY, data => "frame1"}), "initial frame ok");
     $p->send_control(OPCODE_PING);
     $p->send_control(OPCODE_PONG);
     $p->send_ping;
     $p->send_pong;
-    $bin = $p->send_frame(0, "frame2");
+    $bin = $builder->send("frame2");
     is_bin($bin, gen_frame({fin => 0, opcode => OPCODE_CONTINUE, data => "frame2"}), "fragment frame ok");
     $p->send_control(OPCODE_PING);
     $p->send_control(OPCODE_PONG);
     $p->send_ping;
     $p->send_pong;
-    $bin = $p->send_frame(1, "frame3");
+    $bin = $builder->final(1)->send("frame3");
     is_bin($bin, gen_frame({fin => 1, opcode => OPCODE_CONTINUE, data => "frame3"}), "final frame ok");
 };
 
 done_testing();
-
-sub is_bin {
-    my ($got, $expected, $name) = @_;
-    return if our $leak_test;
-    state $has_binary = eval { require Test::BinaryData; Test::BinaryData->import(); 1 };
-    $has_binary ? is_binary($got, $expected, $name) : is($got, $expected, $name);
-}

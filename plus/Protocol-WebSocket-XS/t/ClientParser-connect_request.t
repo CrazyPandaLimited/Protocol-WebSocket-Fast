@@ -10,6 +10,7 @@ subtest 'parser create' => sub {
 
 subtest 'default request' => sub {
     my $p = new Protocol::WebSocket::XS::ClientParser;
+    $p->no_deflate;
     my $req = {
         uri           => URI::XS->new("ws://crazypanda.ru:4321/path?a=b"),
         ws_protocol   => 'fuck',
@@ -46,8 +47,8 @@ subtest 'default values' => sub {
     my $str = $p->connect_request({uri => "ws://crazypanda.ru:4321/path?a=b"});
     like($str, qr/^GET \/path\?a=b HTTP\/1.1\r\n/, "request line ok");
     like($str, qr/^Sec-Websocket-Version: 13\r\n/im, "version ok");
+    like($str, qr/^Sec-Websocket-Extensions: permessage-deflate; client_max_window_bits=15; server_max_window_bits=15/im, "extensions ok");
     unlike($str, qr/^Sec-Websocket-Protocol: /im, "protocol ok");
-    unlike($str, qr/^Sec-Websocket-Extensions: /im, "extensions ok");
 };
 
 subtest 'custom ws_key' => sub {

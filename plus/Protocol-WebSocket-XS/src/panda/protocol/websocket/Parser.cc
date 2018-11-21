@@ -16,6 +16,7 @@ void Parser::reset () {
     _frame_count = 0;
     _message = NULL;
     _message_frame.reset();
+    if (_deflate_ext) _deflate_ext->reset();
 }
 
 FrameSP Parser::_get_frame () {
@@ -27,14 +28,14 @@ FrameSP Parser::_get_frame () {
     if (!_buffer) return NULL;
 
     _state.set(STATE_RECV_FRAME);
-    if (!_frame) _frame = new Frame(_recv_mask_required, max_frame_size);
+    if (!_frame) _frame = new Frame(_recv_mask_required, _max_frame_size);
 
     if (!_frame->parse(_buffer)) {
         _buffer.clear();
         return NULL;
     }
-
     _frame->check(_frame_count);
+    if (_deflate_ext && _frame->rsv1()) _deflate_ext->uncompress(*_frame);
 
     if (_frame->error) {
         _buffer.clear();
@@ -67,7 +68,7 @@ MessageSP Parser::_get_message () {
     if (!_buffer) return NULL;
 
     _state.set(STATE_RECV_MESSAGE);
-    if (!_message) _message = new Message(max_message_size);
+    if (!_message) _message = new Message(_max_message_size);
 
     while (1) {
         if (!_message_frame.parse(_buffer)) {
@@ -83,7 +84,7 @@ MessageSP Parser::_get_message () {
                 _state.set(STATE_RECV_CLOSED);
             }
             if (_message->frame_count) {
-                auto cntl_msg = new Message(max_message_size);
+                auto cntl_msg = new Message(_max_message_size);
                 bool done = cntl_msg->add_frame(_message_frame);
                 assert(done);
                 _message_frame.reset();
@@ -92,6 +93,7 @@ MessageSP Parser::_get_message () {
         }
 
         _message_frame.check(_message->frame_count);
+        if (_deflate_ext && _message_frame.rsv1()) _deflate_ext->uncompress(_message_frame);
         bool done = _message->add_frame(_message_frame);
         _message_frame.reset();
 
@@ -107,7 +109,7 @@ MessageSP Parser::_get_message () {
     return ret;
 }
 
-FrameHeader Parser::_prepare_frame_header (bool final, Opcode opcode) {
+FrameHeader Parser::_prepare_frame_header (bool final, bool deflate, Opcode opcode) {
     if (!_state[STATE_ESTABLISHED]) {
         throw ParserError("not established");
     }
@@ -131,7 +133,11 @@ FrameHeader Parser::_prepare_frame_header (bool final, Opcode opcode) {
         else ++_sent_frame_count;
     }
 
-    return FrameHeader(opcode, final, 0, 0, 0, !_recv_mask_required, _recv_mask_required ? 0 : (uint32_t)std::rand());
+    bool rsv1 = deflate;
+    return FrameHeader(opcode, final, rsv1, 0, 0, !_recv_mask_required, _recv_mask_required ? 0 : (uint32_t)std::rand());
 }
+
+MessageBuilder Parser::message() { return MessageBuilder(*this); }
+
 
 }}}

@@ -10,13 +10,9 @@ ClientParser* new (SV* CLASS) {
     PROTO = CLASS;
 }
 
-size_t ClientParser::max_handshake_size (SV* newval = NULL) {
-    if (newval) THIS->max_handshake_size = SvUV(newval);
-    RETVAL = THIS->max_handshake_size;
-}
-
 string ClientParser::connect_request (ConnectRequestSP req)
 
 ConnectResponseSP ClientParser::connect (string buf) {
     RETVAL = THIS->connect(buf);
 }
+
