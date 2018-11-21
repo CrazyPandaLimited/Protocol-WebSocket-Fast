@@ -21,8 +21,8 @@ public:
         _ws_extensions_set = true;
     }
 
-    friend class ServerParser;
-    friend class ClientParser;
+    friend struct ServerParser;
+    friend struct ClientParser;
 
 protected:
     virtual void _parse_header (StringRange range);
