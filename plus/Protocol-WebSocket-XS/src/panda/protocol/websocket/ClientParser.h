@@ -26,7 +26,6 @@ private:
 
     ConnectRequestSP  _connect_request;
     ConnectResponseSP _connect_response;
-
 };
 
 }}}

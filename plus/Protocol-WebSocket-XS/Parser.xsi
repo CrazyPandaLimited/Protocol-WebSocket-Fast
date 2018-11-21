@@ -1,14 +1,50 @@
 MODULE = Protocol::WebSocket::XS                PACKAGE = Protocol::WebSocket::XS::Parser
 PROTOTYPES: DISABLE
 
-size_t Parser::max_frame_size (SV* newval = NULL) {
-    if (newval) THIS->max_frame_size = SvUV(newval);
-    RETVAL = THIS->max_frame_size;
+void Parser::configure(Hash settings) {
+    Parser::Config cfg;
+    DeflateExt::Config& dcfg = cfg.deflate_config;
+
+    Scalar val;
+    if ((val = settings.fetch("max_frame_size")))     cfg.max_frame_size     = Simple(val);
+    if ((val = settings.fetch("max_message_size")))   cfg.max_message_size   = Simple(val);
+    if ((val = settings.fetch("max_handshake_size"))) cfg.max_handshake_size = Simple(val);
+
+    Hash deflate_settings = settings.fetch("deflate");
+    if ((val = deflate_settings.fetch("server_max_window_bits")))     dcfg.server_max_window_bits     = static_cast<std::uint8_t>(Simple(val));
+    if ((val = deflate_settings.fetch("client_max_window_bits")))     dcfg.client_max_window_bits     = static_cast<std::uint8_t>(Simple(val));
+    if ((val = deflate_settings.fetch("client_no_context_takeover"))) dcfg.client_no_context_takeover = SvTRUE(val);
+    if ((val = deflate_settings.fetch("server_no_context_takeover"))) dcfg.server_no_context_takeover = SvTRUE(val);
+    if ((val = deflate_settings.fetch("mem_level")))                  dcfg.mem_level                  = Simple(val);
+    if ((val = deflate_settings.fetch("compression_level")))          dcfg.compression_level          = Simple(val);
+    if ((val = deflate_settings.fetch("strategy")))                   dcfg.strategy                   = Simple(val);
+    if ((val = deflate_settings.fetch("compression_threshold")))      dcfg.compression_threshold      = Simple(val);
+
+    THIS->configure(cfg);
 }
 
-size_t Parser::max_message_size (SV* newval = NULL) {
-    if (newval) THIS->max_message_size = SvUV(newval);
-    RETVAL = THIS->max_message_size;
+size_t Parser::max_frame_size()
+
+size_t Parser::max_message_size()
+
+size_t Parser::max_handshake_size()
+
+Scalar Parser::deflate_config() {
+    auto deflate_cfg = THIS->deflate_config();
+    if (deflate_cfg) {
+        Hash settings = Hash::create();
+        settings.store("server_max_window_bits",     Simple(deflate_cfg->server_max_window_bits));
+        settings.store("client_max_window_bits",     Simple(deflate_cfg->client_max_window_bits));
+        settings.store("client_no_context_takeover", Simple(deflate_cfg->client_no_context_takeover));
+        settings.store("server_no_context_takeover", Simple(deflate_cfg->server_no_context_takeover));
+        settings.store("mem_level",                  Simple(deflate_cfg->mem_level));
+        settings.store("compression_level",          Simple(deflate_cfg->compression_level));
+        settings.store("strategy",                   Simple(deflate_cfg->strategy));
+        settings.store("compression_threshold",      Simple(deflate_cfg->compression_threshold));
+
+        RETVAL = Ref::create(settings);
+    }
+    else XSRETURN_UNDEF;
 }
 
 bool Parser::established ()
@@ -16,6 +52,8 @@ bool Parser::established ()
 bool Parser::recv_closed ()
 
 bool Parser::send_closed ()
+
+bool Parser::is_deflate_active ()
 
 void Parser::get_frames (string buf = string()) {
     auto frames = buf ? THIS->get_frames(buf) : THIS->get_frames();
@@ -37,16 +75,14 @@ void Parser::get_messages (string buf = string()) {
     }
 }
 
-Simple Parser::send_frame (bool final, string payload, int opcode = (int)Opcode::BINARY) {
-    auto range = THIS->send_frame(final, payload, (Opcode)opcode);
-    RETVAL = strings_to_sv(aTHX_ range);
-}
-
-Simple Parser::send_frame_av (bool final, Array payload, int opcode = (int)Opcode::BINARY) {
-    std::vector<string> list;
-    av_to_vstring(aTHX_ payload, list);
-    auto range = THIS->send_frame(final, list.begin(), list.end(), (Opcode)opcode);
-    RETVAL = strings_to_sv(aTHX_ range);
+XSFrameBuilder* Parser::start_message(SV* config = NULL) {
+    RETVAL = new XSFrameBuilder(THIS->start_message());
+    if (config) {
+        Hash settings(config);
+        if(settings.exists("deflate")) RETVAL->deflate(SvTRUE(settings.at("deflate")));
+        if(settings.exists("final"))   RETVAL->final  (SvTRUE(settings.at("final")));
+        if(settings.exists("opcode"))  RETVAL->opcode ((Opcode)SvIV(settings.at("opcode")));
+    }
 }
 
 Simple Parser::send_control (int opcode, string payload = string()) {
@@ -72,19 +108,39 @@ Simple Parser::send_close (SV* code = NULL, string message = string()) {
     else RETVAL = xs::out(THIS->send_close());
 }
 
-Simple Parser::send_message (string payload, int opcode = (int)Opcode::BINARY) {
-    auto range = THIS->send_message(payload, (Opcode)opcode);
+Simple Parser::send_message (Hash settings) {
+    auto builder{THIS->message()};
+    if(settings.exists("deflate")) builder.deflate(SvTRUE(settings.at("deflate")));
+    if(settings.exists("opcode"))  builder.opcode ((Opcode)SvIV(settings.at("opcode")));
+    Simple payload = settings.at("payload");
+    auto payload_string = payload.as_string();
+    auto range = builder.send(payload_string);
     RETVAL = strings_to_sv(aTHX_ range);
 }
 
-Simple Parser::send_message_av (AV* payload, int opcode = (int)Opcode::BINARY) {
+Simple Parser::send_message_av (Hash settings) {
+    auto builder = THIS->message();
+    if(settings.exists("deflate")) builder.deflate(SvTRUE(settings.at("deflate")));
+    if(settings.exists("opcode"))  builder.opcode ((Opcode)SvIV(settings.at("opcode")));
+
+    Array payload(settings.at("payload"));
+    if (!payload) throw "invalid argument (payload must point to array)";
+
     std::vector<string> list;
     av_to_vstring(aTHX_ payload, list);
-    auto range = THIS->send_message(list.begin(), list.end(), (Opcode)opcode);
+
+    auto range = builder.send(list.begin(), list.end());
     RETVAL = strings_to_sv(aTHX_ range);
 }
 
-Simple Parser::send_message_multiframe (Array payloads, int opcode = (int)Opcode::BINARY) {
+Simple Parser::send_message_multiframe (Hash settings) {
+    auto builder = THIS->message();
+    if(settings.exists("deflate")) builder.deflate(SvTRUE(settings.at("deflate")));
+    if(settings.exists("opcode"))  builder.opcode ((Opcode)SvIV(settings.at("opcode")));
+
+    Array payloads(settings.at("payloads"));
+    if (!payloads) throw "invalid argument (payloads must point to array)";
+
     std::vector<std::vector<string>> cont;
     for (const auto& payload : payloads) {
         if (!payload.defined()) continue;
@@ -92,11 +148,14 @@ Simple Parser::send_message_multiframe (Array payloads, int opcode = (int)Opcode
         tmp.push_back(xs::in<string>(aTHX_ payload));
         cont.push_back(std::move(tmp));
     }
-    auto range = THIS->send_message(cont.begin(), cont.end(), (Opcode)opcode);
+
+    auto range = builder.send(cont.begin(), cont.end());
     RETVAL = strings_to_sv(aTHX_ range);
 }
 
 void Parser::reset ()
+
+void Parser::no_deflate()
 
 int Parser::test_parse_frame (string buf) {
     int cnt = 0;
@@ -110,7 +169,7 @@ int Parser::test_parse_frame (string buf) {
 int Parser::test_send_frame (string pl) {
     int cnt = 0;
     for (int i = 0; i < 1000; ++i) {
-        auto range = THIS->send_frame(1, pl);
+        auto range = THIS->start_message().final(true).send(pl);
         for (const string& s : range) cnt += s.length();
     }
     RETVAL = cnt;

@@ -9,7 +9,7 @@ ConnectRequestSP ServerParser::accept (string& buf) {
 
     if (!_connect_request) {
         _connect_request = new ConnectRequest();
-        _connect_request->max_headers_size = max_handshake_size;
+        _connect_request->max_headers_size = _max_handshake_size;
     }
 
     if (!_connect_request->parse(buf)) return NULL;
@@ -84,11 +84,16 @@ string ServerParser::accept_response (ConnectResponse* res) {
     if (!res->ws_extensions_set()) res->ws_extensions(_connect_request->ws_extensions());
 
     const auto& exts = res->ws_extensions();
-
-    if (exts.size()) {
+    HTTPPacket::HeaderValues used_extensions;
+    if (_deflate_cfg && exts.size()) {
         // filter extensions
-        res->ws_extensions(HTTPPacket::HeaderValues()); // for now no extensions supported
+        auto role = DeflateExt::Role::SERVER;
+        auto deflate_matches = DeflateExt::select(exts, *_deflate_cfg, role);
+        if (deflate_matches) {
+            _deflate_ext.reset(DeflateExt::uplift(*deflate_matches, used_extensions, role));
+        }
     }
+    res->ws_extensions(std::move(used_extensions));
 
     _state.set(STATE_ESTABLISHED);
     _connect_request = NULL;

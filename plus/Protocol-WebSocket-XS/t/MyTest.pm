@@ -1,6 +1,7 @@
 package MyTest;
 use 5.020;
 use warnings;
+use Test::Catch;
 use Test::More;
 use Test::Deep;
 use Test::Exception;
@@ -8,6 +9,7 @@ use Protocol::WebSocket::XS;
 use Data::Dumper 'Dumper';
 use Panda::Lib qw/crypt_xor/;
 use Encode::Base2N 'decode_base64';
+XS::Loader::load_tests();
 
 init();
 
@@ -15,11 +17,11 @@ sub init {}
 
 sub import {
     my $class = shift;
-    
+
     my $caller = caller();
     foreach my $sym_name (qw/
-        plan is cmp_deeply ok done_testing skip isnt pass fail cmp_ok like isa_ok unlike ignore code all any noneof methods subtest dies_ok
-        Dumper
+        plan is is_deeply cmp_deeply ok done_testing skip isnt pass fail cmp_ok like isa_ok unlike ignore code all any noneof methods subtest dies_ok note
+        Dumper is_bin catch_run
         OPCODE_CONTINUE OPCODE_TEXT OPCODE_BINARY OPCODE_CLOSE OPCODE_PING OPCODE_PONG
         CLOSE_DONE CLOSE_AWAY CLOSE_PROTOCOL_ERROR CLOSE_INVALID_DATA CLOSE_UNKNOWN CLOSE_ABNORMALLY CLOSE_INVALID_TEXT
         CLOSE_BAD_REQUEST CLOSE_MAX_SIZE CLOSE_EXTENSION_NEEDED CLOSE_INTERNAL_ERROR CLOSE_TLS
@@ -93,7 +95,7 @@ sub connect_request {
 }
 
 sub connect_response {
-    return all( 
+    return all(
        qr/^GET \/path?a=b HTTP\/1.1$/,
     );
 }
@@ -138,10 +140,10 @@ sub _establish_client {
 
 sub gen_frame {
     my $params = shift;
-    
+
     my $first  = 0;
     my $second = 0;
-    
+
     foreach my $p (qw/fin rsv1 rsv2 rsv3/) {
         $first |= ($params->{$p} ? 1 : 0);
         $first <<= 1;
@@ -149,16 +151,16 @@ sub gen_frame {
     $first <<= 3;
     $first |= ($params->{opcode} & 15);
     $first = pack("C", $first);
-    
+
     $second |= ($params->{mask} ? 1 : 0);
-    
+
     $second <<= 7;
     my $data = $params->{data} // '';
-    
+
     if ($params->{close_code} && !ref $params->{close_code}) {
         $data = pack("S>", $params->{close_code}).$data;
     }
-    
+
     my $dlen = length($data);
     my $extlen = '';
     if ($dlen < 126) {
@@ -173,31 +175,31 @@ sub gen_frame {
         $extlen = pack "Q>", $dlen;
     }
     $second = pack("C", $second);
-    
+
     my $mask = $params->{mask} || '';
     my $payload;
-    
+
     if ($mask) {
         $mask = (length($mask) == 4) ? $mask : pack("L>", int rand(2**32-1));
         $payload = crypt_xor($data, $mask);
     } else {
         $payload = $data;
     }
-    
+
     my $frame = $first.$second.$extlen.$mask.$payload;
     return $frame;
 }
 
 sub gen_message {
     my $params = shift;
-    
+
     my $nframes = $params->{nframes} || 1;
     my $payload = $params->{data} // '';
     my $opcode  = $params->{opcode} // OPCODE_TEXT;
-    
+
     my $frame_len = int(length($payload) / $nframes);
     my @bin;
-    
+
     my $frames_left = $nframes;
     while ($frames_left) {
         my $curlen = (length($payload) / $frames_left--);
@@ -210,8 +212,16 @@ sub gen_message {
         });
         $opcode = OPCODE_CONTINUE;
     }
-    
+
     return wantarray ? @bin : join('', @bin);
+}
+
+
+sub is_bin {
+    my ($got, $expected, $name) = @_;
+    return if our $leak_test;
+    state $has_binary = eval { require Test::BinaryData; Test::BinaryData->import(); 1 };
+    $has_binary ? is_binary($got, $expected, $name) : is($got, $expected, $name);
 }
 
 1;

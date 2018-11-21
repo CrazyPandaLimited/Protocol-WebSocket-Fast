@@ -1,5 +1,6 @@
 #pragma once
 #include <panda/string.h>
+#include <panda/optional.h>
 #include <panda/protocol/websocket/Parser.h>
 #include <panda/protocol/websocket/HTTPResponse.h>
 #include <panda/protocol/websocket/ConnectRequest.h>
@@ -10,7 +11,6 @@ namespace panda { namespace protocol { namespace websocket {
 using panda::string;
 
 struct ServerParser : Parser {
-
     ServerParser () : Parser(true) {}
 
     bool accept_parsed () const { return _state[STATE_ACCEPT_PARSED]; }

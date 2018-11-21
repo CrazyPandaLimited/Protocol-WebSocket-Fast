@@ -10,11 +10,6 @@ ServerParser* new (SV* CLASS) {
     PROTO = CLASS;
 }
 
-size_t ServerParser::max_handshake_size (SV* newval = NULL) {
-    if (newval) THIS->max_handshake_size = SvUV(newval);
-    RETVAL = THIS->max_handshake_size;
-}
-
 bool ServerParser::accept_parsed ()
 
 bool ServerParser::accepted ()

@@ -2,6 +2,7 @@
 #include <panda/uri.h>
 #include <panda/refcnt.h>
 #include <panda/protocol/websocket/HTTPRequest.h>
+#include <panda/protocol/websocket/DeflateExt.h>
 
 namespace panda { namespace protocol { namespace websocket {
 
@@ -21,6 +22,8 @@ public:
     bool                ws_version_supported () const { return _ws_version_supported; }
 
     void ws_extensions (const HeaderValues& new_extensions) { _ws_extensions = new_extensions; }
+
+    void add_deflate(const DeflateExt::Config& cfg);
 
 protected:
     virtual void _parse_header (StringRange range);
