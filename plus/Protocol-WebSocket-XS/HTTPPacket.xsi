@@ -21,7 +21,7 @@ Hash HTTPPacket::headers (Hash new_headers = Hash()) {
         http_packet_set_headers(aTHX_ THIS, new_headers);
         XSRETURN_UNDEF;
     }
-    
+
     RETVAL = Hash::create(THIS->headers.size());
     for (const auto& elem : THIS->headers) {
         auto len = elem.first.length();
@@ -39,13 +39,13 @@ string HTTPPacket::header (string_view name, SV* val = NULL) {
         else it->second = value;
         XSRETURN_UNDEF;
     }
-    
+
     auto it = THIS->headers.find(name);
     if (it == THIS->headers.cend()) XSRETURN_UNDEF;
     RETVAL = it->second;
 }
 
-Simple HTTPPacket::body (Simple newval = NULL) {
+Simple HTTPPacket::body (SV* newval = NULL) {
     if (newval) {
         http_packet_set_body(aTHX_ THIS, newval);
         XSRETURN_UNDEF;

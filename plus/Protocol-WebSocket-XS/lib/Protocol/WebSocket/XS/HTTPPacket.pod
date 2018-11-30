@@ -1,0 +1,114 @@
+=head1 NAME
+
+Protocol::WebSocket::XS::HTTPPacket - Base class for HTTP requests/responces
+
+=cut
+
+=head1 SYNOPSIS
+
+    use Protocol::WebSocket::XS::HTTPRequest;
+    use Protocol::WebSocket::XS::HTTPPacket;
+    use URI::XS;
+
+    my $packet = Protocol::WebSocket::XS::HTTPRequest->new; # => isa 'Protocol::WebSocket::XS::HTTPPacket'
+    $packet->init({
+        method  => 'POST',
+        uri     => "ws://example.com/",
+        body    => '...',
+        headers => { 'Origin' => 'http://www.crazypanda.ru'},
+    });
+
+    $packet->error;                                         # => undef
+    $packet->header('Origin');                              # => 'http://www.crazypanda.ru'
+    $packet->header('Origin', 'http://crazypanda.ru');
+    $packet->header('Origin');                              # => 'http://crazypanda.ru'
+
+    # case-insentensive
+    $packet->header('origin');                              # => 'http://crazypanda.ru'
+
+    # lower-cased keys in perl hashes
+    my $v1 = $packet->headers->{'origin'};                  # => 'http://crazypanda.ru'
+    my $v2 = $packet->headers->{'Origin'};                  # => undef
+
+    $packet->headers({'User-Agent' => 'My-UA'});
+    $packet->header('user-agent');                          # => 'My-UA'
+
+    $packet->body;                                          # => '...'
+    $packet->body('new-body');
+    $packet->body;                                          # => 'new-body'
+
+    $packet->clear;
+    $packet->content_length;                                # => 0
+
+
+=head1 DESCRIPTION
+
+Base class for L<Protocol::WebSocket::XS::HTTPRequest> and
+L<Protocol::WebSocket::XS::HTTPResponse>. It cannot be instantiated
+directly.
+
+=head1 METHODS
+
+=head2 init($params)
+
+Fills the object with supplied params.
+
+=over 2
+
+=item headers (hash)
+
+=item body (string)
+
+=back
+
+=head2 header($name)
+
+=head2 header($name, $value)
+
+Gets and sets the specified header C<$name>. The C<$name> is case-insentensive.
+
+=head2 headers()
+
+=head2 headers($hash)
+
+Gets and sets all HTTP-packet headers. The returned hash of header values is
+case-sensitive, as usual in perl.
+
+=head2 body()
+
+=head2 body($string)
+
+Gets and sets all HTTP-packet body.
+
+=head2 content_length()
+
+Convenient way to access 'Content-Length' header. Has sense only for parsed
+responses.
+
+=head2 error()
+
+Returns human-readable error in parsing HTTPResponce (e.g. "max_body_size
+exceeded") or C<undef>.
+
+
+=head1 SEE ALSO
+
+
+L<Protocol::WebSocket::XS>
+
+L<Protocol::WebSocket::XS::HTTPRequest>
+
+L<Protocol::WebSocket::XS::HTTPResponse>
+
+
+=head1 AUTHOR
+
+Pronin Oleg <syber@cpan.org>, Crazy Panda LTD
+
+Ivan Baidakou <i.baydakov@dev.crazypanda.ru>, Crazy Panda LTD
+
+=head1 LICENSE
+
+You may distribute this code under the same terms as Perl itself.
+
+=cut
