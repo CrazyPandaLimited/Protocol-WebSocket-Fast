@@ -1,0 +1,50 @@
+=head1 NAME
+
+Protocol::WebSocket::XS::FrameIterator - WebSocket frame iterator class
+
+=cut
+
+=head1 DESCRIPTION
+
+The class allows developer traverse on parsed websocket frames.
+
+You cannot instantiate an object of the class direcly, it can be accessed
+only via L<Protocol::WebSocket::XS::Parser> or
+L<Protocol::WebSocket::XS::MessageIterator>.
+
+
+=head1 METHODS
+
+=head2 next()
+
+Returns next unvisited L<Protocol::WebSocket::XS::Frame> parsed from receive buffer;
+otherwise (i.e. when end of buffer is reached) returns C<undef>.
+
+=head2 get_messages()
+
+Returns L<Protocol::WebSocket::XS::MessageIterator>, if there is any unread frame left.
+Otherwise returns C<undef>.
+
+=head1 SEE ALSO
+
+L<rfc6455|https://tools.ietf.org/html/rfc6455>
+
+L<Protocol::WebSocket::XS>
+
+L<Protocol::WebSocket::XS::Frame>
+
+L<Protocol::WebSocket::XS::MessageIterator>
+
+L<Protocol::WebSocket::XS::Parser>
+
+=head1 AUTHOR
+
+Pronin Oleg <syber@cpan.org>, Crazy Panda LTD
+
+Ivan Baidakou <i.baydakov@dev.crazypanda.ru>, Crazy Panda LTD
+
+=head1 LICENSE
+
+You may distribute this code under the same terms as Perl itself.
+
+=cut

@@ -138,8 +138,8 @@ Simple Parser::send_message_multiframe (Hash settings) {
     if(settings.exists("deflate")) builder.deflate(SvTRUE(settings.at("deflate")));
     if(settings.exists("opcode"))  builder.opcode ((Opcode)SvIV(settings.at("opcode")));
 
-    Array payloads(settings.at("payloads"));
-    if (!payloads) throw "invalid argument (payloads must point to array)";
+    Array payloads(settings.at("payload"));
+    if (!payloads) throw "invalid argument (payload must point to array)";
 
     std::vector<std::vector<string>> cont;
     for (const auto& payload : payloads) {

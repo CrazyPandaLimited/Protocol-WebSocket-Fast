@@ -1,0 +1,417 @@
+=head1 NAME
+
+Protocol::WebSocket::XS::Parser - Base class of websocket parser
+
+=cut
+
+=head1 SYNOPSIS
+
+    use Protocol::WebSocket::XS::ClientParser;
+
+    my $parser = Protocol::WebSocket::XS::ClientParser->new;    # => isa 'Protocol::WebSocket::XS::Parser'
+
+    $parser->configure({
+        max_frame_size     => 0,
+        max_message_size   => 0,
+        max_handshake_size => 0,
+        deflate => {
+            server_max_window_bits     => 15,
+            client_max_window_bits     => 15,
+            client_no_context_takeover => 0,
+            server_no_context_takeover => 0,
+            mem_level                  => 8,
+            compression_level          => -1,
+            strategy                   => 0,
+            compression_threshold      => 1410,
+        },
+    });
+
+    my $level = $parser->deflate_config->{mem_level};    # => 8
+
+    $parser->no_deflate();
+
+=head1 DESCRIPTION
+
+C<Protocol::WebSocket::XS::Parser> contains shared implementation
+for concrete child classes L<Protocol::WebSocket::XS::ClientParser> and
+L<Protocol::WebSocket::XS::ServerParser>. No direct class instantiation
+is possible.
+
+=head1 METHODS
+
+=head2 configure($hash)
+
+Performs parser configuration. If connection is already established,
+some settings might have no effect.
+
+=over 2
+
+=item max_frame_size
+
+Default value is 0 (unlimited)
+
+=item max_message_size
+
+Default value is 0 (unlimited)
+
+=item max_handshake_size
+
+Default value is 0 (unlimited)
+
+=item deflate/server_max_window_bits
+
+This parameter has a decimal integer value without leading
+zeroes between 8 to 15, inclusive, indicating the base-2
+logarithm of the LZ77 sliding window size.
+
+By including this parameter in an extension negotiation offer, a
+client limits the LZ77 sliding window size that the server will use
+to compress messages.  If the peer server uses a small LZ77 sliding
+window to compress messages, the client can reduce the memory needed
+for the LZ77 sliding window.
+
+Default value is 15 (max memory usage, better compression).
+
+This option MAY be set by client-side.
+
+See L<rfc7692|https://tools.ietf.org/html/rfc7692>.
+
+=item deflate/client_max_window_bits
+
+This parameter has a decimal integer value without leading
+zeroes between 8 to 15, inclusive, indicating the base-2
+logarithm of the LZ77 sliding window size.
+
+A client informs server, that it is not going to use an LZ77
+sliding window size greater than the size specified by the
+value in the extension negotiation offer to compress messages.
+
+By including this extension parameter in an extension negotiation
+response, a server limits the LZ77 sliding window size that the
+client uses to compress messages.  This reduces the amount of memory
+for the decompression context that the server has to reserve for the
+connection.
+
+Default value is 15 (max memory usage, better compression).
+
+This option MAY be set by client-side.
+
+See L<rfc7692|https://tools.ietf.org/html/rfc7692>.
+
+=item deflate/client_no_context_takeover
+
+A a client informs the peer server of a hint that the client
+is not going to use context takeover.
+
+This reduces the amount of memory that the server has to
+reserve for the connection by the cost of reducing session
+compression ratio.
+
+Default value is 0 (false)
+
+See L<rfc7692|https://tools.ietf.org/html/rfc7692>.
+
+=item deflate/server_no_context_takeover
+
+By including this extension parameter in an
+extension negotiation offer, a client prevents the peer server from
+using context takeover.  If the peer server doesn't use context
+takeover, the client doesn't need to reserve memory to retain the
+LZ77 sliding window between messages by the cost of reducing session
+compression ratio.
+
+Default value is 0 (false)
+
+See L<rfc7692|https://tools.ietf.org/html/rfc7692>.
+
+=item deflate/mem_level
+
+The C<mem_level> parameter specifies how much memory should be allocated
+for the internal compression state. C<mem_level=1> uses minimum memory
+butis slow and reduces compression ratio; C<mem_level=9> uses maximum
+memory for optimal speed.
+
+Default value is 8 (zlib default).
+
+See L<zlib manual|https://www.zlib.net/manual.html> (search for C<memLevel>).
+
+=item deflate/compression_level
+
+Possible values are:
+
+C<-1> - default compression
+
+C<0> - no compression
+
+C<1> - best speed
+
+C<9> - best compression
+
+Default value is C<Z_DEFAULT_COMPRESSION> (-1)
+
+See L<zlib manual|https://www.zlib.net/manual.html>.
+
+=item deflate/strategy
+
+The parameter is used to tune the compression algorithm. Possible values are:
+
+C<1> - filtered
+
+C<2> - huffman only
+
+C<3> - RLE
+
+C<4> - fixed
+
+C<0> - default startegy
+
+Default value is 0
+
+See L<zlib manual|https://www.zlib.net/manual.html>.
+
+=item deflate/compression_threshold
+
+The minimum size of text I<message> payload to let the payload be compressed.
+
+Default value is C<1410>, i.e. when the message payload is going to exceed
+one TCP-segment, it will be compressed in the hope that it still be able to
+fit in.
+
+This parameter is not used, when message is created manually frame by frame,
+i.e. by frame builder
+
+    $parser->start_message()
+
+as the whole message size is not known at the moment. It's developer
+responsibility to decide, whether compress message or not:
+
+    parser->start_message({deflate => 0 | 1})
+
+=back
+
+=head2 no_deflate()
+
+Disables usage of C<permessage-deflate> compression extension at connection
+negotiation phase.
+
+=head2 max_frame_size()
+
+=head2 max_message_size()
+
+=head2 max_handshake_size()
+
+=head2 deflate_config()
+
+Returns hash-ref of deflate config. See L<configure>
+
+=head2 established()
+
+Returns C<true> if connection has been established, i.e. B<client_parser>
+successfully parsed server responce and on B<server_parser> side the
+C<accept_response> has been invoked.
+
+=head2 recv_closed()
+
+No further frames/messages are expected from a peer, as C<OPCODE_CLOSE>
+has been received.
+
+=head2 send_closed()
+
+No further frames/messages are expected to a peer, as C<OPCODE_CLOSE>
+has been sent.
+
+=head2 is_deflate_active()
+
+Returns true if connection has been established and peer has agreed to
+use per-message deflate extension.
+
+=head2 get_frames()
+
+=head2 get_frames($data)
+
+Optionally appends $data to internal buffer and tries to parse it.
+
+In list context it returns all parsed L<frames|Protocol::WebSocket::XS::Frame>;
+in scalar context it returns L<Protocol::WebSocket::XS::FrameIterator>.
+
+This operation is destructive, i.e. once parsed data is be removed
+from internal buffer and accessible only via high-level interface,
+i.e. as L<Protocol::WebSocket::XS::Frame> or
+L<FrameIterator|Protocol::WebSocket::XS::FrameIterato>
+
+=head2 get_messages()
+
+=head2 get_messages($data)
+
+Optionally appends $data to internal buffer and tries to parse it.
+
+In list context it returns all parsed L<messages|Protocol::WebSocket::XS::Message>;
+in scalar context it returns L<Protocol::WebSocket::XS::MessageIterator>.
+
+This operation is destructive, i.e. once parsed data is be removed
+from internal buffer and accessible only via high-level interface,
+i.e. as L<Message|Protocol::WebSocket::XS::Message> or
+L<MessageIterator|Protocol::WebSocket::XS::MessageIterator>.
+
+=head2 start_message($config = {})
+
+Returns new L<FrameBuilder|Protocol::WebSocket::XS::FrameBuilder>, assuming that
+a developer will manually compose message from frames.
+
+    my $builder = $parser->start_message({ deflate => 0, opcode => OPCODE_BINARY, final => 0});
+
+Options in $config
+
+=over 2
+
+=item deflate (bool)
+
+Use compression (default) for the B<whole message> or not.
+
+=item final (bool)
+
+Gives a hint, whether the next payload forms a final frame
+(i.e. finishes message) or not (default).
+
+=item opcode
+
+B<Message> opcode (L<Protocol::WebSocket::XS>). Possible values:
+
+OPCODE_TEXT
+
+OPCODE_BINARY (default)
+
+=back
+
+=head2 send_control($opcode, $payload = '')
+
+Returns serialized single frame control message with the specified opcode (see
+L<Protocol::WebSocket::XS>) and optional payload.
+
+The constructed frame is always final and is never compressed.
+
+=head2 send_ping($payload = '')
+
+Returns serialized single frame ping-message with optional payload.
+
+The constructed frame is always final and is never compressed.
+
+=head2 send_pong($payload = '')
+
+Returns serialized single frame pong-message with optional payload.
+
+The constructed frame is always final and is never compressed.
+
+=head2 send_close($code, $payload = '')
+
+Returns serializes close frame with the specified code (see
+L<Protocol::WebSocket::XS>) and optional payload.
+
+The constructed frame is always final and is never compressed.
+
+=head2 send_message($settings)
+
+=over 2
+
+=item deflate (default: unspecified)
+
+=item opcode (default: OPCODE_BINARY)
+
+=item payload
+
+=back
+
+Returns serialized single frame message with the supplied C<payload> data.
+
+When C<deflate> option is specified, then the payload is either compressed
+or not. Otherwise, if C<deflate> option is not specified, then compression
+is determined by the following policy:
+
+If the C<opcode> is C<OPCODE_BINARY>, then compression is not applied.
+
+If the C<opcode> is C<OPCODE_TEXT> and payload length exceeds
+C<compression_threshold> (see L<configure>) then compression is applied.
+
+Otherwise payload is sent uncompressed.
+
+Example:
+
+    my $data = $parser->send_message({
+        opcode  => OPCODE_TEXT,
+        deflate => 1,
+        payload => 'Lorem ipsum dolor',
+    });
+
+
+=head2 send_message_av($settings)
+
+    my $data = $parser->send_message_av({
+        opcode  => OPCODE_TEXT,
+        deflate => 1,
+        payload => [qw/Lorem ipsum dolor/],
+    });
+
+See L<send_message> for description and parameters. This method might be
+a little bit more effective if payload is already scattered as there is no
+need to merge it into single buffer and then drop.
+
+=head2 send_message_multiframe($settings)
+
+    my $data = $parser->send_message_multiframe({
+        opcode  => OPCODE_BINARY,
+        deflate => 0,
+        payload => [qw/Lorem ipsum dolor/],
+    });
+
+See L<send_message> for parameters.
+
+This method sends one mesassage as multiple frames. It iss useful if it is
+desirable to preserve payload decomposition into multiple pieces, which
+will be serialized as multiple frames.
+
+C<deflate> should always be set to C<0>, as it is generally impossilbe to
+keep original pieces borders and let them to be compressed.
+
+=head2 reset()
+
+Clears internal state and reset buffer.
+
+=head1 SEE ALSO
+
+L<rfc6455|https://tools.ietf.org/html/rfc6455>
+
+L<rfc7692|https://tools.ietf.org/html/rfc7692>
+
+L<zlib|https://www.zlib.net>
+
+L<Protocol::WebSocket::XS>
+
+L<Protocol::WebSocket::XS::ClientParser>
+
+L<Protocol::WebSocket::XS::ConnectRequest>
+
+L<Protocol::WebSocket::XS::ConnectResponse>
+
+L<Protocol::WebSocket::XS::Frame>
+
+L<Protocol::WebSocket::XS::FrameBuilder>
+
+L<Protocol::WebSocket::XS::FrameIterator>
+
+L<Protocol::WebSocket::XS::Message>
+
+L<Protocol::WebSocket::XS::MessageIterator>
+
+L<Protocol::WebSocket::XS::ServerParser>
+
+=head1 AUTHOR
+
+Pronin Oleg <syber@cpan.org>, Crazy Panda LTD
+
+Ivan Baidakou <i.baydakov@dev.crazypanda.ru>, Crazy Panda LTD
+
+=head1 LICENSE
+
+You may distribute this code under the same terms as Perl itself.
+
+=cut

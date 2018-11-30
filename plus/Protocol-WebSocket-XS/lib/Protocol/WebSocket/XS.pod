@@ -1,16 +1,183 @@
 =head1 NAME
 
-Protocol::WebSocket::XS - WebSocket extremely fast server/client zero-copy incremental parser library with Perl and C++ interface.
+Protocol::WebSocket::XS - WebSocket extremely fast websocket parser
 
 =cut
 
+=head1 SYNOPSIS
+
+    use URI::XS;
+    use Protocol::WebSocket::XS::ClientParser;
+    use Protocol::WebSocket::XS::ServerParser;
+
+    my $client = Protocol::WebSocket::XS::ClientParser->new;
+    my $req_str = $client->connect_request({
+        uri           => URI::XS->new("ws://example.com/"),
+        ws_key        => "dGhlIHNhbXBsZSBub25jZQ==",
+        ws_protocol   => "chat",
+        ws_extensions => [ [ 'permessage-deflate'] ],
+        headers       => {
+            'Origin'          => 'http://www.crazypanda.ru',
+            'User-Agent'      => 'My-UA',
+        },
+    });
+
+    my $server = Protocol::WebSocket::XS::ServerParser->new;
+    my $req    = $server->accept($req_str);
+
+    my $accept_reply_str = $req->error ? $server->accept_error : $server->accept_response;
+    my $reply = $client->connect($accept_reply_str);   # => isa 'Protocol::WebSocket::XS::ConnectResponse'
+    $client->established;                       # => success
+    $client->is_deflate_active;                 # => success
+    $server->is_deflate_active;                 # => success
+
+    # control frames
+    my $data_1 = $client->send_control(OPCODE_PING, "hello");
+    my ($frame_1) = $server->get_frames($data_1);
+
+    $frame_1->payload;                          # => 'hello'
+    $frame_1->payload_length;                   # => 5
+    $frame_1->is_control;                       # => success
+    $frame_1->opcode;                           # => OPCODE_PING
+    $frame_1->final;                            # => success
+
+    # send message split by frame
+    my $builder = $server->start_message({opcode => OPCODE_TEXT, final => 0, deflate => 0});
+    my $data_2 = $builder->send("Lorem ");
+    my $data_3 = $builder->send("ipsum ");
+    my $data_4 = $builder->final(1)->send("dolor ");
+
+    my $message_data = join('', $data_2, $data_3, $data_4);
+    my ($message_1) = $client->get_messages($message_data);
+
+    $message_1->opcode;                         # => OPCODE_TEXT
+    $message_1->is_control;                     # => 0
+    $message_1->payload_length;                 # => 18
+    $message_1->payload;                        # => 'Lorem ipsum dolor '
+    $message_1->frame_count;                    # => 3
+
+    # convenient way just to send message
+    my $data_5 = $client->send_message({deflate => 1, payload => 'sit amet, '});
+
+    # pieces merged into single frame/message
+    my @payload_pieces = ('consectetur ', 'adipiscing ', 'elit.');
+    my $data_6 = $client->send_message_av({deflate => 0, payload => \@payload_pieces});
+    my $fit = $server->get_frames($data_6);    # => isa 'Protocol::WebSocket::XS::FrameIterator'
+    $fit->next;                                # => isa 'Protocol::WebSocket::XS::Frame'
+    $fit->next;                                # => undef
+
+    # pieces are send as frames; a bit faster, when you already have your data and compression
+    # is turned off
+    my $data_7 = $client->send_message_multiframe({deflate => 0, payload =>\@payload_pieces});
+    my $mit = $server->get_messages($data_7);  # => isa 'Protocol::WebSocket::XS::MessageIterator'
+    my $message_2 = $mit->next;                # => isa 'Protocol::WebSocket::XS::Message'
+    $message_2->frame_count;                   # => 3
+
+    # server/client configuration
+    my $client2 = Protocol::WebSocket::XS::ClientParser->new;
+    $client2->configure({
+        max_frame_size     => 1024 * 10,
+        max_message_size   => 1024 * 100,
+        max_handshake_size => 1024 * 5,
+        deflate            => {             # always on by default
+            compression_threshold => 0,     # compress all TEXT-frames
+        },
+    });
+
+    # completely disable compression; effective before connection establishment
+    $client2->no_deflate;
+
 =head1 DESCRIPTION
 
-=head1 SYNOPSIS
+C<Protocol::WebSocket::XS> is extremely fast server/client zero-copy
+incremental WebSocket (L<rfc6455|https://tools.ietf.org/html/rfc6455>) parser
+library with Perl and C++ interface.
+
+The library supports compression (a.k.a. per-message deflate extension, see
+L<rfc7692|https://tools.ietf.org/html/rfc7692>) via C<zlib> C library, which
+is enabled by default for all text messages exceeding TCP max segment
+size (1410 bytes).
+
+The C++ interfaces of the library can be used to maximize performance, due to
+no overhead occurs in Perl-C++ data marshalling; in other words it is friendly
+to XS servers and frameworks, written in C++.
+
+=head1 EXPORTED CONSTANTS
+
+=head2 OPCODE_CONTINUE
+
+=head2 OPCODE_TEXT
+
+=head2 OPCODE_BINARY
+
+=head2 OPCODE_CLOSE
+
+=head2 OPCODE_PING
+
+=head2 OPCODE_PONG
+
+=head2 CLOSE_DONE
+
+=head2 CLOSE_AWAY
+
+=head2 CLOSE_PROTOCOL_ERROR
+
+=head2 CLOSE_INVALID_DATA
+
+=head2 CLOSE_UNKNOWN
+
+=head2 CLOSE_ABNORMALLY
+
+=head2 CLOSE_INVALID_TEXT
+
+=head2 CLOSE_BAD_REQUEST
+
+=head2 CLOSE_MAX_SIZE
+
+=head2 CLOSE_EXTENSION_NEEDED
+
+=head2 CLOSE_INTERNAL_ERROR
+
+=head2 CLOSE_TLS
+
+
+=head1 SEE ALSO
+
+L<rfc6455|https://tools.ietf.org/html/rfc6455>
+
+L<rfc7692|https://tools.ietf.org/html/rfc7692>
+
+L<Protocol::WebSocket::XS::ClientParser>
+
+L<Protocol::WebSocket::XS::ConnectRequest>
+
+L<Protocol::WebSocket::XS::ConnectResponse>
+
+L<Protocol::WebSocket::XS::Frame>
+
+L<Protocol::WebSocket::XS::FrameBuilder>
+
+L<Protocol::WebSocket::XS::FrameIterator>
+
+L<Protocol::WebSocket::XS::HTTPPacket>
+
+L<Protocol::WebSocket::XS::HTTPRequest>
+
+L<Protocol::WebSocket::XS::HTTPResponse>
+
+L<Protocol::WebSocket::XS::Message>
+
+L<Protocol::WebSocket::XS::MessageIterator>
+
+L<Protocol::WebSocket::XS::Parser>
+
+L<Protocol::WebSocket::XS::ServerParser>
 
 =head1 AUTHOR
 
 Pronin Oleg <syber@cpan.org>, Crazy Panda LTD
+
+Ivan Baidakou <i.baydakov@dev.crazypanda.ru>, Crazy Panda LTD
 
 =head1 LICENSE
 

@@ -15,7 +15,7 @@ subtest 'one frame message' => sub {
 };
 
 subtest 'multi frame message' => sub {
-    my $bin = $p->send_message_multiframe({deflate => 0, payloads => [qw/first second third/]});
+    my $bin = $p->send_message_multiframe({deflate => 0, payload => [qw/first second third/]});
     is(length($bin), 22, "message length ok"); # (2 header + 5 payload) + (2 header + 6 payload) + (2 header + 5 payload)
     is_bin($bin, gen_frame({mask => 0, fin => 0, opcode => OPCODE_BINARY, data => "first"}).
                  gen_frame({mask => 0, fin => 0, opcode => OPCODE_CONTINUE, data => "second"}).

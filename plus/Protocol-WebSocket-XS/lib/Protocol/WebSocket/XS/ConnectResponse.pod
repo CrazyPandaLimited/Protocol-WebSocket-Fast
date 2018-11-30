@@ -1,0 +1,105 @@
+=head1 NAME
+
+Protocol::WebSocket::XS::ConnectResponse - Server HTTP response for websocket connection request
+
+=cut
+
+=head1 SYNOPSIS
+
+    use Protocol::WebSocket::XS::ConnectResponse;
+
+    my $response = Protocol::WebSocket::XS::ConnectResponse->new({
+        code          => '404',
+        message       => 'Not Found',
+        body          => '...',
+        headers       => { 'Cache-Control' => 'no-cache'},
+        ws_protocol   => "chat",
+        ws_extensions => [["ext1"], ["ext2", {arg1 => 1}]],
+    });
+
+    $response->ws_protocol;                          # => 'chat'
+    $response->ws_protocol('bla-bla');
+    $response->ws_protocol;                          # => 'bla-bla'
+
+    $response->ws_extensions;                        # => is_deeply ([["ext1"], ["ext2", {arg1 => 1}]])
+    $response->ws_extensions([]);
+    $response->ws_extensions;                        # => is_deeply([])
+
+
+=head1 DESCRIPTION
+
+Extends base class L<Protocol::WebSocket::XS::HTTPResponse> with websocket-related
+details, namely (in case of successfully established connection):
+
+1. Hard-coded headers, code and message, required by L<Protocol::WebSocket::XS>, e.g.
+C<101 Switching Protocols>.
+
+2. User-defined websocket headers, e.g. C<Sec-WebSocket-Protocol>.
+
+3. Selected subset of server-supported extensions and their options, initially proposed
+by client in the request if they match server-configuration, e.g.
+C<Sec-WebSocket-Extensions>
+
+3. User-supplied custom headers, if needed.
+
+=head1 METHODS
+
+=head2 new($params)
+
+=head2 init($params)
+
+Additional params on top of C<Protocol::WebSocket::XS::HTTPResponse::init>
+
+=over 2
+
+=item ws_protocol (string)
+
+Identifies application specific communication protocol.
+
+See L<rfc6455|https://tools.ietf.org/html/rfc6455> (look for C<Sec-WebSocket-Protocol>).
+
+=item ws_extensions(array)
+
+Additional extensions and their options, which client has been offered by client-side
+and server-side aggrees to use. The extensions, which are provided
+by the module and enabled by user (default), will be added automatically by
+L<Protocol::WebSocket::XS::ServerParser>.
+
+User-supplied extensions wasn't tested yet, but it should be possible to let them work
+at L<Protocol::WebSocket::XS::Frame> or L<Protocol::WebSocket::XS::Message> level.
+
+=back
+
+=head2 ws_protocol()
+
+=head2 ws_protocol($string)
+
+=head2 ws_extensions()
+
+=head2 ws_extensions($array)
+
+=head1 SEE ALSO
+
+L<rfc6455|https://tools.ietf.org/html/rfc6455>
+
+L<Protocol::WebSocket::XS>
+
+L<Protocol::WebSocket::XS::ConnectRequest>
+
+L<Protocol::WebSocket::XS::ClientParser>
+
+L<Protocol::WebSocket::XS::HTTPRequest>
+
+L<Protocol::WebSocket::XS::ServerParser>
+
+=head1 AUTHOR
+
+Pronin Oleg <syber@cpan.org>, Crazy Panda LTD
+
+Ivan Baidakou <i.baydakov@dev.crazypanda.ru>, Crazy Panda LTD
+
+=head1 LICENSE
+
+You may distribute this code under the same terms as Perl itself.
+
+=cut

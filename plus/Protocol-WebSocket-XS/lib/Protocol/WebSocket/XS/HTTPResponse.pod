@@ -1,0 +1,80 @@
+=head1 NAME
+
+Protocol::WebSocket::XS::HTTPResponse - represents HTTP response object
+
+=cut
+
+=head1 SYNOPSIS
+
+    use Protocol::WebSocket::XS::HTTPResponse;
+
+    my $res = Protocol::WebSocket::XS::HTTPResponse->new({
+        code    => '404',
+        message => 'Not Found',
+        body    => '...',
+        headers => { 'Cache-Control' => 'no-cache'},
+    });
+
+    $res->code;                         # => 404
+    $res->code(403);
+    $res->code;                         # => 403
+
+    $res->message;                      # => 'Not Found'
+    $res->message('Not Authorized');
+    $res->message;                      # => 'Not Authorized'
+
+
+=head1 DESCRIPTION
+
+Extends base class L<Protocol::WebSocket::XS::HTTPPacket> with HTTP-response
+specific details.
+
+=head1 METHODS
+
+=head2 init($params)
+
+Additional params on top of C<Protocol::WebSocket::XS::HTTPPacket::init>
+
+=over 2
+
+=item code (int)
+
+=item message(string)
+
+=back
+
+=head2 code()
+
+=head2 code($int)
+
+Gets and sets code in HTTP responce.
+
+=head2 message()
+
+=head2 message($string)
+
+Gets and sets message in HTTP request.
+
+=head1 SEE ALSO
+
+L<Protocol::WebSocket::XS>
+
+L<Protocol::WebSocket::XS::ConnectResponse>
+
+L<Protocol::WebSocket::XS::HTTPPacket>
+
+L<Protocol::WebSocket::XS::HTTPRequest>
+
+L<URI::XS>
+
+=head1 AUTHOR
+
+Pronin Oleg <syber@cpan.org>, Crazy Panda LTD
+
+Ivan Baidakou <i.baydakov@dev.crazypanda.ru>, Crazy Panda LTD
+
+=head1 LICENSE
+
+You may distribute this code under the same terms as Perl itself.
+
+=cut

@@ -1,0 +1,67 @@
+=head1 NAME
+
+Protocol::WebSocket::XS::Frame - WebSocket Frame class
+
+=cut
+
+=head1 DESCRIPTION
+
+The class represents a frame received via WebSocket protocol.
+
+You cannot instantiate an object of the class direcly, it can be accessed
+via L<Protocol::WebSocket::XS::FrameIterator> or
+L<Protocol::WebSocket::XS::Parser>.
+
+You cannot modify Frame object, all provided methods are read only.
+
+=head1 METHODS
+
+=head2 error()
+
+Returns error occured during frame parsing(string); returns C<undef> otherwise.
+
+=head2 opcode()
+
+See L<Protocol::WebSocket::XS>.
+
+=head2 is_control()
+
+=head2 final()
+
+=head2 payload_length()
+
+=head2 payload()
+
+Returns payload as string
+
+=head2 close_code()
+
+See L<Protocol::WebSocket::XS>.
+
+=head2 close_message()
+
+Returns close message as string
+
+=head1 SEE ALSO
+
+L<rfc6455|https://tools.ietf.org/html/rfc6455>
+
+L<Protocol::WebSocket::XS>
+
+L<Protocol::WebSocket::XS::FrameIterator>
+
+L<Protocol::WebSocket::XS::Message>
+
+L<Protocol::WebSocket::XS::Parser>
+
+=head1 AUTHOR
+
+Pronin Oleg <syber@cpan.org>, Crazy Panda LTD
+
+Ivan Baidakou <i.baydakov@dev.crazypanda.ru>, Crazy Panda LTD
+
+=head1 LICENSE
+
+You may distribute this code under the same terms as Perl itself.
+
+=cut
