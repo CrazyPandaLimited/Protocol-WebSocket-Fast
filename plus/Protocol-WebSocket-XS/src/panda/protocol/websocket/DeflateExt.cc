@@ -200,6 +200,10 @@ string& DeflateExt::compress(string& str, bool final) {
 bool DeflateExt::uncompress(Frame& frame) {
     bool r;
     if (frame.error) r = false;
+    else if (frame.is_control()) {
+        frame.error = "compression of control frames is not allowed (rfc7692)";
+        r = false;
+    }
     else if (frame.payload_length() == 0) r = true;
     else {
         r = uncompress_impl(frame);

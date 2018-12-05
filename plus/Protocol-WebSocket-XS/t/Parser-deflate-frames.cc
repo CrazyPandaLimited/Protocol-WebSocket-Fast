@@ -173,4 +173,13 @@ TEST_CASE("FrameBuilder & Message builder", "[deflate-extension]") {
         REQUIRE(messages_it.begin()->payload_length() == 0);
     }
 
+    SECTION("Control compressed frame") {
+        string payload;
+        FrameHeader fh(Opcode::PING, true, true, false, false, true, (uint32_t)std::rand());
+        auto data_string = Frame::compile(fh, payload);
+        auto frames_it = client.get_frames(data_string);
+        REQUIRE(frames_it.begin()->error == "compression of control frames is not allowed (rfc7692)");
+    }
+
+
 }
