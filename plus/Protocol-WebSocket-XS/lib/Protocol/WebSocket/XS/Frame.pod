@@ -30,6 +30,9 @@ See L<Protocol::WebSocket::XS>.
 
 =head2 payload_length()
 
+Returns frame payload length, i.e. size of transferred bytes over network.
+Might not match the size of actual payload, e.g. if it was compressed.
+
 =head2 payload()
 
 Returns payload as string

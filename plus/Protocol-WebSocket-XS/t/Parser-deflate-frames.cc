@@ -163,7 +163,28 @@ TEST_CASE("FrameBuilder & Message builder", "[deflate-extension]") {
         }
     }
 
-    SECTION("Emtpy compressed frame") {
+    SECTION("empty compressed frame with zero payload") {
+        string payload;
+        REQUIRE(payload.length() == 0);
+        //auto builder =
+        auto data = server.start_message().deflate(true).final(true).send(payload);
+        auto data_string = to_string(data);
+
+        SECTION("zero uncompressed payload") {
+            auto messages_it = client.get_messages(data_string);
+            REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
+            REQUIRE(messages_it.begin()->payload_length() == 0);
+        }
+
+        SECTION("non-zero network payload") {
+            auto frames_it = client.get_frames(data_string);
+            REQUIRE(std::distance(frames_it.begin(), frames_it.end()) == 1);
+            REQUIRE(frames_it.begin()->payload_length() == 1);
+        }
+    }
+
+
+    SECTION("compressed frame with zero payload") {
         string payload;
         REQUIRE(payload.length() == 0);
         FrameHeader fh(Opcode::TEXT, true, true, false, false, true, (uint32_t)std::rand());

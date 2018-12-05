@@ -26,8 +26,10 @@ bool Message::add_frame (const Frame& frame) {
         return true;
     }
 
-    for (const auto& s : frame.payload) payload.push_back(s);
-    _payload_length += frame.payload_length();
+    for (const auto& s : frame.payload) {
+        _payload_length += s.length();
+        payload.push_back(s);
+    }
 
     if (frame.final()) _state = State::DONE;
 
