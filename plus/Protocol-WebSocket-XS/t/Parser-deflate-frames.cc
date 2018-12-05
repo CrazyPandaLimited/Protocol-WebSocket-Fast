@@ -37,7 +37,7 @@ TEST_CASE("FrameBuilder & Message builder", "[deflate-extension]") {
     REQUIRE(server.is_deflate_active());
     REQUIRE(client.is_deflate_active());
 
-    SECTION("FrameBufffer") {
+    SECTION("FrameBuffer") {
         SECTION("send (iterator)") {
             std::vector<string> fragments;
             fragments.push_back("hello");
@@ -161,7 +161,16 @@ TEST_CASE("FrameBuilder & Message builder", "[deflate-extension]") {
             auto it = messages_it.begin();
             REQUIRE(it->payload.empty());
         }
+    }
 
+    SECTION("Emtpy compressed frame") {
+        string payload;
+        REQUIRE(payload.length() == 0);
+        FrameHeader fh(Opcode::TEXT, true, true, false, false, true, (uint32_t)std::rand());
+        auto data_string = Frame::compile(fh, payload);
+        auto messages_it = client.get_messages(data_string);
+        REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
+        REQUIRE(messages_it.begin()->payload_length() == 0);
     }
 
 }

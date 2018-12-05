@@ -114,6 +114,7 @@ public:
 
 private:
     void reset_rx();
+    bool uncompress_impl(Frame& frame);
 
     DeflateExt(const Config& cfg, Role role);
     z_stream rx_stream;

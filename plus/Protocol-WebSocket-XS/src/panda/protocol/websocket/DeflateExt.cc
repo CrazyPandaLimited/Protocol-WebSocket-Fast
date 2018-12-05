@@ -198,16 +198,27 @@ string& DeflateExt::compress(string& str, bool final) {
 }
 
 bool DeflateExt::uncompress(Frame& frame) {
-    using It = decltype(frame.payload)::iterator;
-    if(frame.error) return false;
-    string acc;
+    bool r;
+    if (frame.error) r = false;
+    else if (frame.payload_length() == 0) r = true;
+    else {
+        r = uncompress_impl(frame);
+    }
+    if(frame.final() && reset_after_rx) reset_rx();
+    return r;
+}
 
-    It it_in = frame.payload.begin();
-    It end = frame.payload.end();
-    size_t sz = frame.payload_length();
-    acc.reserve(sz);
+bool DeflateExt::uncompress_impl(Frame& frame) {
+    using It = decltype(frame.payload)::iterator;
 
     bool final = frame.final();
+    It it_in = frame.payload.begin();
+    It end = frame.payload.end();
+
+    size_t sz = frame.payload_length();
+    string acc;
+    acc.reserve(sz);
+
     rx_stream.next_out = reinterpret_cast<Bytef*>(acc.buf());
     rx_stream.avail_out = static_cast<uInt>(acc.capacity());
     do {
@@ -255,7 +266,6 @@ bool DeflateExt::uncompress(Frame& frame) {
     frame.payload.resize(1);
     frame.payload.at(0) = std::move(acc);
 
-    if(final && reset_after_rx) reset_rx();
     return true;
 }
 
