@@ -2,6 +2,7 @@
 #include <deque>
 #include <bitset>
 #include <iterator>
+#include <panda/log.h>
 #include <panda/refcnt.h>
 #include <panda/string.h>
 #include <panda/optional.h>
@@ -109,7 +110,10 @@ public:
 
     string     send_control (Opcode opcode)                  { return send_control_frame(opcode); }
     StringPair send_control (Opcode opcode, string& payload) {
-        if (payload.length() > Frame::MAX_CONTROL_PAYLOAD) throw std::invalid_argument("control frame payload is too long");
+        if (payload.length() > Frame::MAX_CONTROL_PAYLOAD) {
+            panda_log_critical("control frame payload is too long");
+            payload.offset(0, Frame::MAX_CONTROL_PAYLOAD);
+        }
         return send_control_frame(payload, opcode);
     }
 

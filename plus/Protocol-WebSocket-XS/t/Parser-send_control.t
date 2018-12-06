@@ -17,7 +17,11 @@ subtest 'send_control PING' => sub {
         is(length($bin), 127, "frame length ok");
         is_bin($bin, gen_frame({fin => 1, opcode => OPCODE_PING, data => "h" x 125}), "frame ok");
     };
-    dies_ok { $p->send_control(OPCODE_PING, "h" x 126) } "dies with long payload";
+    subtest 'long payload' => sub {
+        my $bin = $p->send_control(OPCODE_PING, "h" x 126);
+        is(length($bin), 127, "frame length ok");
+        is_bin($bin, gen_frame({fin => 1, opcode => OPCODE_PING, data => "h" x 125}), "frame ok");
+    }
 };
 
 subtest 'send_control PONG' => sub {
@@ -31,7 +35,11 @@ subtest 'send_control PONG' => sub {
         is(length($bin), 10, "frame length ok");
         is_bin($bin, gen_frame({fin => 1, opcode => OPCODE_PONG, data => "hi there"}), "frame ok");
     };
-    dies_ok { $p->send_control(OPCODE_PONG, "h" x 126) } "dies with long payload";
+    subtest 'long payload' => sub {
+        my $bin = $p->send_control(OPCODE_PONG, "h" x 126);
+        is(length($bin), 127, "frame length ok");
+        is_bin($bin, gen_frame({fin => 1, opcode => OPCODE_PONG, data => "h" x 125}), "frame ok");
+    };
 };
 
 subtest 'send_control CLOSE' => sub {
@@ -52,7 +60,12 @@ subtest 'send_control CLOSE' => sub {
         MyTest::reset($p);
     };
 
-    dies_ok { $p->send_control(OPCODE_CLOSE, "h" x 126) } "dies with long payload";
+    subtest 'long payload' => sub {
+        my $bin = $p->send_control(OPCODE_CLOSE, "h" x 126);
+        is(length($bin), 127, "frame length ok");
+        is_bin($bin, gen_frame({fin => 1, opcode => OPCODE_CLOSE, data => "h" x 125}), "frame ok");
+        MyTest::reset($p);
+    };
 };
 
 subtest 'send_ping' => sub {
@@ -66,7 +79,11 @@ subtest 'send_ping' => sub {
         is(length($bin), 10, "frame length ok");
         is_bin($bin, gen_frame({fin => 1, opcode => OPCODE_PING, data => "hi buddy"}), "frame ok");
     };
-    dies_ok { $p->send_ping("h" x 126) } "dies with long payload";
+    subtest 'long payload' => sub {
+        my $bin = $p->send_ping("h" x 126);
+        is(length($bin), 127, "frame length ok");
+        is_bin($bin, gen_frame({fin => 1, opcode => OPCODE_PING, data => "h" x 125}), "frame ok");
+    };
 };
 
 subtest 'send_pong' => sub {
@@ -80,7 +97,11 @@ subtest 'send_pong' => sub {
         is(length($bin), 10, "frame length ok");
         is_bin($bin, gen_frame({fin => 1, opcode => OPCODE_PONG, data => "hi buddy"}), "frame ok");
     };
-    dies_ok { $p->send_pong("h" x 126) } "dies with long payload";
+    subtest 'long payload' => sub {
+        my $bin = $p->send_pong("h" x 126);
+        is(length($bin), 127, "frame length ok");
+        is_bin($bin, gen_frame({fin => 1, opcode => OPCODE_PONG, data => "h" x 125}), "frame ok");
+    };
 };
 
 subtest 'send_close' => sub {
@@ -102,7 +123,12 @@ subtest 'send_close' => sub {
         is_bin($bin, gen_frame({fin => 1, opcode => OPCODE_CLOSE, close_code => CLOSE_AWAY, data => "f" x 123}), "frame ok");
         MyTest::reset($p);
     };
-    dies_ok { $p->send_close(CLOSE_DONE, "h" x 124) } "dies with long payload";
+    subtest 'with code and long payload' => sub {
+        my $bin = $p->send_close(CLOSE_AWAY, "f" x 127);
+        is(length($bin), 127, "frame length ok");
+        is_bin($bin, gen_frame({fin => 1, opcode => OPCODE_CLOSE, close_code => CLOSE_AWAY, data => "f" x 123}), "frame ok");
+        MyTest::reset($p);
+    };
 };
 
 subtest 'control frames do not reset message state in frame mode' => sub {

@@ -288,6 +288,8 @@ OPCODE_BINARY (default)
 Returns serialized single frame control message with the specified opcode (see
 L<Protocol::WebSocket::XS>) and optional payload.
 
+Max payload length is 125, everythin bigger will be cut.
+
 The constructed frame is always final and is never compressed.
 
 =head2 send_ping($payload = '')
@@ -306,6 +308,8 @@ The constructed frame is always final and is never compressed.
 
 Returns serializes close frame with the specified code (see
 L<Protocol::WebSocket::XS>) and optional payload.
+
+Max payload length is 123, everythin bigger will be cut.
 
 The constructed frame is always final and is never compressed.
 
