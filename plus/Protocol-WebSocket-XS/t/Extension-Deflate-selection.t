@@ -89,7 +89,7 @@ subtest "permessage-deflate extension in server reply" => sub {
         my $res_str = $creq->error ? $server->accept_error : $server->accept_response;
         like $str, qr/permessage-deflate/;
         like $res_str, qr/permessage-deflate/;
-        like $res_str, qr/client_max_window_bits[^=]/;
+        like $res_str, qr/client_max_window_bits=15/;
         ok $server->is_deflate_active;
 
         $client->connect($res_str);
@@ -244,6 +244,25 @@ END
 
 };
 
+subtest "SRV-1229 bufix" => sub {
+    my $request_str =<<END;
+GET / HTTP/1.1\r
+User-Agent: Panda-WebSocket\r
+Upgrade: websocket\r
+Connection: Upgrade\r
+Host: crazypanda.ru\r
+Sec-WebSocket-Extensions: permessage-deflate; server_max_window_bits=13; client_max_window_bits\r
+Sec-WebSocket-Version: 13\r
+Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r
+\r
+END
+    my $server = Protocol::WebSocket::XS::ServerParser->new;
+    my $res = $server->accept($request_str) or die "should not happen";
+    my $res_str = $res->error ? $server->accept_error : $server->accept_response;
+    note $res_str;
+    like $res_str, qr/permessage-deflate/;
+    like $res_str, qr/client_max_window_bits=15/;
+};
 
 subtest "configuration getters" => sub {
     my $client = Protocol::WebSocket::XS::ClientParser->new;

@@ -41,14 +41,14 @@ subtest 'simple connect' => sub {
         message       => 'Switching Protocols',
         ws_accept_key => 's3pPLMBiTxaQ9kYGzzhZRbK+xOo=',
         ws_protocol   => 'killme',
-        ws_extensions => [ [ 'permessage-deflate', , { 'client_max_window_bits' => '' } ] ],
+        ws_extensions => [ [ 'permessage-deflate', , { 'client_max_window_bits' => '15' } ] ],
         headers       => {
             'connection'               => 'Upgrade',
             'upgrade'                  => 'websocket',
             'sec-websocket-accept'     => 's3pPLMBiTxaQ9kYGzzhZRbK+xOo=',
             'sec-websocket-protocol'   => 'killme',
             'server'                   => ignore(),
-            'sec-websocket-extensions' => 'permessage-deflate; client_max_window_bits',
+            'sec-websocket-extensions' => 'permessage-deflate; client_max_window_bits=15',
         },
     });
 };

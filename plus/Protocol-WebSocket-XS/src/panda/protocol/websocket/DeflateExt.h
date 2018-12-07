@@ -12,14 +12,29 @@ class DeflateExt {
 public:
 
     struct Config {
-        bool client_no_context_takeover = false;
-        bool server_no_context_takeover = false;
+        bool client_no_context_takeover = false;    // sent is only, when it is true; always parsed
+        bool server_no_context_takeover = false;    // sent is only, when it is true; always parsed
         std::uint8_t server_max_window_bits = 15;
         std::uint8_t client_max_window_bits = 15;
+
+        // non-negotiatiable settings
         int mem_level = 8;
         int compression_level = Z_DEFAULT_COMPRESSION;
         int strategy = Z_DEFAULT_STRATEGY;
         size_t compression_threshold = 1410;  // try to fit into TCP frame
+    };
+
+    struct EffectiveConfig {
+        static const constexpr int HAS_CLIENT_NO_CONTEXT_TAKEOVER = 1 << 0;
+        static const constexpr int HAS_SERVER_NO_CONTEXT_TAKEOVER = 1 << 1;
+        static const constexpr int HAS_SERVER_MAX_WINDOW_BITS     = 1 << 2;
+        static const constexpr int HAS_CLIENT_MAX_WINDOW_BITS     = 1 << 3;
+
+        int flags = 0;
+        bool client_no_context_takeover;
+        bool server_no_context_takeover;
+        std::uint8_t server_max_window_bits;
+        std::uint8_t client_max_window_bits;
     };
 
     enum class Role { CLIENT, SERVER };
@@ -28,9 +43,9 @@ public:
 
     static panda::optional<panda::string> bootstrap();
 
-    static const HTTPPacket::HeaderValue* select(const HTTPPacket::HeaderValues& values, const Config& cfg, Role role);
+    static panda::optional<EffectiveConfig> select(const HTTPPacket::HeaderValues& values, const Config& cfg, Role role);
     static void request(HTTPPacket::HeaderValues& ws_extensions, const Config& cfg);
-    static DeflateExt* uplift(const HTTPPacket::HeaderValue& deflate_extension, HTTPPacket::HeaderValues& extensions, Role role);
+    static DeflateExt* uplift(const EffectiveConfig& cfg, HTTPPacket::HeaderValues& extensions, Role role);
 
     ~DeflateExt();
 

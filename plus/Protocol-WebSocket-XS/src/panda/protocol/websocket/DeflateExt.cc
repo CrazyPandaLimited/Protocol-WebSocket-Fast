@@ -4,6 +4,10 @@
 namespace panda { namespace protocol { namespace websocket {
 
 const char* DeflateExt::extension_name = "permessage-deflate";
+static const char* PARAM_SERVER_NO_CONTEXT_TAKEOVER = "server_no_context_takeover";
+static const char* PARAM_CLIENT_NO_CONTEXT_TAKEOVER = "client_no_context_takeover";
+static const char* PARAM_SERVER_MAX_WINDOW_BITS = "server_max_window_bits";
+static const char* PARAM_CLIENT_MAX_WINDOW_BITS = "client_max_window_bits";
 
 panda::optional<panda::string> DeflateExt::bootstrap() {
     using result_t = panda::optional<panda::string>;
@@ -19,10 +23,10 @@ panda::optional<panda::string> DeflateExt::bootstrap() {
 
 void DeflateExt::request(HTTPPacket::HeaderValues& ws_extensions, const Config& cfg) {
     HTTPPacket::HeaderValueParams params;
-    params.emplace("server_max_window_bits", panda::to_string(cfg.server_max_window_bits));
-    params.emplace("client_max_window_bits", panda::to_string(cfg.client_max_window_bits));
-    if(cfg.server_no_context_takeover) params.emplace("server_no_context_takeover", "");
-    if(cfg.client_no_context_takeover) params.emplace("client_no_context_takeover", "");
+    params.emplace(PARAM_SERVER_MAX_WINDOW_BITS, panda::to_string(cfg.server_max_window_bits));
+    params.emplace(PARAM_CLIENT_MAX_WINDOW_BITS, panda::to_string(cfg.client_max_window_bits));
+    if(cfg.server_no_context_takeover) params.emplace(PARAM_SERVER_NO_CONTEXT_TAKEOVER, "");
+    if(cfg.client_no_context_takeover) params.emplace(PARAM_CLIENT_NO_CONTEXT_TAKEOVER, "");
 
     string name{extension_name};
     HTTPPacket::HeaderValue hv {name, std::move(params)};
@@ -30,60 +34,84 @@ void DeflateExt::request(HTTPPacket::HeaderValues& ws_extensions, const Config& 
 }
 
 
-static bool get_window_bits(const string& value, std::int8_t& bits) {
+static bool get_window_bits(const string& value, std::uint8_t& bits) {
     auto res = std::from_chars(value.data(), value.data() + value.size(), bits, 10);
     return !res.ec && (bits >= 8) && (bits <= 15);
 }
 
-const HTTPPacket::HeaderValue* DeflateExt::select(const HTTPPacket::HeaderValues& values, const Config& cfg, Role role) {
+panda::optional<DeflateExt::EffectiveConfig> DeflateExt::select(const HTTPPacket::HeaderValues& values, const Config& cfg, Role role) {
+    using result_t = panda::optional<DeflateExt::EffectiveConfig>;
     for(auto& header: values) {
         if (header.name == extension_name) {
+            EffectiveConfig ecfg;
             bool params_correct = true;
-            for(auto& it: header.params) {
-                auto& param_name = it.first;
-                auto& param_value = it.second;
-                if (param_name == "server_no_context_takeover") params_correct = params_correct && param_value == "";
-                else if (param_name == "client_no_context_takeover") params_correct = params_correct && param_value == "";
-                else if (param_name == "server_max_window_bits") {
-                    std::int8_t bits;
-                    params_correct = params_correct && get_window_bits(param_value, bits);
-                    if(params_correct && role == Role::CLIENT) {
-                         params_correct = bits == cfg.server_max_window_bits;
-                         // ignore for, use it later for compression client messages
+            for(auto it = begin(header.params); params_correct && it != end(header.params); ++it) {
+                auto& param_name = it->first;
+                auto& param_value = it->second;
+                if (param_name == PARAM_SERVER_NO_CONTEXT_TAKEOVER) {
+                    ecfg.flags |= EffectiveConfig::HAS_SERVER_NO_CONTEXT_TAKEOVER;
+                }
+                else if (param_name == PARAM_CLIENT_NO_CONTEXT_TAKEOVER) {
+                    ecfg.flags |= EffectiveConfig::HAS_CLIENT_NO_CONTEXT_TAKEOVER;
+                }
+                else if (param_name == PARAM_SERVER_MAX_WINDOW_BITS) {
+                    ecfg.flags |= EffectiveConfig::HAS_SERVER_MAX_WINDOW_BITS;
+                    std::uint8_t bits;
+                    params_correct = get_window_bits(param_value, bits);
+                    if (params_correct) {
+                        ecfg.server_max_window_bits = bits;
+                        if (role == Role::CLIENT) {
+                            params_correct = bits == cfg.server_max_window_bits;
+                        } else {
+                            params_correct = bits <= cfg.server_max_window_bits;
+                        }
                     }
                 }
-                else if (param_name == "client_max_window_bits") {
-                    std::int8_t bits;
+                else if (param_name == PARAM_CLIENT_MAX_WINDOW_BITS) {
+                    ecfg.flags |= EffectiveConfig::HAS_CLIENT_MAX_WINDOW_BITS;
+                    std::uint8_t bits;
                     // value is optional
                     if (param_value) {
-                        params_correct = params_correct && get_window_bits(param_value, bits);
-                        if(params_correct && role == Role::CLIENT) {
-                             params_correct = bits == cfg.client_max_window_bits;
-                             // ignore for, use it later for decompression client messages
-                        }
-                    } else if(params_correct && role == Role::CLIENT) {
-                        params_correct = cfg.client_max_window_bits == 15;
+                        params_correct = get_window_bits(param_value, bits);
+                        ecfg.client_max_window_bits = bits;
+                        params_correct = params_correct && (
+                                (role == Role::CLIENT) ? bits == cfg.client_max_window_bits
+                                                       : bits <= cfg.client_max_window_bits
+                            );
+                    } else {
+                        ecfg.client_max_window_bits = 15;
+                        // the value must be supplied in server response, otherwise (for client) it is invalid
+                        params_correct = role == Role::SERVER;
                     }
                 } else { params_correct = false; }  // unknown parameter
             }
-            if (params_correct) return &header;
+            // first best match wins
+            if (params_correct) return result_t { ecfg };
         }
     }
-    return nullptr;
+    return result_t{};
 }
 
-DeflateExt* DeflateExt::uplift(const HTTPPacket::HeaderValue& deflate_extension, HTTPPacket::HeaderValues& extensions, Role role) {
+DeflateExt* DeflateExt::uplift(const EffectiveConfig& ecfg, HTTPPacket::HeaderValues& extensions, Role role) {
     Config cfg;
-    for(auto& it: deflate_extension.params) {
-        auto& param_name = it.first;
-        auto& param_value = it.second;
-        if (param_name == "server_no_context_takeover") cfg.server_no_context_takeover = true;
-        if (param_name == "client_no_context_takeover") cfg.client_no_context_takeover = true;
-        if (param_name == "server_max_window_bits") cfg.server_max_window_bits = static_cast<std::uint8_t>(panda::stoi(param_value));
-        if (param_name == "client_max_window_bits") cfg.client_max_window_bits = param_value ? static_cast<std::uint8_t>(panda::stoi(param_value)) : 15;
+    HTTPPacket::HeaderValueParams params;
+    if (ecfg.flags & EffectiveConfig::HAS_SERVER_NO_CONTEXT_TAKEOVER) {
+        cfg.server_no_context_takeover = true;
+        params.emplace(PARAM_SERVER_NO_CONTEXT_TAKEOVER, "");
     }
-    // echo back best match
-    extensions.push_back(deflate_extension);
+    if (ecfg.flags & EffectiveConfig::HAS_CLIENT_NO_CONTEXT_TAKEOVER) {
+        cfg.client_no_context_takeover = true;
+        params.emplace(PARAM_CLIENT_NO_CONTEXT_TAKEOVER, "");
+    }
+    if (ecfg.flags & EffectiveConfig::HAS_SERVER_MAX_WINDOW_BITS) {
+        cfg.server_max_window_bits = ecfg.server_max_window_bits;
+        params.emplace(PARAM_SERVER_MAX_WINDOW_BITS, to_string(ecfg.server_max_window_bits));
+    }
+    if (ecfg.flags & EffectiveConfig::HAS_CLIENT_MAX_WINDOW_BITS) {
+        cfg.client_max_window_bits = ecfg.client_max_window_bits;
+        params.emplace(PARAM_CLIENT_MAX_WINDOW_BITS, to_string(ecfg.client_max_window_bits));
+    }
+    extensions.emplace_back(HTTPPacket::HeaderValue{string(extension_name), params});
     return new DeflateExt(cfg, role);
 }
 
