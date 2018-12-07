@@ -256,5 +256,55 @@ subtest "no_deflate" => sub {
     is( substr($bin, 2), $payload);
 };
 
+subtest "zip-bomb prevention (check max_message_size)" => sub {
+    subtest "single frame/message exceeds limit" => sub {
+        my ($c, $s) = $create_pair->(sub {
+            my ($c, $s) = @_;
+            $_->configure({max_message_size => 100, deflate => { compression_threshold => 0 }}) for ($c, $s);
+        });
+
+        my $payload = join("", ('0') x (101));
+        my $bin = $s->send_message({payload => $payload, opcode => OPCODE_TEXT});
+        note "payload length: ", length($bin);
+        my ($m) = $c->get_messages($bin);
+        ok $m;
+        like $m->error, qr/zlib::inflate error: max message size has been reached/;
+    };
+
+    subtest "multi-frame/message exceeds limit" => sub {
+        my ($c, $s) = $create_pair->(sub {
+            my ($c, $s) = @_;
+            $_->configure({max_message_size => 100, deflate => { compression_threshold => 0 }}) for ($c, $s);
+        });
+
+        my $payload_1 = join("", ('0') x (60));
+        my $payload_2 = $payload_1;
+        my $builder = $s->start_message({final => 0, deflate => 1});
+        my $bin_1 = $builder->send($payload_1);
+        my $bin_2 = $builder->final(1)->send($payload_2);
+        my $bin = $bin_1 . $bin_2;
+        note "payload lengths: ", length($bin_1) , " and ", length($bin_2);
+        my ($m) = $c->get_messages($bin);
+        ok $m;
+        like $m->error, qr/zlib::inflate error: max message size has been reached/;
+    };
+
+    subtest "exact message size is allowed" => sub {
+        my ($c, $s) = $create_pair->(sub {
+            my ($c, $s) = @_;
+            $_->configure({max_message_size => 100, deflate => { compression_threshold => 0 }}) for ($c, $s);
+        });
+
+        my $payload = join("", ('0') x (100));
+        my $bin = $s->send_message({payload => $payload, opcode => OPCODE_TEXT});
+        note "payload length: ", length($bin);
+        my ($m) = $c->get_messages($bin);
+        ok $m;
+        ok !$m->error;
+        ok $m->payload, $payload;
+    };
+
+};
+
 
 done_testing;

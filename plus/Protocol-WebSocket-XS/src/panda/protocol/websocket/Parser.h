@@ -133,7 +133,10 @@ public:
         _max_message_size   = cfg.max_message_size;
         _max_handshake_size = cfg.max_handshake_size;
 
-        if (!_state[STATE_ESTABLISHED]) _deflate_cfg = cfg.deflate_config;
+        if (!_state[STATE_ESTABLISHED]) {
+            _deflate_cfg = cfg.deflate_config;
+            if (_deflate_cfg) _deflate_cfg->max_message_size = _max_message_size;
+        }
     }
 
     size_t max_frame_size()     const { return  _max_frame_size; }

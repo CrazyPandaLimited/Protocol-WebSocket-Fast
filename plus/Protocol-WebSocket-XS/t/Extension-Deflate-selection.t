@@ -11,9 +11,10 @@ subtest "default config" => sub {
     my $server = Protocol::WebSocket::XS::ServerParser->new;
     $server->configure({ deflate => undef });
     is $server->deflate_config, undef;
-    $server->configure({ deflate => {client_no_context_takeover => 1 }});
+    $server->configure({ deflate => {client_no_context_takeover => 1, mem_level => 5 }});
     ok $server->deflate_config;
     is $server->deflate_config->{compression_level}, -1, "default settings";
+    is $server->deflate_config->{mem_level}, 5, "supplied settings";
 };
 
 subtest "permessage-deflate extension in request" => sub {

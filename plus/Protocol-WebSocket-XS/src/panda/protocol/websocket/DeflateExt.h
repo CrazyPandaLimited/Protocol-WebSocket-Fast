@@ -17,6 +17,8 @@ public:
         std::uint8_t server_max_window_bits = 15;
         std::uint8_t client_max_window_bits = 15;
 
+        // copied from parser config, no direct usage
+        size_t max_message_size;
         // non-negotiatiable settings
         int mem_level = 8;
         int compression_level = Z_DEFAULT_COMPRESSION;
@@ -30,11 +32,8 @@ public:
         static const constexpr int HAS_SERVER_MAX_WINDOW_BITS     = 1 << 2;
         static const constexpr int HAS_CLIENT_MAX_WINDOW_BITS     = 1 << 3;
 
+        Config cfg;
         int flags = 0;
-        bool client_no_context_takeover;
-        bool server_no_context_takeover;
-        std::uint8_t server_max_window_bits;
-        std::uint8_t client_max_window_bits;
     };
 
     enum class Role { CLIENT, SERVER };
@@ -132,6 +131,8 @@ private:
     bool uncompress_impl(Frame& frame);
 
     DeflateExt(const Config& cfg, Role role);
+    size_t message_size;
+    size_t max_message_size;
     z_stream rx_stream;
     z_stream tx_stream;
     bool reset_after_tx;
