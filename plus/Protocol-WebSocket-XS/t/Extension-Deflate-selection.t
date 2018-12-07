@@ -7,6 +7,15 @@ my $req = {
     ws_key => "dGhlIHNhbXBsZSBub25jZQ==",
 };
 
+subtest "default config" => sub {
+    my $server = Protocol::WebSocket::XS::ServerParser->new;
+    $server->configure({ deflate => undef });
+    is $server->deflate_config, undef;
+    $server->configure({ deflate => {client_no_context_takeover => 1 }});
+    ok $server->deflate_config;
+    is $server->deflate_config->{compression_level}, -1, "default settings";
+};
+
 subtest "permessage-deflate extension in request" => sub {
     subtest "no deflate enabled => no extension" => sub {
         my $client = Protocol::WebSocket::XS::ClientParser->new;

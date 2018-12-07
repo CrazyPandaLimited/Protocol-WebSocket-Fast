@@ -9,6 +9,7 @@ void Parser::configure(Hash settings) {
     if ((val = settings.fetch("max_message_size")))   cfg.max_message_size   = Simple(val);
     if ((val = settings.fetch("max_handshake_size"))) cfg.max_handshake_size = Simple(val);
 
+    if(settings.exists("deflate")) cfg.deflate_config.reset();
     Hash deflate_settings = settings.fetch("deflate");
     if (deflate_settings) {
         DeflateExt::Config dcfg;
