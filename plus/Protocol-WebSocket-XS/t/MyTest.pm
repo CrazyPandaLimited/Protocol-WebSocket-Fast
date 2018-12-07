@@ -5,6 +5,7 @@ use Test::Catch;
 use Test::More;
 use Test::Deep;
 use Test::Exception;
+use Test::Fatal;
 use Protocol::WebSocket::XS;
 use Data::Dumper 'Dumper';
 use Panda::Lib qw/crypt_xor/;
@@ -21,6 +22,7 @@ sub import {
     my $caller = caller();
     foreach my $sym_name (qw/
         plan is is_deeply cmp_deeply ok done_testing skip isnt pass fail cmp_ok like isa_ok unlike ignore code all any noneof methods subtest dies_ok note
+        exception
         Dumper is_bin catch_run
         OPCODE_CONTINUE OPCODE_TEXT OPCODE_BINARY OPCODE_CLOSE OPCODE_PING OPCODE_PONG
         CLOSE_DONE CLOSE_AWAY CLOSE_PROTOCOL_ERROR CLOSE_INVALID_DATA CLOSE_UNKNOWN CLOSE_ABNORMALLY CLOSE_INVALID_TEXT

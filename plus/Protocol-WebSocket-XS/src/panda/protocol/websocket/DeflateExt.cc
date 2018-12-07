@@ -36,7 +36,7 @@ void DeflateExt::request(HTTPPacket::HeaderValues& ws_extensions, const Config& 
 
 static bool get_window_bits(const string& value, std::uint8_t& bits) {
     auto res = std::from_chars(value.data(), value.data() + value.size(), bits, 10);
-    return !res.ec && (bits >= 8) && (bits <= 15);
+    return !res.ec && (bits >= 9) && (bits <= 15);
 }
 
 panda::optional<DeflateExt::EffectiveConfig> DeflateExt::select(const HTTPPacket::HeaderValues& values, const Config& cfg, Role role) {
@@ -127,7 +127,8 @@ DeflateExt::DeflateExt(const DeflateExt::Config& cfg, Role role): message_size{0
     // -1 is used as "raw deflate", i.e. do not emit header/trailers
     auto r = inflateInit2(&rx_stream, -1 * rx_window);
     if (r != Z_OK) {
-        panda::string err = panda::string("zlib::inflateInit2 error ") + rx_stream.msg;
+        panda::string err = "zlib::inflateInit2 error";
+        if (rx_stream.msg) err.append(panda::string(" : ") + rx_stream.msg);
         throw std::runtime_error(err);
     }
 
@@ -140,7 +141,8 @@ DeflateExt::DeflateExt(const DeflateExt::Config& cfg, Role role): message_size{0
     // -1 is used as "raw deflate", i.e. do not emit header/trailers
     r = deflateInit2(&tx_stream, cfg.compression_level, Z_DEFLATED, -1 * tx_window , cfg.mem_level, cfg.strategy);
     if (r != Z_OK) {
-        panda::string err = panda::string("zlib::deflateInit2 error ") +rx_stream.msg;
+        panda::string err = "zlib::deflateInit2 error";
+        if (rx_stream.msg) err.append(panda::string(" : ") + rx_stream.msg);
         throw std::runtime_error(err);
     }
 

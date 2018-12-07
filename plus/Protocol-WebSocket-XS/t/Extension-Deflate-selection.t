@@ -274,6 +274,53 @@ END
     like $res_str, qr/client_max_window_bits=15/;
 };
 
+subtest "8-bit windows are not allowed" => sub {
+    subtest "server ignores permessage-deflate option with window_bits=8, and uses no compression" => sub {
+        my $req = {
+            uri           => "ws://crazypanda.ru",
+            ws_key        => "dGhlIHNhbXBsZSBub25jZQ==",
+        };
+
+        subtest "8-bit request is rejected" => sub {
+            my $server = Protocol::WebSocket::XS::ServerParser->new;
+            my $client = Protocol::WebSocket::XS::ClientParser->new;
+            $client->configure({deflate => { client_max_window_bits => 9 }});
+
+            my $str = $client->connect_request($req);
+            $str =~ s/window_bits=9/window_bits=8/g;
+            my $creq = $server->accept($str) or die "should not happen";
+            my $res_str = $creq->error ? $server->accept_error : $server->accept_response;
+            like $str, qr/permessage-deflate/;
+            unlike $res_str, qr/permessage-deflate/;
+            ok !$server->is_deflate_active;
+
+            $client->connect($res_str);
+            ok $client->established;
+            ok !$client->is_deflate_active;
+        };
+
+        subtest "8-bit responce is rejected" => sub {
+            my $server = Protocol::WebSocket::XS::ServerParser->new;
+            my $client = Protocol::WebSocket::XS::ClientParser->new;
+            $client->configure({deflate => { client_max_window_bits => 9 }});
+
+            my $str = $client->connect_request($req);
+            my $creq = $server->accept($str) or die "should not happen";
+            my $res_str = $creq->error ? $server->accept_error : $server->accept_response;
+            like $str, qr/permessage-deflate/;
+            like $res_str, qr/permessage-deflate/;
+            ok $server->is_deflate_active;
+
+            $res_str =~ s/window_bits=9/window_bits=8/g;
+            $client->connect($res_str);
+=TODO
+            ok !$client->established;
+            ok !$client->is_deflate_active;
+=cut
+        };
+    }
+};
+
 subtest "configuration getters" => sub {
     my $client = Protocol::WebSocket::XS::ClientParser->new;
     my $deflate_cfg = {
