@@ -15,7 +15,7 @@ string to_string(T range) {
 
 TEST_CASE("FrameBuilder & Message builder", "[deflate-extension]") {
     Parser::Config cfg;
-    cfg.deflate_config.compression_threshold = 0;
+    cfg.deflate_config->compression_threshold = 0;
 
     ServerParser server;
     server.configure(cfg);

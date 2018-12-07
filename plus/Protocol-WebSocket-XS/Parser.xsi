@@ -3,7 +3,6 @@ PROTOTYPES: DISABLE
 
 void Parser::configure(Hash settings) {
     Parser::Config cfg;
-    DeflateExt::Config& dcfg = cfg.deflate_config;
 
     Scalar val;
     if ((val = settings.fetch("max_frame_size")))     cfg.max_frame_size     = Simple(val);
@@ -11,14 +10,19 @@ void Parser::configure(Hash settings) {
     if ((val = settings.fetch("max_handshake_size"))) cfg.max_handshake_size = Simple(val);
 
     Hash deflate_settings = settings.fetch("deflate");
-    if ((val = deflate_settings.fetch("server_max_window_bits")))     dcfg.server_max_window_bits     = static_cast<std::uint8_t>(Simple(val));
-    if ((val = deflate_settings.fetch("client_max_window_bits")))     dcfg.client_max_window_bits     = static_cast<std::uint8_t>(Simple(val));
-    if ((val = deflate_settings.fetch("client_no_context_takeover"))) dcfg.client_no_context_takeover = SvTRUE(val);
-    if ((val = deflate_settings.fetch("server_no_context_takeover"))) dcfg.server_no_context_takeover = SvTRUE(val);
-    if ((val = deflate_settings.fetch("mem_level")))                  dcfg.mem_level                  = Simple(val);
-    if ((val = deflate_settings.fetch("compression_level")))          dcfg.compression_level          = Simple(val);
-    if ((val = deflate_settings.fetch("strategy")))                   dcfg.strategy                   = Simple(val);
-    if ((val = deflate_settings.fetch("compression_threshold")))      dcfg.compression_threshold      = Simple(val);
+    if (deflate_settings) {
+        DeflateExt::Config dcfg;
+
+        if ((val = deflate_settings.fetch("server_max_window_bits")))     dcfg.server_max_window_bits     = static_cast<std::uint8_t>(Simple(val));
+        if ((val = deflate_settings.fetch("client_max_window_bits")))     dcfg.client_max_window_bits     = static_cast<std::uint8_t>(Simple(val));
+        if ((val = deflate_settings.fetch("client_no_context_takeover"))) dcfg.client_no_context_takeover = SvTRUE(val);
+        if ((val = deflate_settings.fetch("server_no_context_takeover"))) dcfg.server_no_context_takeover = SvTRUE(val);
+        if ((val = deflate_settings.fetch("mem_level")))                  dcfg.mem_level                  = Simple(val);
+        if ((val = deflate_settings.fetch("compression_level")))          dcfg.compression_level          = Simple(val);
+        if ((val = deflate_settings.fetch("strategy")))                   dcfg.strategy                   = Simple(val);
+        if ((val = deflate_settings.fetch("compression_threshold")))      dcfg.compression_threshold      = Simple(val);
+        cfg.deflate_config = dcfg;
+    }
 
     THIS->configure(cfg);
 }
