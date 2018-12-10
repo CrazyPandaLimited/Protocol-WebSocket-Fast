@@ -90,7 +90,7 @@ string ServerParser::accept_response (ConnectResponse* res) {
         auto role = DeflateExt::Role::SERVER;
         auto deflate_matches = DeflateExt::select(exts, *_deflate_cfg, role);
         if (deflate_matches) {
-            _deflate_ext.reset(DeflateExt::uplift(*deflate_matches, used_extensions, role));
+            _deflate_ext.reset(DeflateExt::uplift(deflate_matches, used_extensions, role));
         }
     }
     res->ws_extensions(std::move(used_extensions));

@@ -52,6 +52,19 @@ Scalar Parser::deflate_config() {
     else XSRETURN_UNDEF;
 }
 
+Scalar Parser::effective_deflate_config() {
+    auto deflate_cfg = THIS->effective_deflate_config();
+    if (deflate_cfg) {
+        Hash settings = Hash::create();
+        settings.store("server_max_window_bits",     Simple(deflate_cfg->server_max_window_bits));
+        settings.store("client_max_window_bits",     Simple(deflate_cfg->client_max_window_bits));
+        settings.store("client_no_context_takeover", Simple(deflate_cfg->client_no_context_takeover));
+        settings.store("server_no_context_takeover", Simple(deflate_cfg->server_no_context_takeover));
+        RETVAL = Ref::create(settings);
+    }
+    else XSRETURN_UNDEF;
+}
+
 bool Parser::established ()
 
 bool Parser::recv_closed ()

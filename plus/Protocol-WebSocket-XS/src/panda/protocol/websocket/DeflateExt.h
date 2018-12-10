@@ -31,9 +31,25 @@ public:
         static const constexpr int HAS_SERVER_NO_CONTEXT_TAKEOVER = 1 << 1;
         static const constexpr int HAS_SERVER_MAX_WINDOW_BITS     = 1 << 2;
         static const constexpr int HAS_CLIENT_MAX_WINDOW_BITS     = 1 << 3;
+        enum class NegotiationsResult { SUCCESS, NOT_FOUND, ERROR };
+
+        EffectiveConfig(const Config& cfg_, NegotiationsResult result_): cfg{cfg_}, result{result_} {}
+        EffectiveConfig(NegotiationsResult result_): result{result_} {}
+
+        explicit operator bool() const { return result == NegotiationsResult::SUCCESS; }
 
         Config cfg;
         int flags = 0;
+        NegotiationsResult result;
+    };
+
+    struct NegotiationsResult {
+        enum class Result { SUCCESS, NOT_FOUND, ERROR };
+
+
+        Config cfg;
+        int flags = 0;
+        Result result = Result::ERROR;
     };
 
     enum class Role { CLIENT, SERVER };
@@ -42,7 +58,7 @@ public:
 
     static panda::optional<panda::string> bootstrap();
 
-    static panda::optional<EffectiveConfig> select(const HTTPPacket::HeaderValues& values, const Config& cfg, Role role);
+    static EffectiveConfig select(const HTTPPacket::HeaderValues& values, const Config& cfg, Role role);
     static void request(HTTPPacket::HeaderValues& ws_extensions, const Config& cfg);
     static DeflateExt* uplift(const EffectiveConfig& cfg, HTTPPacket::HeaderValues& extensions, Role role);
 
@@ -126,11 +142,14 @@ public:
 
     bool uncompress(Frame& frame);
 
+    const Config& effective_config() const { return effective_cfg; }
+
 private:
     void reset_rx();
     bool uncompress_impl(Frame& frame);
 
     DeflateExt(const Config& cfg, Role role);
+    Config effective_cfg;
     size_t message_size;
     size_t max_message_size;
     z_stream rx_stream;

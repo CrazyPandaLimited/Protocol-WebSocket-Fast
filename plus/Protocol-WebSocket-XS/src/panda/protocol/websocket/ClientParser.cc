@@ -33,24 +33,32 @@ ConnectResponseSP ClientParser::connect (string& buf) {
         _connect_response->_ws_key = _connect_request->ws_key;
     }
 
-    if (!_connect_response->parse(buf)) return NULL;
+    if (!_connect_response->parse(buf)) return nullptr;
 
     _state.set(STATE_CONNECTION_RESPONSE_PARSED);
+
+    if (!_connect_response->error && _deflate_cfg) {
+        using result_t = DeflateExt::EffectiveConfig::NegotiationsResult;
+        auto& exts = _connect_response->ws_extensions();
+        HTTPPacket::HeaderValues used_extensions;
+        auto role = DeflateExt::Role::CLIENT;
+        auto deflate_matches = DeflateExt::select(exts, *_deflate_cfg, role);
+        switch (deflate_matches.result) {
+        case result_t::SUCCESS:
+            _deflate_ext.reset(DeflateExt::uplift(deflate_matches, used_extensions, role));
+            _connect_response->ws_extensions(used_extensions);
+            break;
+        case result_t::NOT_FOUND:
+            /* NOOP */
+            break;
+        case result_t::ERROR:
+            _connect_response->error = "deflate paramenters negotiation error";
+        }
+    }
 
     if (!_connect_response->error) {
         _buffer = buf;       // if something remains in buf, user can get it via get_frames() or get_messages() without buf param.
         _state.set(STATE_ESTABLISHED);
-
-        if (_deflate_cfg) {
-            auto& exts = _connect_response->ws_extensions();
-            HTTPPacket::HeaderValues used_extensions;
-            auto role = DeflateExt::Role::CLIENT;
-            auto deflate_matches = DeflateExt::select(exts, *_deflate_cfg, role);
-            if (deflate_matches) {
-                _deflate_ext.reset(DeflateExt::uplift(*deflate_matches, used_extensions, role));
-            }
-            _connect_response->ws_extensions(used_extensions);
-        }
     }
 
     ConnectResponseSP ret(_connect_response);

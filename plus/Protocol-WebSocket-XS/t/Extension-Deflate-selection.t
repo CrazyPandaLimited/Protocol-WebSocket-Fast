@@ -195,7 +195,7 @@ subtest "permessage-deflate extension in server reply" => sub {
 
     };
 
-    subtest "client deflate: on, server deflate: on (wrong params) => extension: off" => sub {
+    subtest "client deflate: on, server deflate: on (wrong params) => no connection" => sub {
         subtest "offected other windows size" => sub {
             my $client = Protocol::WebSocket::XS::ClientParser->new;
 
@@ -209,9 +209,10 @@ Server: Panda-WebSocket\r
 Upgrade: websocket\r
 \r
 END
-            $client->connect($res_str);
-            ok $client->established;
+            my $conn_res = $client->connect($res_str);
+            ok !$client->established;
             ok !$client->is_deflate_active;
+            is $conn_res->error, 'deflate paramenters negotiation error';
         };
 
         subtest "offected garbage windows size" => sub {
@@ -227,9 +228,10 @@ Server: Panda-WebSocket\r
 Upgrade: websocket\r
 \r
 END
-            $client->connect($res_str);
-            ok $client->established;
+            my $conn_res = $client->connect($res_str);
+            ok !$client->established;
             ok !$client->is_deflate_active;
+            is $conn_res->error, 'deflate paramenters negotiation error';
         };
 
         subtest "offected garbage extension parameter" => sub {
@@ -245,9 +247,10 @@ Server: Panda-WebSocket\r
 Upgrade: websocket\r
 \r
 END
-            $client->connect($res_str);
-            ok $client->established;
+            my $conn_res = $client->connect($res_str);
+            ok !$client->established;
             ok !$client->is_deflate_active;
+            is $conn_res->error, 'deflate paramenters negotiation error';
         };
 
     };
@@ -312,11 +315,28 @@ subtest "8-bit windows are not allowed" => sub {
             ok $server->is_deflate_active;
 
             $res_str =~ s/window_bits=9/window_bits=8/g;
-            $client->connect($res_str);
-=TODO
+            my $conn_res = $client->connect($res_str);
             ok !$client->established;
             ok !$client->is_deflate_active;
-=cut
+            is $conn_res->error, 'deflate paramenters negotiation error';
+        };
+
+        subtest "9-bit window is OK" => sub {
+            my $server = Protocol::WebSocket::XS::ServerParser->new;
+            my $client = Protocol::WebSocket::XS::ClientParser->new;
+            $_->configure({deflate => { client_max_window_bits => 9 }}) for ($server, $client);
+
+            my $str = $client->connect_request($req);
+            my $creq = $server->accept($str) or die "should not happen";
+            my $res_str = $creq->error ? $server->accept_error : $server->accept_response;
+            $client->connect($res_str);
+            ok $client->established;
+            ok $client->is_deflate_active;
+            ok $server->is_deflate_active;
+            is $client->effective_deflate_config->{client_max_window_bits}, 9;
+            is $client->effective_deflate_config->{server_max_window_bits}, 15;
+            is $server->effective_deflate_config->{client_max_window_bits}, 9;
+            is $server->effective_deflate_config->{server_max_window_bits}, 15;
         };
     }
 };

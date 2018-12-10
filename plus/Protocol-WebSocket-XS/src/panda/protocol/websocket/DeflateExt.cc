@@ -39,12 +39,10 @@ static bool get_window_bits(const string& value, std::uint8_t& bits) {
     return !res.ec && (bits >= 9) && (bits <= 15);
 }
 
-panda::optional<DeflateExt::EffectiveConfig> DeflateExt::select(const HTTPPacket::HeaderValues& values, const Config& cfg, Role role) {
-    using result_t = panda::optional<DeflateExt::EffectiveConfig>;
+DeflateExt::EffectiveConfig DeflateExt::select(const HTTPPacket::HeaderValues& values, const Config& cfg, Role role) {
     for(auto& header: values) {
         if (header.name == extension_name) {
-            EffectiveConfig ecfg;
-            ecfg.cfg = cfg;
+            EffectiveConfig ecfg(cfg, EffectiveConfig::NegotiationsResult::ERROR);
             bool params_correct = true;
             for(auto it = begin(header.params); params_correct && it != end(header.params); ++it) {
                 auto& param_name = it->first;
@@ -88,11 +86,19 @@ panda::optional<DeflateExt::EffectiveConfig> DeflateExt::select(const HTTPPacket
                     }
                 } else { params_correct = false; }  // unknown parameter
             }
-            // first best match wins
-            if (params_correct) return result_t { ecfg };
+            if (params_correct) {
+                // first best match wins (for server & client)
+                ecfg.result = EffectiveConfig::NegotiationsResult::SUCCESS;
+                return ecfg;
+            }
+            else if (role == Role::CLIENT) {
+                // first fail (and terminate connection)
+                return ecfg;
+            }
+
         }
     }
-    return result_t{};
+    return EffectiveConfig(EffectiveConfig::NegotiationsResult::NOT_FOUND);
 }
 
 DeflateExt* DeflateExt::uplift(const EffectiveConfig& ecfg, HTTPPacket::HeaderValues& extensions, Role role) {
@@ -114,7 +120,7 @@ DeflateExt* DeflateExt::uplift(const EffectiveConfig& ecfg, HTTPPacket::HeaderVa
 }
 
 
-DeflateExt::DeflateExt(const DeflateExt::Config& cfg, Role role): message_size{0}, max_message_size{cfg.max_message_size} {
+DeflateExt::DeflateExt(const DeflateExt::Config& cfg, Role role): effective_cfg{cfg}, message_size{0}, max_message_size{cfg.max_message_size} {
     auto rx_window = role == Role::CLIENT ? cfg.server_max_window_bits : cfg.client_max_window_bits;
     auto tx_window = role == Role::CLIENT ? cfg.client_max_window_bits : cfg.server_max_window_bits;
 
