@@ -5,7 +5,7 @@
 
 namespace panda { namespace protocol { namespace websocket {
 
-struct Parser;
+class Parser;
 
 class FrameBuilder {
 public:
