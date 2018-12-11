@@ -2,6 +2,7 @@
 #include <deque>
 #include <bitset>
 #include <iterator>
+#include <panda/log.h>
 #include <panda/refcnt.h>
 #include <panda/string.h>
 #include <panda/optional.h>
@@ -70,11 +71,11 @@ public:
     typedef panda::optional<DeflateExt::Config>  DeflateConfigOption;
 
     struct Config {
-        Config():max_frame_size{0}, max_message_size{0}, max_handshake_size{0}, deflate_config{} {}
+        Config():max_frame_size{0}, max_message_size{0}, max_handshake_size{0}, deflate_config{ DeflateExt::Config() } {}
         size_t max_frame_size;
         size_t max_message_size;
         size_t max_handshake_size;
-        DeflateExt::Config deflate_config;
+        DeflateConfigOption deflate_config;
     };
 
     bool established () const { return _state[STATE_ESTABLISHED]; }
@@ -109,7 +110,10 @@ public:
 
     string     send_control (Opcode opcode)                  { return send_control_frame(opcode); }
     StringPair send_control (Opcode opcode, string& payload) {
-        if (payload.length() > Frame::MAX_CONTROL_PAYLOAD) throw std::invalid_argument("control frame payload is too long");
+        if (payload.length() > Frame::MAX_CONTROL_PAYLOAD) {
+            panda_log_critical("control frame payload is too long");
+            payload.offset(0, Frame::MAX_CONTROL_PAYLOAD);
+        }
         return send_control_frame(payload, opcode);
     }
 
@@ -129,7 +133,10 @@ public:
         _max_message_size   = cfg.max_message_size;
         _max_handshake_size = cfg.max_handshake_size;
 
-        if (!_state[STATE_ESTABLISHED]) _deflate_cfg = cfg.deflate_config;
+        if (!_state[STATE_ESTABLISHED]) {
+            _deflate_cfg = cfg.deflate_config;
+            if (_deflate_cfg) _deflate_cfg->max_message_size = _max_message_size;
+        }
     }
 
     size_t max_frame_size()     const { return  _max_frame_size; }
@@ -143,7 +150,12 @@ public:
 
     virtual void reset ();
 
-    bool is_deflate_active() { return (bool)_deflate_ext; }
+    bool is_deflate_active() const { return (bool)_deflate_ext; }
+    panda::optional<DeflateExt::Config> effective_deflate_config() const {
+        using result_t = panda::optional<DeflateExt::Config>;
+        if (!_deflate_ext) return result_t{};
+        return result_t{ _deflate_ext->effective_config() };
+    }
 
     virtual ~Parser () {}
 

@@ -1,6 +1,7 @@
 use 5.020;
 use warnings;
 use lib 't'; use MyTest;
+use Test::Fatal;
 
 my $create_pair = sub {
     my $configure = shift;
@@ -256,5 +257,102 @@ subtest "no_deflate" => sub {
     is( substr($bin, 2), $payload);
 };
 
+subtest "zip-bomb prevention (check max_message_size)" => sub {
+    subtest "single frame/message exceeds limit" => sub {
+        my ($c, $s) = $create_pair->(sub {
+            my ($c, $s) = @_;
+            $_->configure({max_message_size => 100, deflate => { compression_threshold => 0 }}) for ($c, $s);
+        });
+
+        my $payload = join("", ('0') x (101));
+        my $bin = $s->send_message({payload => $payload, opcode => OPCODE_TEXT});
+        note "payload length: ", length($bin);
+        my ($m) = $c->get_messages($bin);
+        ok $m;
+        like $m->error, qr/zlib::inflate error: max message size has been reached/;
+    };
+
+    subtest "multi-frame/message exceeds limit" => sub {
+        my ($c, $s) = $create_pair->(sub {
+            my ($c, $s) = @_;
+            $_->configure({max_message_size => 100, deflate => { compression_threshold => 0 }}) for ($c, $s);
+        });
+
+        my $payload_1 = join("", ('0') x (60));
+        my $payload_2 = $payload_1;
+        my $builder = $s->start_message({final => 0, deflate => 1});
+        my $bin_1 = $builder->send($payload_1);
+        my $bin_2 = $builder->final(1)->send($payload_2);
+        my $bin = $bin_1 . $bin_2;
+        note "payload lengths: ", length($bin_1) , " and ", length($bin_2);
+        my ($m) = $c->get_messages($bin);
+        ok $m;
+        like $m->error, qr/zlib::inflate error: max message size has been reached/;
+    };
+
+    subtest "exact message size is allowed" => sub {
+        my ($c, $s) = $create_pair->(sub {
+            my ($c, $s) = @_;
+            $_->configure({max_message_size => 100, deflate => { compression_threshold => 0 }}) for ($c, $s);
+        });
+
+        my $payload = join("", ('0') x (100));
+        my $bin = $s->send_message({payload => $payload, opcode => OPCODE_TEXT});
+        note "payload length: ", length($bin);
+        my ($m) = $c->get_messages($bin);
+        ok $m;
+        ok !$m->error;
+        ok $m->payload, $payload;
+    };
+
+};
+
+subtest "windowBits == 8 zlib tests" => sub {
+    # https://github.com/faye/permessage-deflate-node/wiki/Denial-of-service-caused-by-invalid-windowBits-parameter-passed-to-zlib.createDeflateRaw()
+    # https://github.com/madler/zlib/commit/049578f0a1849f502834167e233f4c1d52ddcbcc
+
+    subtest "8-bit config" => sub {
+        my $req = {
+            uri    => "ws://crazypanda.ru",
+            ws_key => "dGhlIHNhbXBsZSBub25jZQ==",
+        };
+
+        my $client = Protocol::WebSocket::XS::ClientParser->new;
+        my $server = Protocol::WebSocket::XS::ServerParser->new;
+
+        my $config = { deflate => {
+            compression_threshold  => 0,
+            server_max_window_bits => 8,
+            client_max_window_bits => 8,
+        }};
+        $_->configure($config) for($client, $server);
+
+        my $str = $client->connect_request($req);
+        my $creq = $server->accept($str) or die "should not happen";
+        my $res_str = $creq->error ? $server->accept_error : $server->accept_response;
+
+        my $server_deflate = $client->deflate_config && $server->deflate_config;
+        like $str, qr/permessage-deflate/ if($client->deflate_config);
+        unlike $res_str, qr/permessage-deflate/ if($server->deflate_config);
+        ok !$server->is_deflate_active;
+
+        $client->connect($res_str);
+        ok $client->established;
+        ok !$client->is_deflate_active;
+    };
+
+    subtest "9-bit config is allowed" => sub {
+        my ($c, $s) = $create_pair->(sub {
+            my ($c, $s) = @_;
+            $_->configure({deflate => {
+                compression_threshold  => 0,
+                server_max_window_bits => 9,
+                client_max_window_bits => 9,
+            }}) for ($c, $s);
+        });
+        ok $c;
+        ok $s;
+    };
+};
 
 done_testing;

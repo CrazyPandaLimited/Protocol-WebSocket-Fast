@@ -15,7 +15,7 @@ string to_string(T range) {
 
 TEST_CASE("FrameBuilder & Message builder", "[deflate-extension]") {
     Parser::Config cfg;
-    cfg.deflate_config.compression_threshold = 0;
+    cfg.deflate_config->compression_threshold = 0;
 
     ServerParser server;
     server.configure(cfg);
@@ -37,7 +37,7 @@ TEST_CASE("FrameBuilder & Message builder", "[deflate-extension]") {
     REQUIRE(server.is_deflate_active());
     REQUIRE(client.is_deflate_active());
 
-    SECTION("FrameBufffer") {
+    SECTION("FrameBuffer") {
         SECTION("send (iterator)") {
             std::vector<string> fragments;
             fragments.push_back("hello");
@@ -161,7 +161,46 @@ TEST_CASE("FrameBuilder & Message builder", "[deflate-extension]") {
             auto it = messages_it.begin();
             REQUIRE(it->payload.empty());
         }
-
     }
+
+    SECTION("empty compressed frame with zero payload") {
+        string payload;
+        REQUIRE(payload.length() == 0);
+        //auto builder =
+        auto data = server.start_message().deflate(true).final(true).send(payload);
+        auto data_string = to_string(data);
+
+        SECTION("zero uncompressed payload") {
+            auto messages_it = client.get_messages(data_string);
+            REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
+            REQUIRE(messages_it.begin()->payload_length() == 0);
+        }
+
+        SECTION("non-zero network payload") {
+            auto frames_it = client.get_frames(data_string);
+            REQUIRE(std::distance(frames_it.begin(), frames_it.end()) == 1);
+            REQUIRE(frames_it.begin()->payload_length() == 1);
+        }
+    }
+
+
+    SECTION("compressed frame with zero payload") {
+        string payload;
+        REQUIRE(payload.length() == 0);
+        FrameHeader fh(Opcode::TEXT, true, true, false, false, true, (uint32_t)std::rand());
+        auto data_string = Frame::compile(fh, payload);
+        auto messages_it = client.get_messages(data_string);
+        REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
+        REQUIRE(messages_it.begin()->payload_length() == 0);
+    }
+
+    SECTION("Control compressed frame") {
+        string payload;
+        FrameHeader fh(Opcode::PING, true, true, false, false, true, (uint32_t)std::rand());
+        auto data_string = Frame::compile(fh, payload);
+        auto frames_it = client.get_frames(data_string);
+        REQUIRE(frames_it.begin()->error == "compression of control frames is not allowed (rfc7692)");
+    }
+
 
 }

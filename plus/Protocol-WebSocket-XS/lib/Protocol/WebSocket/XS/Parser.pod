@@ -61,7 +61,7 @@ Default value is 0 (unlimited)
 =item deflate/server_max_window_bits
 
 This parameter has a decimal integer value without leading
-zeroes between 8 to 15, inclusive, indicating the base-2
+zeroes between 9 to 15, inclusive, indicating the base-2
 logarithm of the LZ77 sliding window size.
 
 By including this parameter in an extension negotiation offer, a
@@ -79,7 +79,7 @@ See L<rfc7692|https://tools.ietf.org/html/rfc7692>.
 =item deflate/client_max_window_bits
 
 This parameter has a decimal integer value without leading
-zeroes between 8 to 15, inclusive, indicating the base-2
+zeroes between 9 to 15, inclusive, indicating the base-2
 logarithm of the LZ77 sliding window size.
 
 A client informs server, that it is not going to use an LZ77
@@ -288,6 +288,8 @@ OPCODE_BINARY (default)
 Returns serialized single frame control message with the specified opcode (see
 L<Protocol::WebSocket::XS>) and optional payload.
 
+Max payload length is 125, everythin bigger will be cut.
+
 The constructed frame is always final and is never compressed.
 
 =head2 send_ping($payload = '')
@@ -306,6 +308,8 @@ The constructed frame is always final and is never compressed.
 
 Returns serializes close frame with the specified code (see
 L<Protocol::WebSocket::XS>) and optional payload.
+
+Max payload length is 123, everythin bigger will be cut.
 
 The constructed frame is always final and is never compressed.
 

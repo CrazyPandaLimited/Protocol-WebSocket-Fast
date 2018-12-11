@@ -3,22 +3,27 @@ PROTOTYPES: DISABLE
 
 void Parser::configure(Hash settings) {
     Parser::Config cfg;
-    DeflateExt::Config& dcfg = cfg.deflate_config;
 
     Scalar val;
     if ((val = settings.fetch("max_frame_size")))     cfg.max_frame_size     = Simple(val);
     if ((val = settings.fetch("max_message_size")))   cfg.max_message_size   = Simple(val);
     if ((val = settings.fetch("max_handshake_size"))) cfg.max_handshake_size = Simple(val);
 
+    if(settings.exists("deflate")) cfg.deflate_config.reset();
     Hash deflate_settings = settings.fetch("deflate");
-    if ((val = deflate_settings.fetch("server_max_window_bits")))     dcfg.server_max_window_bits     = static_cast<std::uint8_t>(Simple(val));
-    if ((val = deflate_settings.fetch("client_max_window_bits")))     dcfg.client_max_window_bits     = static_cast<std::uint8_t>(Simple(val));
-    if ((val = deflate_settings.fetch("client_no_context_takeover"))) dcfg.client_no_context_takeover = SvTRUE(val);
-    if ((val = deflate_settings.fetch("server_no_context_takeover"))) dcfg.server_no_context_takeover = SvTRUE(val);
-    if ((val = deflate_settings.fetch("mem_level")))                  dcfg.mem_level                  = Simple(val);
-    if ((val = deflate_settings.fetch("compression_level")))          dcfg.compression_level          = Simple(val);
-    if ((val = deflate_settings.fetch("strategy")))                   dcfg.strategy                   = Simple(val);
-    if ((val = deflate_settings.fetch("compression_threshold")))      dcfg.compression_threshold      = Simple(val);
+    if (deflate_settings) {
+        DeflateExt::Config dcfg;
+
+        if ((val = deflate_settings.fetch("server_max_window_bits")))     dcfg.server_max_window_bits     = static_cast<std::uint8_t>(Simple(val));
+        if ((val = deflate_settings.fetch("client_max_window_bits")))     dcfg.client_max_window_bits     = static_cast<std::uint8_t>(Simple(val));
+        if ((val = deflate_settings.fetch("client_no_context_takeover"))) dcfg.client_no_context_takeover = SvTRUE(val);
+        if ((val = deflate_settings.fetch("server_no_context_takeover"))) dcfg.server_no_context_takeover = SvTRUE(val);
+        if ((val = deflate_settings.fetch("mem_level")))                  dcfg.mem_level                  = Simple(val);
+        if ((val = deflate_settings.fetch("compression_level")))          dcfg.compression_level          = Simple(val);
+        if ((val = deflate_settings.fetch("strategy")))                   dcfg.strategy                   = Simple(val);
+        if ((val = deflate_settings.fetch("compression_threshold")))      dcfg.compression_threshold      = Simple(val);
+        cfg.deflate_config = dcfg;
+    }
 
     THIS->configure(cfg);
 }
@@ -42,6 +47,19 @@ Scalar Parser::deflate_config() {
         settings.store("strategy",                   Simple(deflate_cfg->strategy));
         settings.store("compression_threshold",      Simple(deflate_cfg->compression_threshold));
 
+        RETVAL = Ref::create(settings);
+    }
+    else XSRETURN_UNDEF;
+}
+
+Scalar Parser::effective_deflate_config() {
+    auto deflate_cfg = THIS->effective_deflate_config();
+    if (deflate_cfg) {
+        Hash settings = Hash::create();
+        settings.store("server_max_window_bits",     Simple(deflate_cfg->server_max_window_bits));
+        settings.store("client_max_window_bits",     Simple(deflate_cfg->client_max_window_bits));
+        settings.store("client_no_context_takeover", Simple(deflate_cfg->client_no_context_takeover));
+        settings.store("server_no_context_takeover", Simple(deflate_cfg->server_no_context_takeover));
         RETVAL = Ref::create(settings);
     }
     else XSRETURN_UNDEF;

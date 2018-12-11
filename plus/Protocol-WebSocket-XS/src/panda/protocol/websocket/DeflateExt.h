@@ -12,14 +12,44 @@ class DeflateExt {
 public:
 
     struct Config {
-        bool client_no_context_takeover = false;
-        bool server_no_context_takeover = false;
+        bool client_no_context_takeover = false;    // sent is only, when it is true; always parsed
+        bool server_no_context_takeover = false;    // sent is only, when it is true; always parsed
         std::uint8_t server_max_window_bits = 15;
         std::uint8_t client_max_window_bits = 15;
+
+        // copied from parser config, no direct usage
+        size_t max_message_size;
+        // non-negotiatiable settings
         int mem_level = 8;
         int compression_level = Z_DEFAULT_COMPRESSION;
         int strategy = Z_DEFAULT_STRATEGY;
         size_t compression_threshold = 1410;  // try to fit into TCP frame
+    };
+
+    struct EffectiveConfig {
+        static const constexpr int HAS_CLIENT_NO_CONTEXT_TAKEOVER = 1 << 0;
+        static const constexpr int HAS_SERVER_NO_CONTEXT_TAKEOVER = 1 << 1;
+        static const constexpr int HAS_SERVER_MAX_WINDOW_BITS     = 1 << 2;
+        static const constexpr int HAS_CLIENT_MAX_WINDOW_BITS     = 1 << 3;
+        enum class NegotiationsResult { SUCCESS, NOT_FOUND, ERROR };
+
+        EffectiveConfig(const Config& cfg_, NegotiationsResult result_): cfg{cfg_}, result{result_} {}
+        EffectiveConfig(NegotiationsResult result_): result{result_} {}
+
+        explicit operator bool() const { return result == NegotiationsResult::SUCCESS; }
+
+        Config cfg;
+        int flags = 0;
+        NegotiationsResult result;
+    };
+
+    struct NegotiationsResult {
+        enum class Result { SUCCESS, NOT_FOUND, ERROR };
+
+
+        Config cfg;
+        int flags = 0;
+        Result result = Result::ERROR;
     };
 
     enum class Role { CLIENT, SERVER };
@@ -28,9 +58,9 @@ public:
 
     static panda::optional<panda::string> bootstrap();
 
-    static const HTTPPacket::HeaderValue* select(const HTTPPacket::HeaderValues& values, const Config& cfg, Role role);
+    static EffectiveConfig select(const HTTPPacket::HeaderValues& values, const Config& cfg, Role role);
     static void request(HTTPPacket::HeaderValues& ws_extensions, const Config& cfg);
-    static DeflateExt* uplift(const HTTPPacket::HeaderValue& deflate_extension, HTTPPacket::HeaderValues& extensions, Role role);
+    static DeflateExt* uplift(const EffectiveConfig& cfg, HTTPPacket::HeaderValues& extensions, Role role);
 
     ~DeflateExt();
 
@@ -112,10 +142,16 @@ public:
 
     bool uncompress(Frame& frame);
 
+    const Config& effective_config() const { return effective_cfg; }
+
 private:
     void reset_rx();
+    bool uncompress_impl(Frame& frame);
 
     DeflateExt(const Config& cfg, Role role);
+    Config effective_cfg;
+    size_t message_size;
+    size_t max_message_size;
     z_stream rx_stream;
     z_stream tx_stream;
     bool reset_after_tx;
