@@ -205,26 +205,15 @@ string& DeflateExt::compress(string& str, bool final) {
     tx_stream.avail_in = static_cast<uInt>(in_copy.length());
     tx_stream.next_out = reinterpret_cast<Bytef*>(str.shared_buf());
     tx_stream.avail_out = static_cast<uInt>(sz);
-    auto flush = Z_SYNC_FLUSH;
-    do {
-        if (!tx_stream.avail_out) {
-            sz += 6;
-            tx_stream.avail_out += 6;
-            str.reserve(sz);
-            str.length(sz);
-        }
-        auto r = deflate(&tx_stream, flush);
-        if(r < 0 && r != Z_BUF_ERROR) {
-            panda::string err = panda::string("zlib::deflate error ");
-            if (tx_stream.msg) err += tx_stream.msg;
-            throw std::runtime_error(err);
-        }
-    } while(!tx_stream.avail_out);
+
+    deflate_iteration(Z_SYNC_FLUSH, [&](){
+        sz = reserve_for_trailer(str);
+    });
 
     sz -= tx_stream.avail_out;
     // remove tail empty-frame 0x00 0x00 0xff 0xff for final messages only
     assert(sz);
-    if (final) sz -= 4;
+    if (final) sz -= TRAILER_SIZE;
     str.length(sz);
 
     if(final && reset_after_tx) reset_tx();
@@ -266,9 +255,9 @@ bool DeflateExt::uncompress_impl(Frame& frame) {
         It it_next = ++it_in;
         if (it_next == end && final) {
             // append empty-frame 0x00 0x00 0xff 0xff
-            unsigned char trailer[4] = { 0x00,  0x00, 0xFF, 0xFF };
-            chunk_in.append(reinterpret_cast<char*>(trailer), 4);
-            rx_stream.avail_in += 4;
+            unsigned char trailer[TRAILER_SIZE] = { 0x00,  0x00, 0xFF, 0xFF };
+            chunk_in.append(reinterpret_cast<char*>(trailer), TRAILER_SIZE);
+            rx_stream.avail_in += TRAILER_SIZE;
         }
         rx_stream.next_in = reinterpret_cast<Bytef*>(chunk_in.buf());
         rx_stream.avail_in = static_cast<uInt>(chunk_in.length());

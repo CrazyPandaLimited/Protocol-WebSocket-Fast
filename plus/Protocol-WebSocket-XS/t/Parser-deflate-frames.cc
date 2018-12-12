@@ -1,6 +1,7 @@
 #include <catch.hpp>
 #include <vector>
 #include <xs/protocol/websocket.h>
+#include <panda/encode/base16.h>
 
 using namespace panda;
 using namespace panda::protocol::websocket;
@@ -200,6 +201,20 @@ TEST_CASE("FrameBuilder & Message builder", "[deflate-extension]") {
         auto data_string = Frame::compile(fh, payload);
         auto frames_it = client.get_frames(data_string);
         REQUIRE(frames_it.begin()->error == "compression of control frames is not allowed (rfc7692)");
+    }
+
+    SECTION("send compressed frame bigger then original") {
+        string payload = encode::decode_base16("8e008f8f8f0090909000919191009292");
+        //string payload = "hell";
+
+        std::vector<string> fragments;
+        fragments.push_back(payload);
+        auto data = server.start_message().deflate(true).final(true).send(fragments.begin(), fragments.end());
+        auto data_string = to_string(data);
+        auto messages_it = client.get_messages(data_string);
+        REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
+        REQUIRE(messages_it.begin()->error == "");
+        //REQUIRE(messages_it.begin()->payload[0] == payload);
     }
 
 
