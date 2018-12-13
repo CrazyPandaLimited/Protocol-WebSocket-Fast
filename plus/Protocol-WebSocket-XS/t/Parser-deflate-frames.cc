@@ -209,17 +209,97 @@ TEST_CASE("FrameBuilder & Message builder", "[deflate-extension]") {
 
     SECTION("send compressed frame bigger then original") {
         string payload = encode::decode_base16("8e008f8f8f0090909000919191009292");
-        //string payload = "hell";
+        string payload_copy = payload;
 
-        std::vector<string> fragments;
-        fragments.push_back(payload);
-        auto data = server.start_message().deflate(true).final(true).send(fragments.begin(), fragments.end());
+        auto data = server.start_message().deflate(true).final(true).send(payload);
+        auto it = std::begin(data) + 1;
+        REQUIRE((*it).length() == 24);
         auto data_string = to_string(data);
         auto messages_it = client.get_messages(data_string);
         REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
-        //REQUIRE(messages_it.begin()->payload[0] == payload);
-        //REQUIRE(messages_it.begin()->error == "");
+        REQUIRE(messages_it.begin()->error == "");
+        REQUIRE(messages_it.begin()->payload[0] == payload_copy);
     }
 
+    SECTION("zlib test") {
+        string payload = encode::decode_base16("8e008f8f8f0090909000919191009292");
+        char buff1[50];
+        char buff2[50];
+        char buff1_out[50];
+        char buff2_out[50];
+
+        z_stream tx_stream1;
+        tx_stream1.avail_in = 0;
+        tx_stream1.zalloc = Z_NULL;
+        tx_stream1.zfree = Z_NULL;
+        tx_stream1.opaque = Z_NULL;
+        auto r = deflateInit2(&tx_stream1, -1, Z_DEFLATED, -1 * 15, 8, Z_DEFAULT_STRATEGY);
+        REQUIRE(r == Z_OK);
+
+        tx_stream1.next_in = reinterpret_cast<Bytef*>(payload.buf());
+        tx_stream1.avail_in = static_cast<uInt>(payload.length());
+        tx_stream1.avail_out = 50;
+        tx_stream1.next_out = reinterpret_cast<Bytef*>(buff1);
+        r = deflate(&tx_stream1, Z_SYNC_FLUSH);
+        REQUIRE(r == Z_OK);
+        REQUIRE(tx_stream1.total_out == 23);
+
+
+        z_stream tx_stream2;
+        tx_stream2.avail_in = 0;
+        tx_stream2.zalloc = Z_NULL;
+        tx_stream2.zfree = Z_NULL;
+        tx_stream2.opaque = Z_NULL;
+        r = deflateInit2(&tx_stream2, -1, Z_DEFLATED, -1 * 15, 8, Z_DEFAULT_STRATEGY);
+        REQUIRE(r == Z_OK);
+        REQUIRE(tx_stream1.avail_out !=0);
+
+        tx_stream2.next_in = reinterpret_cast<Bytef*>(payload.buf());
+        tx_stream2.avail_in = static_cast<uInt>(payload.length());
+        tx_stream2.avail_out = 23;
+        tx_stream2.next_out = reinterpret_cast<Bytef*>(buff2);
+        r = deflate(&tx_stream2, Z_SYNC_FLUSH);
+        REQUIRE(r == Z_OK);
+        REQUIRE(tx_stream2.total_out == 23);
+        REQUIRE(tx_stream2.avail_out == 0);  // !!! ???
+
+        tx_stream2.avail_out = 50 - 23;
+        r = deflate(&tx_stream2, Z_SYNC_FLUSH);
+        REQUIRE(r == Z_OK);
+        //REQUIRE(tx_stream2.total_out == tx_stream1.total_out); /// !!! ???
+
+        z_stream rx_stream1;
+        rx_stream1.avail_in = 0;
+        rx_stream1.zalloc = Z_NULL;
+        rx_stream1.zfree = Z_NULL;
+        rx_stream1.opaque = Z_NULL;
+
+        r = inflateInit2(&rx_stream1, -1 * 15);
+        REQUIRE(r == Z_OK);
+
+        rx_stream1.next_in = reinterpret_cast<Bytef*>(buff1);
+        rx_stream1.avail_in = static_cast<uInt>(tx_stream1.avail_out);
+        rx_stream1.next_out = reinterpret_cast<Bytef*>(buff1_out);
+        rx_stream1.avail_out = 50;
+        r = inflate(&rx_stream1, Z_SYNC_FLUSH);
+        REQUIRE(r == Z_OK);
+
+        z_stream rx_stream2;
+        rx_stream2.avail_in = 0;
+        rx_stream2.zalloc = Z_NULL;
+        rx_stream2.zfree = Z_NULL;
+        rx_stream2.opaque = Z_NULL;
+
+        r = inflateInit2(&rx_stream2, -1 * 15);
+        REQUIRE(r == Z_OK);
+
+        rx_stream2.next_in = reinterpret_cast<Bytef*>(buff2);
+        rx_stream2.avail_in = static_cast<uInt>(tx_stream2.avail_out);
+        rx_stream2.next_out = reinterpret_cast<Bytef*>(buff2_out);
+        rx_stream2.avail_out = 50;
+        r = inflate(&rx_stream2, Z_SYNC_FLUSH);
+        REQUIRE(r == Z_OK);
+
+    }
 
 }

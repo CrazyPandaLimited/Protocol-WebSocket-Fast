@@ -12,8 +12,11 @@ class DeflateExt {
 private:
     // tail empty frame 0x00 0x00 0xff 0xff
     static const constexpr unsigned TRAILER_SIZE = 4;
-    // 1 byte terminator + TRAILER_SIZE + 1 for simple condition check (skip return code check/analyze)
-    static const constexpr unsigned TRAILER_RESERVED = TRAILER_SIZE + 2;
+
+    // zlib doc:
+    // In the case of a Z_FULL_FLUSH or Z_SYNC_FLUSH, make sure that avail_out is greater than six
+    // to avoid repeated flush markers due to avail_out == 0 on return.
+    static const constexpr unsigned TRAILER_RESERVED = TRAILER_SIZE + 3;
 
 public:
 
