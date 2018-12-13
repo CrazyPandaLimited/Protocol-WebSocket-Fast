@@ -199,11 +199,11 @@ DeflateExt::~DeflateExt(){
 
 
 string& DeflateExt::compress(string& str, bool final) {
-    auto sz = str.capacity();
     string in_copy = str;
     tx_stream.next_in = reinterpret_cast<Bytef*>(in_copy.buf());
     tx_stream.avail_in = static_cast<uInt>(in_copy.length());
     tx_stream.next_out = reinterpret_cast<Bytef*>(str.shared_buf());
+    auto sz = str.capacity();
     tx_stream.avail_out = static_cast<uInt>(sz);
 
     deflate_iteration(Z_SYNC_FLUSH, [&](){
