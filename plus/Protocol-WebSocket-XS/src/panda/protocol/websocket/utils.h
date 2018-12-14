@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <strings.h> // strncasecmp
 #include <panda/string.h>
+#include <algorithm>
 
 namespace panda { namespace protocol { namespace websocket {
 
@@ -18,6 +19,17 @@ struct string_equal_ci {
         return lhs.length() == rhs.length() && strncasecmp(lhs.data(), rhs.data(), lhs.length()) == 0;
     }
 };
+
+struct char_equal_ci {
+    bool operator()(char ch1, char ch2) {
+        return std::toupper(ch1) == std::toupper(ch2);
+    }
+};
+
+inline bool string_contains_ci (const string& haystack, const string& needle) {
+    auto iter = std::search(haystack.begin(), haystack.end(), needle.begin(), needle.end(), char_equal_ci());
+    return (iter != haystack.end());
+}
 
 template <typename T>
 inline bool parse_binary_number (T& num, const char*& src, size_t len) {

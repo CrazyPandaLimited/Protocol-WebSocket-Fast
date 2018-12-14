@@ -9,6 +9,15 @@
 namespace panda { namespace protocol { namespace websocket {
 
 class DeflateExt {
+private:
+    // tail empty frame 0x00 0x00 0xff 0xff
+    static const constexpr unsigned TRAILER_SIZE = 4;
+
+    // zlib doc:
+    // In the case of a Z_FULL_FLUSH or Z_SYNC_FLUSH, make sure that avail_out is greater than six
+    // to avoid repeated flush markers due to avail_out == 0 on return.
+    static const constexpr unsigned TRAILER_RESERVED = TRAILER_SIZE + 3;
+
 public:
 
     struct Config {
@@ -91,36 +100,30 @@ public:
             auto flush = (it_next == payload_end) ? Z_SYNC_FLUSH : Z_NO_FLUSH;
             auto avail_out = tx_stream.avail_out;
             do {
-                do {
-                    if (tx_stream.avail_out == 0) {
-                        if (it_out < it_next) {
-                            if (chunk_out) {
-                                auto tx_out = avail_out - tx_stream.avail_out;
-                                chunk_out->length(chunk_out->length() + tx_out);
-                            }
-                            chunk_out = &(*it_out++);
-                            chunk_out->length(0);
-                            tx_stream.next_out = reinterpret_cast<Bytef*>(chunk_out->shared_buf());
-                            avail_out = tx_stream.avail_out = static_cast<uInt>(chunk_out->shared_capacity());
+                deflate_iteration(flush, [&](){
+                    // the current chunk is already filled, try the next one
+                    if (it_out < it_next) {
+                        if (chunk_out) {
+                            auto tx_out = avail_out - tx_stream.avail_out;
+                            chunk_out->length(chunk_out->length() + tx_out);
                         }
-                        else {
-                            chunk_out->reserve(chunk_out->shared_capacity() + 6);
-                            tx_stream.avail_out = 6;
-                        }
+                        chunk_out = &(*it_out++);
+                        chunk_out->length(0);
+                        tx_stream.next_out = reinterpret_cast<Bytef*>(chunk_out->shared_buf());
+                        avail_out = tx_stream.avail_out = static_cast<uInt>(chunk_out->shared_capacity());
                     }
-                    auto r = deflate(&tx_stream, flush);
-                    if (r < 0) {
-                        assert(0);
+                    // there are no more chunks, resize the last/current one
+                    else {
+                        avail_out = reserve_for_trailer(*chunk_out);
                     }
-                } while(tx_stream.avail_out == 0);
+                });
             } while(tx_stream.avail_in);
             auto tx_out = avail_out - tx_stream.avail_out;
             chunk_out->length(chunk_out->length() + tx_out);
             it_in = it_next;
         }
         if(final) {
-            // remove tail empty-frame 0x00 0x00 0xff 0xff
-            size_t tail_left = 4;
+            size_t tail_left = TRAILER_SIZE;
             while(tail_left){
                 --it_out;
                 string& chunk = *it_out;
@@ -145,8 +148,32 @@ public:
     const Config& effective_config() const { return effective_cfg; }
 
 private:
+
+    template<typename F>
+    inline void deflate_iteration(int flush, F&& drain) {
+        do {
+            if (!tx_stream.avail_out) drain();
+            auto r = deflate(&tx_stream, flush);
+            // no known cases, when user input data might lead to the error
+            assert(r >= 0);
+            (void)r;
+        } while (tx_stream.avail_out == 0);
+    }
+
+    unsigned reserve_for_trailer(string &buff) {
+        auto length = buff.capacity();
+        buff.reserve(length + TRAILER_RESERVED);
+        buff.length(length);
+        tx_stream.next_out = reinterpret_cast<Bytef*>(buff.shared_buf() + length);
+        tx_stream.avail_out += TRAILER_RESERVED;
+        return TRAILER_RESERVED;
+    }
+
+
     void reset_rx();
     bool uncompress_impl(Frame& frame);
+    bool uncompress_check_overflow(Frame& frame, const string& acc);
+    void rx_increase_buffer(string& acc);
 
     DeflateExt(const Config& cfg, Role role);
     Config effective_cfg;

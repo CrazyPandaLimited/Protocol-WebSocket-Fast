@@ -1,6 +1,8 @@
 #include <catch.hpp>
 #include <vector>
 #include <xs/protocol/websocket.h>
+#include <panda/encode/base16.h>
+#include <panda/encode/base64.h>
 
 using namespace panda;
 using namespace panda::protocol::websocket;
@@ -11,7 +13,6 @@ string to_string(T range) {
     for (const string& s : range) r += s;
     return r;
 }
-
 
 TEST_CASE("FrameBuilder & Message builder", "[deflate-extension]") {
     Parser::Config cfg;
@@ -168,7 +169,11 @@ TEST_CASE("FrameBuilder & Message builder", "[deflate-extension]") {
         REQUIRE(payload.length() == 0);
         //auto builder =
         auto data = server.start_message().deflate(true).final(true).send(payload);
+        auto it = std::begin(data) + 1;
+        REQUIRE((*it).length() == 1);
+        REQUIRE((*it).capacity() >= ((*it).length()));
         auto data_string = to_string(data);
+        REQUIRE(data_string.length() == 3);
 
         SECTION("zero uncompressed payload") {
             auto messages_it = client.get_messages(data_string);
@@ -202,5 +207,150 @@ TEST_CASE("FrameBuilder & Message builder", "[deflate-extension]") {
         REQUIRE(frames_it.begin()->error == "compression of control frames is not allowed (rfc7692)");
     }
 
+    SECTION("send compressed frame bigger then original") {
+        string payload = encode::decode_base16("8e008f8f8f0090909000919191009292");
+        string payload_copy = payload;
 
+        auto data = server.start_message().deflate(true).final(true).send(payload);
+        auto it = std::begin(data) + 1;
+        REQUIRE((*it).length() == 24);
+        auto data_string = to_string(data);
+        auto messages_it = client.get_messages(data_string);
+        REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
+        REQUIRE(messages_it.begin()->error == "");
+        REQUIRE(messages_it.begin()->payload[0] == payload_copy);
+    }
+
+    SECTION("SRV-1236") {
+        SECTION("buggy sample (does work)") {
+            string data_sample = "UlBQUDLWM1eyUqjmUoABpaTUjMSyzPwioLCSv7eSDhYp55z84lQs8imlRYklmfl5QCkjZPGi1Nz8klSwLuf8FJBOQwMDNBUF+UUlaZk5YGMTS0vykxIz8goqSzLy8+IN4s2AODmxODXeON5cL6sYaANUby3MECUTPUM9Q9K8AgAAAP//";
+            string payload = encode::decode_base64(data_sample);
+            FrameHeader fh(Opcode::TEXT, true, true, false, false, true, (uint32_t)std::rand());
+            auto data_string = Frame::compile(fh, payload).append(payload);
+            auto messages_it = server.get_messages(data_string);
+            REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
+            REQUIRE(!messages_it.begin()->error);
+        }
+    }
+
+    SECTION("zlib test") {
+        string payload = encode::decode_base16("8e008f8f8f0090909000919191009292");
+        char buff1[50];
+        char buff2[50];
+        char buff1_out[50];
+        char buff2_out[50];
+
+        z_stream tx_stream1;
+        tx_stream1.avail_in = 0;
+        tx_stream1.zalloc = Z_NULL;
+        tx_stream1.zfree = Z_NULL;
+        tx_stream1.opaque = Z_NULL;
+        auto r = deflateInit2(&tx_stream1, -1, Z_DEFLATED, -1 * 15, 8, Z_DEFAULT_STRATEGY);
+        REQUIRE(r == Z_OK);
+
+        tx_stream1.next_in = reinterpret_cast<Bytef*>(payload.buf());
+        tx_stream1.avail_in = static_cast<uInt>(payload.length());
+        tx_stream1.avail_out = 50;
+        tx_stream1.next_out = reinterpret_cast<Bytef*>(buff1);
+        r = deflate(&tx_stream1, Z_SYNC_FLUSH);
+        REQUIRE(r == Z_OK);
+        REQUIRE(tx_stream1.total_out == 23);
+
+
+        z_stream tx_stream2;
+        tx_stream2.avail_in = 0;
+        tx_stream2.zalloc = Z_NULL;
+        tx_stream2.zfree = Z_NULL;
+        tx_stream2.opaque = Z_NULL;
+        r = deflateInit2(&tx_stream2, -1, Z_DEFLATED, -1 * 15, 8, Z_DEFAULT_STRATEGY);
+        REQUIRE(r == Z_OK);
+        REQUIRE(tx_stream1.avail_out !=0);
+
+        tx_stream2.next_in = reinterpret_cast<Bytef*>(payload.buf());
+        tx_stream2.avail_in = static_cast<uInt>(payload.length());
+        tx_stream2.avail_out = 23;
+        tx_stream2.next_out = reinterpret_cast<Bytef*>(buff2);
+        r = deflate(&tx_stream2, Z_SYNC_FLUSH);
+        REQUIRE(r == Z_OK);
+        REQUIRE(tx_stream2.total_out == 23);
+        REQUIRE(tx_stream2.avail_out == 0);  // !!! ???
+
+        tx_stream2.avail_out = 50 - 23;
+        r = deflate(&tx_stream2, Z_SYNC_FLUSH);
+        REQUIRE(r == Z_OK);
+        //REQUIRE(tx_stream2.total_out == tx_stream1.total_out); /// !!! ???
+
+        z_stream rx_stream1;
+        rx_stream1.avail_in = 0;
+        rx_stream1.zalloc = Z_NULL;
+        rx_stream1.zfree = Z_NULL;
+        rx_stream1.opaque = Z_NULL;
+
+        r = inflateInit2(&rx_stream1, -1 * 15);
+        REQUIRE(r == Z_OK);
+
+        rx_stream1.next_in = reinterpret_cast<Bytef*>(buff1);
+        rx_stream1.avail_in = static_cast<uInt>(tx_stream1.avail_out);
+        rx_stream1.next_out = reinterpret_cast<Bytef*>(buff1_out);
+        rx_stream1.avail_out = 50;
+        r = inflate(&rx_stream1, Z_SYNC_FLUSH);
+        REQUIRE(r == Z_OK);
+
+        z_stream rx_stream2;
+        rx_stream2.avail_in = 0;
+        rx_stream2.zalloc = Z_NULL;
+        rx_stream2.zfree = Z_NULL;
+        rx_stream2.opaque = Z_NULL;
+
+        r = inflateInit2(&rx_stream2, -1 * 15);
+        REQUIRE(r == Z_OK);
+
+        rx_stream2.next_in = reinterpret_cast<Bytef*>(buff2);
+        rx_stream2.avail_in = static_cast<uInt>(tx_stream2.avail_out);
+        rx_stream2.next_out = reinterpret_cast<Bytef*>(buff2_out);
+        rx_stream2.avail_out = 50;
+        r = inflate(&rx_stream2, Z_SYNC_FLUSH);
+        REQUIRE(r == Z_OK);
+
+    }
+}
+
+TEST_CASE("SRV-1236, false inflate error caused by incorrectly handling Z_BUF_ERROR",  "[deflate-extension]") {
+    Parser::Config cfg;
+    cfg.deflate_config->client_no_context_takeover = true;
+
+    ServerParser server;
+    server.configure(cfg);
+    ClientParser client;
+
+    ConnectRequestSP connect_request(new ConnectRequest());
+    connect_request->uri = new URI("ws://crazypanda.ru");
+    connect_request->ws_key = "dGhlIHNhbXBsZSBub25jZQ==";
+    connect_request->ws_version = 13;
+    connect_request->ws_protocol = "ws";
+    auto client_request = client.connect_request(connect_request);
+
+    REQUIRE((bool)server.accept(client_request));
+    auto server_reply = server.accept_response();
+    client.connect(server_reply);
+
+    REQUIRE(server.established());
+    REQUIRE(client.established());
+    REQUIRE(server.is_deflate_active());
+    REQUIRE(client.is_deflate_active());
+
+    string data_samples[] = {
+        "0uFSgAGlpNSMxLLM/CLnnPziVCUrBSV/byUdJPmU0qLEksz8PKCUCbJ4UWpufkkqWJdzfgpIp6GBgRGqioL8opK0zBywsYmlJflJiRl5BZUlGfl58QbxZkCcnFicGm8cb6yXVQy0Aaq3FmaIkrGeCVBrNRbXYnEoCR4BAAAA//8",
+        "MjTX4VKAAaWi1Nz8klTnnPziVOf8lFQlKwVDAwMjVBUF+UUlaZk5IEmlxNKS/KTEjLyCypKM/Lx4g3gzIE5OLE6NN4430csqzs9TguqthRmiZKxnCtRajWRmUmpGYllmfhHIRH9vJR0sUmAnYZFPKS1KLMkEWmOlYESWRwAAAAD//w",
+        "ysxJVbJSUEosLclPSszIK6gsycjPizeINwPi5MTi1HjjeFO9rOL8PCUuBTCo1YEylIz1zIBaq6FckEhSakZiWWZ+EchEf28lHSxSzjn5xalY5FNKixJLMoHWWCkYIYsXpebml6SCdTnnp4B0GhoYoKkoyC8qScsk7BEzLB4BAAAA//8",
+        "UlBQUDLWM1eyUqjmUoABpaTUjMSyzPwioLCSv7eSDhYp55z84lQs8imlRYklmfl5QCkjZPGi1Nz8klSwLuf8FJBOQwMDNBUF+UUlaZk5YGMTS0vykxIz8goqSzLy8+IN4s2AODmxODXeON5cL6sYaANUby3MECUTPUM9Q9K8AgAAAP//",
+    };
+    for(auto it = std::begin(data_samples); it != std::end(data_samples); ++it){
+        string payload = encode::decode_base64(*it);
+        FrameHeader fh(Opcode::TEXT, true, true, false, false, true, (uint32_t)std::rand());
+        auto data_string = Frame::compile(fh, payload).append(payload);
+        auto messages_it = server.get_messages(data_string);
+        REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
+        REQUIRE(messages_it.begin()->error == "");
+    }
 }

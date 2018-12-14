@@ -2,6 +2,8 @@ use 5.020;
 use warnings;
 use lib 't'; use MyTest;
 use Test::Fatal;
+use Path::Tiny;
+use Encode::Base2N qw/encode_base64pad decode_base64/;
 
 my $create_pair = sub {
     my $configure = shift;
@@ -47,7 +49,6 @@ subtest 'tiny payload' => sub {
     my ($f) = $c->get_frames($bin);
     is $f->payload, $payload;
 };
-
 
 subtest 'medium payload' => sub {
     my @payload = ('0') x (1923);
@@ -255,6 +256,20 @@ subtest "no_deflate" => sub {
     my $bin = $s->send_message({payload => $payload});
     note $bin;
     is( substr($bin, 2), $payload);
+};
+
+subtest "SRV-1236/12.3 inflate error" => sub {
+    my $data = path(__FILE__)->slurp;
+    my ($c, $s) = $create_pair->(sub {
+        my ($c, $s) = @_;
+        $_->configure({client_no_context_takeover => 1}) for ($c, $s);
+    });
+    for(my $i = 1;  $i < 100; ++$i) {
+        my $sample = substr($data, 1, 256);
+        my $bin = $c->send_message({payload => $sample});
+        my ($m) = $c->get_messages($bin);
+        is $m->payload, $sample;
+    }
 };
 
 subtest "zip-bomb prevention (check max_message_size)" => sub {

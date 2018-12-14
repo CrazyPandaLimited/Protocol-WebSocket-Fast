@@ -67,6 +67,7 @@ subtest 'server parser accepts connect request' => sub {
     my $p = new Protocol::WebSocket::XS::ClientParser;
     my $sp = new Protocol::WebSocket::XS::ServerParser;
     my $str = $p->connect_request({uri => "ws://crazypanda.ru/path?a=b"});
+    $str =~ s/websocket/WebSocket/; #check case insensitive
     my $req = $sp->accept($str);
     ok($sp->accepted, "request accepted");
     ok($req, "request returned");

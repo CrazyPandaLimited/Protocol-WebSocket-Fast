@@ -27,7 +27,7 @@ void ConnectResponse::_parse_header (StringRange range) {
     }
 
     it = headers.find("Upgrade");
-    if (it == headers.end() || it->second.find("websocket") == string::npos) {
+    if (it == headers.end() || !string_contains_ci(it->second, "websocket")) {
         error = "Upgrade must be 'websocket'";
         return;
     }

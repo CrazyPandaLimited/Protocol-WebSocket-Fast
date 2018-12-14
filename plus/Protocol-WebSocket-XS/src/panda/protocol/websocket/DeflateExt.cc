@@ -199,32 +199,22 @@ DeflateExt::~DeflateExt(){
 
 
 string& DeflateExt::compress(string& str, bool final) {
-    auto sz = str.capacity();
     string in_copy = str;
     tx_stream.next_in = reinterpret_cast<Bytef*>(in_copy.buf());
     tx_stream.avail_in = static_cast<uInt>(in_copy.length());
     tx_stream.next_out = reinterpret_cast<Bytef*>(str.shared_buf());
+    auto sz = str.capacity();
+    str.length(sz);
     tx_stream.avail_out = static_cast<uInt>(sz);
-    auto flush = Z_SYNC_FLUSH;
-    do {
-        if (!tx_stream.avail_out) {
-            sz += 6;
-            tx_stream.avail_out += 6;
-            str.reserve(sz);
-            str.length(sz);
-        }
-        auto r = deflate(&tx_stream, flush);
-        if(r < 0 && r != Z_BUF_ERROR) {
-            panda::string err = panda::string("zlib::deflate error ");
-            if (tx_stream.msg) err += tx_stream.msg;
-            throw std::runtime_error(err);
-        }
-    } while(!tx_stream.avail_out);
+
+    deflate_iteration(Z_SYNC_FLUSH, [&](){
+        sz += reserve_for_trailer(str);
+    });
 
     sz -= tx_stream.avail_out;
     // remove tail empty-frame 0x00 0x00 0xff 0xff for final messages only
     assert(sz);
-    if (final) sz -= 4;
+    if (final) sz -= TRAILER_SIZE;
     str.length(sz);
 
     if(final && reset_after_tx) reset_tx();
@@ -249,6 +239,25 @@ bool DeflateExt::uncompress(Frame& frame) {
     return r;
 }
 
+bool DeflateExt::uncompress_check_overflow(Frame& frame, const string& acc) {
+    auto unpacked_frame_size = acc.capacity() - rx_stream.avail_out;
+    auto unpacked_message_size = message_size + unpacked_frame_size;
+    if (unpacked_message_size > max_message_size) {
+        frame.error = "zlib::inflate error: max message size has been reached";
+        return false;
+    }
+    return true;
+}
+
+void DeflateExt::rx_increase_buffer(string& acc) {
+    auto l = acc.capacity();
+    acc.length(l);
+    acc.reserve(3 * l / 2); // * 1.5
+    rx_stream.next_out = reinterpret_cast<Bytef*>(acc.buf() + l);
+    rx_stream.avail_out = static_cast<uInt>(acc.capacity() - l);
+}
+
+
 bool DeflateExt::uncompress_impl(Frame& frame) {
     using It = decltype(frame.payload)::iterator;
 
@@ -266,9 +275,9 @@ bool DeflateExt::uncompress_impl(Frame& frame) {
         It it_next = ++it_in;
         if (it_next == end && final) {
             // append empty-frame 0x00 0x00 0xff 0xff
-            unsigned char trailer[4] = { 0x00,  0x00, 0xFF, 0xFF };
-            chunk_in.append(reinterpret_cast<char*>(trailer), 4);
-            rx_stream.avail_in += 4;
+            unsigned char trailer[TRAILER_SIZE] = { 0x00,  0x00, 0xFF, 0xFF };
+            chunk_in.append(reinterpret_cast<char*>(trailer), TRAILER_SIZE);
+            rx_stream.avail_in += TRAILER_SIZE;
         }
         rx_stream.next_in = reinterpret_cast<Bytef*>(chunk_in.buf());
         rx_stream.avail_in = static_cast<uInt>(chunk_in.length());
@@ -277,32 +286,30 @@ bool DeflateExt::uncompress_impl(Frame& frame) {
         do {
             has_more_output = !rx_stream.avail_out;
             auto r = inflate(&rx_stream, flush);
-            if (r == Z_OK && max_message_size) {
-                auto unpacked_frame_size = acc.capacity() - rx_stream.avail_out;
-                auto unpacked_message_size = message_size + unpacked_frame_size;
-                if (unpacked_message_size > max_message_size) {
-                    frame.error = "zlib::inflate error: max message size has been reached";
-                    return false;
+            switch (r) {
+            case Z_OK:
+                if (max_message_size && !uncompress_check_overflow(frame, acc)) return false;
+                if (!rx_stream.avail_out) {
+                    rx_increase_buffer(acc);
+                    has_more_output = true;
+                } else {
+                    has_more_output = false;
                 }
-            }
-            if (r == Z_OK && !rx_stream.avail_out) {
-                auto l = acc.capacity();
-                acc.length(l);
-                acc.reserve(3 * l / 2); // * 1.5
-                rx_stream.next_out = reinterpret_cast<Bytef*>(acc.buf() + l);
-                rx_stream.avail_out = static_cast<uInt>(acc.capacity() - l);
-                has_more_output = true;
-                continue;
-            }
-            else if (r < 0) {
+                break;
+            case Z_BUF_ERROR:
+                /* it is non-fatal error. It is unavoidable, if we unpacked the payload which
+                 * fits into accumulator acc exactly, i.e. on the previous iteration it was
+                 * rx_stream.avail_out == 0 and it is not known, whether there is still some
+                 * output or no. If there is no output, than this error code is returned
+                 */
+                has_more_output = false;
+                break;
+            default:
                 string err = "zlib::inflate error ";
                 if (rx_stream.msg) err += rx_stream.msg;
                 else err += to_string(r);
                 frame.error = err;
                 return false;
-            }
-            else {
-                has_more_output = false;
             }
         } while(has_more_output);
         it_in = it_next;
