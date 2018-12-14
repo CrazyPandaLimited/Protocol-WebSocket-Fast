@@ -172,6 +172,8 @@ private:
 
     void reset_rx();
     bool uncompress_impl(Frame& frame);
+    bool uncompress_check_overflow(Frame& frame, const string& acc);
+    void rx_increase_buffer(string& acc);
 
     DeflateExt(const Config& cfg, Role role);
     Config effective_cfg;

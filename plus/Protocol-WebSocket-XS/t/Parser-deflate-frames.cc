@@ -2,6 +2,7 @@
 #include <vector>
 #include <xs/protocol/websocket.h>
 #include <panda/encode/base16.h>
+#include <panda/encode/base64.h>
 
 using namespace panda;
 using namespace panda::protocol::websocket;
@@ -12,7 +13,6 @@ string to_string(T range) {
     for (const string& s : range) r += s;
     return r;
 }
-
 
 TEST_CASE("FrameBuilder & Message builder", "[deflate-extension]") {
     Parser::Config cfg;
@@ -221,6 +221,18 @@ TEST_CASE("FrameBuilder & Message builder", "[deflate-extension]") {
         REQUIRE(messages_it.begin()->payload[0] == payload_copy);
     }
 
+    SECTION("SRV-1236") {
+        SECTION("buggy sample (does work)") {
+            string data_sample = "UlBQUDLWM1eyUqjmUoABpaTUjMSyzPwioLCSv7eSDhYp55z84lQs8imlRYklmfl5QCkjZPGi1Nz8klSwLuf8FJBOQwMDNBUF+UUlaZk5YGMTS0vykxIz8goqSzLy8+IN4s2AODmxODXeON5cL6sYaANUby3MECUTPUM9Q9K8AgAAAP//";
+            string payload = encode::decode_base64(data_sample);
+            FrameHeader fh(Opcode::TEXT, true, true, false, false, true, (uint32_t)std::rand());
+            auto data_string = Frame::compile(fh, payload).append(payload);
+            auto messages_it = server.get_messages(data_string);
+            REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
+            REQUIRE(!messages_it.begin()->error);
+        }
+    }
+
     SECTION("zlib test") {
         string payload = encode::decode_base16("8e008f8f8f0090909000919191009292");
         char buff1[50];
@@ -301,5 +313,44 @@ TEST_CASE("FrameBuilder & Message builder", "[deflate-extension]") {
         REQUIRE(r == Z_OK);
 
     }
+}
 
+TEST_CASE("SRV-1236, false inflate error caused by incorrectly handling Z_BUF_ERROR",  "[deflate-extension]") {
+    Parser::Config cfg;
+    cfg.deflate_config->client_no_context_takeover = true;
+
+    ServerParser server;
+    server.configure(cfg);
+    ClientParser client;
+
+    ConnectRequestSP connect_request(new ConnectRequest());
+    connect_request->uri = new URI("ws://crazypanda.ru");
+    connect_request->ws_key = "dGhlIHNhbXBsZSBub25jZQ==";
+    connect_request->ws_version = 13;
+    connect_request->ws_protocol = "ws";
+    auto client_request = client.connect_request(connect_request);
+
+    REQUIRE((bool)server.accept(client_request));
+    auto server_reply = server.accept_response();
+    client.connect(server_reply);
+
+    REQUIRE(server.established());
+    REQUIRE(client.established());
+    REQUIRE(server.is_deflate_active());
+    REQUIRE(client.is_deflate_active());
+
+    string data_samples[] = {
+        "0uFSgAGlpNSMxLLM/CLnnPziVCUrBSV/byUdJPmU0qLEksz8PKCUCbJ4UWpufkkqWJdzfgpIp6GBgRGqioL8opK0zBywsYmlJflJiRl5BZUlGfl58QbxZkCcnFicGm8cb6yXVQy0Aaq3FmaIkrGeCVBrNRbXYnEoCR4BAAAA//8",
+        "MjTX4VKAAaWi1Nz8klTnnPziVOf8lFQlKwVDAwMjVBUF+UUlaZk5IEmlxNKS/KTEjLyCypKM/Lx4g3gzIE5OLE6NN4430csqzs9TguqthRmiZKxnCtRajWRmUmpGYllmfhHIRH9vJR0sUmAnYZFPKS1KLMkEWmOlYESWRwAAAAD//w",
+        "ysxJVbJSUEosLclPSszIK6gsycjPizeINwPi5MTi1HjjeFO9rOL8PCUuBTCo1YEylIz1zIBaq6FckEhSakZiWWZ+EchEf28lHSxSzjn5xalY5FNKixJLMoHWWCkYIYsXpebml6SCdTnnp4B0GhoYoKkoyC8qScsk7BEzLB4BAAAA//8",
+        "UlBQUDLWM1eyUqjmUoABpaTUjMSyzPwioLCSv7eSDhYp55z84lQs8imlRYklmfl5QCkjZPGi1Nz8klSwLuf8FJBOQwMDNBUF+UUlaZk5YGMTS0vykxIz8goqSzLy8+IN4s2AODmxODXeON5cL6sYaANUby3MECUTPUM9Q9K8AgAAAP//",
+    };
+    for(auto it = std::begin(data_samples); it != std::end(data_samples); ++it){
+        string payload = encode::decode_base64(*it);
+        FrameHeader fh(Opcode::TEXT, true, true, false, false, true, (uint32_t)std::rand());
+        auto data_string = Frame::compile(fh, payload).append(payload);
+        auto messages_it = server.get_messages(data_string);
+        REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
+        REQUIRE(messages_it.begin()->error == "");
+    }
 }
