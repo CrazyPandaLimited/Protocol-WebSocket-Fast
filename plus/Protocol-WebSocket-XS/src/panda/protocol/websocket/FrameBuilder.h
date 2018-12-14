@@ -20,8 +20,8 @@ public:
     FrameBuilder& final(bool value) noexcept { _final = value; return *this; }
     bool final() const noexcept { return _final;}
 
-    FrameBuilder& deflate(bool value) noexcept { _deflate = value; return *this; }
-    bool deflate() const noexcept { return _deflate;}
+    FrameBuilder& deflate(bool value) noexcept;
+    bool deflate() const noexcept;
 
     string send();
 

@@ -1,5 +1,6 @@
 #include "DeflateExt.h"
 #include <panda/lib/from_chars.h>
+#include <panda/encode/base64.h>
 
 namespace panda { namespace protocol { namespace websocket {
 
@@ -250,11 +251,12 @@ bool DeflateExt::uncompress_check_overflow(Frame& frame, const string& acc) {
 }
 
 void DeflateExt::rx_increase_buffer(string& acc) {
-    auto l = acc.capacity();
-    acc.length(l);
-    acc.reserve(3 * l / 2); // * 1.5
-    rx_stream.next_out = reinterpret_cast<Bytef*>(acc.buf() + l);
-    rx_stream.avail_out = static_cast<uInt>(acc.capacity() - l);
+    auto prev_sz = acc.capacity();
+    size_t new_sz = 3 * prev_sz / 2; // * 1.5
+    acc.length(prev_sz);
+    acc.reserve(new_sz);
+    rx_stream.next_out = reinterpret_cast<Bytef*>(acc.buf() + prev_sz);
+    rx_stream.avail_out = static_cast<uInt>(new_sz - prev_sz);
 }
 
 
@@ -270,6 +272,7 @@ bool DeflateExt::uncompress_impl(Frame& frame) {
 
     rx_stream.next_out = reinterpret_cast<Bytef*>(acc.buf());
     rx_stream.avail_out = static_cast<uInt>(acc.capacity());
+
     do {
         string& chunk_in = *it_in;
         It it_next = ++it_in;
@@ -279,6 +282,7 @@ bool DeflateExt::uncompress_impl(Frame& frame) {
             chunk_in.append(reinterpret_cast<char*>(trailer), TRAILER_SIZE);
             rx_stream.avail_in += TRAILER_SIZE;
         }
+        // std::cout << "[debug] b64 payload: " << encode::encode_base64(chunk_in) << "\n";
         rx_stream.next_in = reinterpret_cast<Bytef*>(chunk_in.buf());
         rx_stream.avail_in = static_cast<uInt>(chunk_in.length());
         auto flush = (it_next == end) ? Z_SYNC_FLUSH : Z_NO_FLUSH;
