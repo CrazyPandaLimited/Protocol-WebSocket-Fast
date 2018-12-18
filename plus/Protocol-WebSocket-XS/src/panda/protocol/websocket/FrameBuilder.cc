@@ -25,6 +25,15 @@ Opcode FrameBuilder::opcode() const noexcept {
     return _frame_index == 0 ? _opcode : Opcode::CONTINUE;
 }
 
+FrameBuilder& FrameBuilder::deflate(bool value) noexcept {
+    if (_frame_index == 0) {
+        _deflate = value;
+    }
+    return *this;
+}
+
+bool FrameBuilder::deflate() const noexcept { return _deflate;}
+
 
 string FrameBuilder::send() {
     if (_finished) throw std::runtime_error("messsage is already finished");

@@ -232,6 +232,7 @@ private:
     bool      _recv_mask_required;
     FrameSP   _frame;            // current frame being received (frame mode)
     int       _frame_count;      // frame count for current message being received (frame mode)
+    bool      _use_compression;  // have true, deflate extension is active and 1st frame has rsv1 flag on
     MessageSP _message;          // current message being received (message mode)
     Frame     _message_frame;    // current frame being received (message mode)
     int       _sent_frame_count; // frame count for current message being sent (frame mode)
@@ -239,7 +240,9 @@ private:
     std::deque<string> _simple_payload_tmp;
 
     FrameSP   _get_frame ();
-    MessageSP _get_message ();
+    MessageSP _get_message();
+    bool      _apply_deflate_message();
+    bool      _apply_deflate_frame();
 
     FrameHeader _prepare_frame_header (bool final, bool deflate, Opcode opcode);
     friend class FrameBuilder;

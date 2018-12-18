@@ -315,7 +315,7 @@ TEST_CASE("FrameBuilder & Message builder", "[deflate-extension]") {
     }
 }
 
-TEST_CASE("SRV-1236, false inflate error caused by incorrectly handling Z_BUF_ERROR",  "[deflate-extension]") {
+TEST_CASE("SRV-1236",  "[deflate-extension]") {
     Parser::Config cfg;
     cfg.deflate_config->client_no_context_takeover = true;
 
@@ -339,18 +339,40 @@ TEST_CASE("SRV-1236, false inflate error caused by incorrectly handling Z_BUF_ER
     REQUIRE(server.is_deflate_active());
     REQUIRE(client.is_deflate_active());
 
-    string data_samples[] = {
-        "0uFSgAGlpNSMxLLM/CLnnPziVCUrBSV/byUdJPmU0qLEksz8PKCUCbJ4UWpufkkqWJdzfgpIp6GBgRGqioL8opK0zBywsYmlJflJiRl5BZUlGfl58QbxZkCcnFicGm8cb6yXVQy0Aaq3FmaIkrGeCVBrNRbXYnEoCR4BAAAA//8",
-        "MjTX4VKAAaWi1Nz8klTnnPziVOf8lFQlKwVDAwMjVBUF+UUlaZk5IEmlxNKS/KTEjLyCypKM/Lx4g3gzIE5OLE6NN4430csqzs9TguqthRmiZKxnCtRajWRmUmpGYllmfhHIRH9vJR0sUmAnYZFPKS1KLMkEWmOlYESWRwAAAAD//w",
-        "ysxJVbJSUEosLclPSszIK6gsycjPizeINwPi5MTi1HjjeFO9rOL8PCUuBTCo1YEylIz1zIBaq6FckEhSakZiWWZ+EchEf28lHSxSzjn5xalY5FNKixJLMoHWWCkYIYsXpebml6SCdTnnp4B0GhoYoKkoyC8qScsk7BEzLB4BAAAA//8",
-        "UlBQUDLWM1eyUqjmUoABpaTUjMSyzPwioLCSv7eSDhYp55z84lQs8imlRYklmfl5QCkjZPGi1Nz8klSwLuf8FJBOQwMDNBUF+UUlaZk5YGMTS0vykxIz8goqSzLy8+IN4s2AODmxODXeON5cL6sYaANUby3MECUTPUM9Q9K8AgAAAP//",
-    };
-    for(auto it = std::begin(data_samples); it != std::end(data_samples); ++it){
-        string payload = encode::decode_base64(*it);
-        FrameHeader fh(Opcode::TEXT, true, true, false, false, true, (uint32_t)std::rand());
-        auto data_string = Frame::compile(fh, payload).append(payload);
+    SECTION("12.1.3 :: false inflate error caused by incorrectly handling Z_BUF_ERROR") {
+        string data_samples[] = {
+            "0uFSgAGlpNSMxLLM/CLnnPziVCUrBSV/byUdJPmU0qLEksz8PKCUCbJ4UWpufkkqWJdzfgpIp6GBgRGqioL8opK0zBywsYmlJflJiRl5BZUlGfl58QbxZkCcnFicGm8cb6yXVQy0Aaq3FmaIkrGeCVBrNRbXYnEoCR4BAAAA//8",
+            "MjTX4VKAAaWi1Nz8klTnnPziVOf8lFQlKwVDAwMjVBUF+UUlaZk5IEmlxNKS/KTEjLyCypKM/Lx4g3gzIE5OLE6NN4430csqzs9TguqthRmiZKxnCtRajWRmUmpGYllmfhHIRH9vJR0sUmAnYZFPKS1KLMkEWmOlYESWRwAAAAD//w",
+            "ysxJVbJSUEosLclPSszIK6gsycjPizeINwPi5MTi1HjjeFO9rOL8PCUuBTCo1YEylIz1zIBaq6FckEhSakZiWWZ+EchEf28lHSxSzjn5xalY5FNKixJLMoHWWCkYIYsXpebml6SCdTnnp4B0GhoYoKkoyC8qScsk7BEzLB4BAAAA//8",
+            "UlBQUDLWM1eyUqjmUoABpaTUjMSyzPwioLCSv7eSDhYp55z84lQs8imlRYklmfl5QCkjZPGi1Nz8klSwLuf8FJBOQwMDNBUF+UUlaZk5YGMTS0vykxIz8goqSzLy8+IN4s2AODmxODXeON5cL6sYaANUby3MECUTPUM9Q9K8AgAAAP//",
+        };
+        for(auto it = std::begin(data_samples); it != std::end(data_samples); ++it){
+            string payload = encode::decode_base64(*it);
+            FrameHeader fh(Opcode::TEXT, true, true, false, false, true, (uint32_t)std::rand());
+            auto data_string = Frame::compile(fh, payload).append(payload);
+            auto messages_it = server.get_messages(data_string);
+            REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
+            REQUIRE(messages_it.begin()->error == "");
+        }
+    }
+
+    SECTION("12.1.11 (no rsv1 flag on 2nd frame == that's correct)") {
+        string payload1 = encode::decode_base64("MjAgFQAAAAD//w");
+        string payload2 = encode::decode_base64("Ih0AAAAA//8");
+
+        FrameHeader fh1(Opcode::TEXT, false, true, false, false, true, (uint32_t)std::rand());
+        auto data_string1 = Frame::compile(fh1, payload1).append(payload1);
+
+        FrameHeader fh2(Opcode::CONTINUE, true, false, false, false, true, (uint32_t)std::rand());
+        auto data_string2 = Frame::compile(fh2, payload2).append(payload2);
+        auto data_string = data_string1 + data_string2;
+
         auto messages_it = server.get_messages(data_string);
         REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
         REQUIRE(messages_it.begin()->error == "");
+        REQUIRE(messages_it.begin()->payload.size() == 2);
+        REQUIRE(messages_it.begin()->payload[0] == "00000000000000000000000000000000000000000000000000");
+        REQUIRE(messages_it.begin()->payload[1] == "00000000000000000000000000000000000000000000000000");
     }
+
 }

@@ -14,8 +14,10 @@ void Parser::reset () {
     _state.reset();
     _frame = NULL;
     _frame_count = 0;
+    _use_compression = false;
     _message = NULL;
     _message_frame.reset();
+    _use_compression = 0;
     if (_deflate_ext) _deflate_ext->reset();
 }
 
@@ -35,7 +37,7 @@ FrameSP Parser::_get_frame () {
         return NULL;
     }
     _frame->check(_frame_count);
-    if (_deflate_ext && _frame->rsv1()) _deflate_ext->uncompress(*_frame);
+    if (_apply_deflate_frame()) _deflate_ext->uncompress(*_frame);
 
     if (_frame->error) {
         _buffer.clear();
@@ -51,6 +53,7 @@ FrameSP Parser::_get_frame () {
     else if (_frame->final()) {
         _state.reset(STATE_RECV_FRAME);
         _frame_count = 0;
+        _use_compression = false;
     }
     else ++_frame_count;
 
@@ -93,7 +96,7 @@ MessageSP Parser::_get_message () {
         }
 
         _message_frame.check(_message->frame_count);
-        if (_deflate_ext && _message_frame.rsv1()) _deflate_ext->uncompress(_message_frame);
+        if (_apply_deflate_message()) _deflate_ext->uncompress(_message_frame);
         bool done = _message->add_frame(_message_frame);
         _message_frame.reset();
 
@@ -120,12 +123,16 @@ FrameHeader Parser::_prepare_frame_header (bool final, bool deflate, Opcode opco
 
     _state.set(STATE_SEND_FRAME);
 
+    bool rsv1 = deflate;
     if (FrameHeader::is_control_opcode(opcode)) {
         if (!final) throw std::logic_error("control frame must be final");
         if (!_sent_frame_count) _state.reset(STATE_SEND_FRAME);
         if (opcode == Opcode::CLOSE) _state.set(STATE_SEND_CLOSED);
     } else {
-        if (_sent_frame_count) opcode = Opcode::CONTINUE;
+        if (_sent_frame_count) {
+            opcode = Opcode::CONTINUE;
+            rsv1 = false;
+        }
         if (final) {
             _sent_frame_count = 0;
             _state.reset(STATE_SEND_FRAME);
@@ -133,11 +140,37 @@ FrameHeader Parser::_prepare_frame_header (bool final, bool deflate, Opcode opco
         else ++_sent_frame_count;
     }
 
-    bool rsv1 = deflate;
     return FrameHeader(opcode, final, rsv1, 0, 0, !_recv_mask_required, _recv_mask_required ? 0 : (uint32_t)std::rand());
 }
 
 MessageBuilder Parser::message() { return MessageBuilder(*this); }
+
+bool Parser::_apply_deflate_message() {
+    if (_deflate_ext) {
+        auto frame_count = _message->frame_count;
+        if (frame_count == 0) {
+            _use_compression = _message_frame.rsv1();
+            return _use_compression;
+        }
+        else {
+            return _use_compression && (frame_count != 0) && !_message_frame.rsv1();
+        }
+    }
+    return false;
+}
+
+bool Parser::_apply_deflate_frame() {
+    if (_deflate_ext) {
+        if (_frame_count == 0) {
+            _use_compression = _frame->rsv1();
+            return _use_compression;
+        }
+        else {
+            return _use_compression && (_frame_count != 0) && !_frame->rsv1();
+        }
+    }
+    return false;
+}
 
 
 }}}
