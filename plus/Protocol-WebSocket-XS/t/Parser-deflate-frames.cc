@@ -16,7 +16,7 @@ string to_string(T range) {
 
 TEST_CASE("FrameBuilder & Message builder", "[deflate-extension]") {
     Parser::Config cfg;
-    cfg.deflate_config->compression_threshold = 0;
+    cfg.deflate->compression_threshold = 0;
 
     ServerParser server;
     server.configure(cfg);
@@ -317,7 +317,7 @@ TEST_CASE("FrameBuilder & Message builder", "[deflate-extension]") {
 
 TEST_CASE("SRV-1236",  "[deflate-extension]") {
     Parser::Config cfg;
-    cfg.deflate_config->client_no_context_takeover = true;
+    cfg.deflate->client_no_context_takeover = true;
 
     ServerParser server;
     server.configure(cfg);
