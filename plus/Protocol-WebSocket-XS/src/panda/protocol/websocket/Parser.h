@@ -71,11 +71,11 @@ public:
     typedef panda::optional<DeflateExt::Config>  DeflateConfigOption;
 
     struct Config {
-        Config():max_frame_size{0}, max_message_size{0}, max_handshake_size{0}, deflate_config{ DeflateExt::Config() } {}
+        Config():max_frame_size{0}, max_message_size{0}, max_handshake_size{0}, deflate{ DeflateExt::Config() } {}
         size_t max_frame_size;
         size_t max_message_size;
         size_t max_handshake_size;
-        DeflateConfigOption deflate_config;
+        DeflateConfigOption deflate;
     };
 
     bool established () const { return _state[STATE_ESTABLISHED]; }
@@ -134,7 +134,7 @@ public:
         _max_handshake_size = cfg.max_handshake_size;
 
         if (!_state[STATE_ESTABLISHED]) {
-            _deflate_cfg = cfg.deflate_config;
+            _deflate_cfg = cfg.deflate;
             if (_deflate_cfg) _deflate_cfg->max_message_size = _max_message_size;
         }
     }
@@ -182,7 +182,7 @@ protected:
         _max_message_size{cfg.max_message_size},
         _max_handshake_size{cfg.max_handshake_size},
         _state(0),
-        _deflate_cfg{cfg.deflate_config},
+        _deflate_cfg{cfg.deflate},
         _recv_mask_required(recv_mask_required),
         _frame_count(0),
         _message_frame(_recv_mask_required, _max_frame_size),

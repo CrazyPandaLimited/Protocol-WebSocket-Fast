@@ -27,7 +27,7 @@ public:
         std::uint8_t client_max_window_bits = 15;
 
         // copied from parser config, no direct usage
-        size_t max_message_size;
+        size_t max_message_size = 0;
         // non-negotiatiable settings
         int mem_level = 8;
         int compression_level = Z_DEFAULT_COMPRESSION;

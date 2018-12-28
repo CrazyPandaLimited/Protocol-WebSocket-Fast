@@ -29,7 +29,7 @@ public:
     bool operator!= (const StringPairIterator& rhs) const { return i != rhs.i; }
 
     string& operator*  () { return i == 0 ? s1 : s2; }
-    string& operator-> () { return i == 0 ? s1 : s2; }
+    string* operator-> () { return i == 0 ? &s1 : &s2; }
 
     StringPairIterator& operator++ ()    { ++i; return *this; }
     StringPairIterator  operator++ (int) { StringPairIterator tmp(*this); operator++(); return tmp; }
@@ -102,7 +102,7 @@ public:
     bool operator!= (const StringChainIterator& rhs) const { return i != rhs.i; }
 
     string& operator*  () { return i == 0 ? s : it[i-1]; }
-    string& operator-> () { return i == 0 ? s : it[i-1]; }
+    string* operator-> () { return i == 0 ? &s : &it[i-1]; }
 
     StringChainIterator& operator++ ()    { ++i; return *this; }
     StringChainIterator  operator++ (int) { StringChainIterator tmp(*this); operator++(); return tmp; }
