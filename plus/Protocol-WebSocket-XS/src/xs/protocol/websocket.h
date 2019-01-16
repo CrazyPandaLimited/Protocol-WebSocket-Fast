@@ -108,9 +108,8 @@ namespace xs {
     template <class TYPE>
     struct Typemap<panda::protocol::websocket::HTTPResponseSP, panda::iptr<TYPE>> : Typemap<TYPE*> {
         using Super = Typemap<TYPE*>;
-        panda::iptr<TYPE> in (pTHX_ SV* arg) {
-            Object obj = arg;
-            if (!obj && SvOK(arg)) obj = Super::default_stash().call("new", arg);
+        panda::iptr<TYPE> in (pTHX_ Sv arg) {
+            Object obj = arg.is_object_ref() ? Object(std::move(arg)) : Super::default_stash().call("new", arg);
             return Super::in(aTHX_ obj);
         }
     };
@@ -123,9 +122,8 @@ namespace xs {
     template <class TYPE>
     struct Typemap<panda::protocol::websocket::ConnectRequestSP, panda::iptr<TYPE>> : Typemap<TYPE*> {
         using Super = Typemap<TYPE*>;
-        panda::iptr<TYPE> in (pTHX_ SV* arg) {
-            Object obj = arg;
-            if (!obj && SvOK(arg)) obj = Super::default_stash().call("new", arg);
+        panda::iptr<TYPE> in (pTHX_ Sv arg) {
+            Object obj = arg.is_object_ref() ? Object(std::move(arg)) : Super::default_stash().call("new", arg);
             return Super::in(aTHX_ obj);
         }
     };
@@ -138,9 +136,8 @@ namespace xs {
     template <class TYPE>
     struct Typemap<panda::protocol::websocket::ConnectResponseSP, panda::iptr<TYPE>> : Typemap<TYPE*> {
         using Super = Typemap<TYPE*>;
-        panda::iptr<TYPE> in (pTHX_ SV* arg) {
-            Object obj = arg;
-            if (!obj && SvOK(arg)) obj = Super::default_stash().call("new", arg);
+        panda::iptr<TYPE> in (pTHX_ Sv arg) {
+            Object obj = arg.is_object_ref() ? Object(std::move(arg)) : Super::default_stash().call("new", arg);
             return Super::in(aTHX_ obj);
         }
     };
