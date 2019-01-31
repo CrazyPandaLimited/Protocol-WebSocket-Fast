@@ -152,9 +152,8 @@ public:
 
     bool is_deflate_active() const { return (bool)_deflate_ext; }
     panda::optional<DeflateExt::Config> effective_deflate_config() const {
-        using result_t = panda::optional<DeflateExt::Config>;
-        if (!_deflate_ext) return result_t{};
-        return result_t{ _deflate_ext->effective_config() };
+        if (!_deflate_ext) return {};
+        return _deflate_ext->effective_config();
     }
 
     virtual ~Parser () {}
