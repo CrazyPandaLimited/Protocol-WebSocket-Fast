@@ -41,7 +41,7 @@ void ConnectResponse::_parse_header (StringRange range) {
 
     auto ext_range = headers.equal_range("Sec-WebSocket-Extensions");
     for (auto it = ext_range.first; it != ext_range.second; ++it) {
-        parse_header_value(it->second, _ws_extensions);
+        http::parse_header_value(it->second, _ws_extensions);
     }
 
     it = headers.find("Sec-WebSocket-Protocol");

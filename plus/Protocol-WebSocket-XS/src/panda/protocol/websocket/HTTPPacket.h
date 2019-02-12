@@ -8,6 +8,7 @@
 #include <panda/unordered_string_map.h>
 #include <panda/protocol/websocket/utils.h>
 #include <panda/protocol/http/Body.h>
+#include <panda/protocol/http/HeaderValueParamsParser.h>
 
 namespace panda { namespace protocol { namespace websocket {
 
@@ -18,12 +19,10 @@ static auto fndr = panda::ranges::make_kmp_finder("\r\n\r\n");
 class HTTPPacket : public virtual panda::Refcnt {
 public:
     typedef panda::unordered_string_multimap<string, string, string_hash_ci, string_equal_ci> Headers;
-    typedef panda::unordered_string_map<string, string>                                       HeaderValueParams;
-    struct HeaderValue {
-        string name;
-        HeaderValueParams params;
-    };
-    typedef std::vector<HeaderValue> HeaderValues;
+
+    using HeaderValue = http::HeaderValue;
+    using HeaderValues = http::HeaderValues;
+
     using BodySP = http::BodySP;
 
     size_t  max_headers_size;
@@ -37,9 +36,6 @@ public:
     size_t content_length () const { return _content_length; }
 
     virtual bool parse (string& buf);
-
-    void   parse_header_value   (const string& strval, HeaderValues& values);
-    string compile_header_value (const HeaderValues& values);
 
     void replace_header (const string& name, const string& value) {
         auto it = headers.find(name);
