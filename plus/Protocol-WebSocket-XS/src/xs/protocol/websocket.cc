@@ -42,9 +42,9 @@ void http_packet_set_headers (pTHX_ HTTPPacket* p, const Hash& hv) {
 }
 
 void http_packet_set_body (pTHX_ HTTPPacket* p, const Simple& sv) {
-    p->body.clear();
+    p->body()->parts.clear();
     auto newbody = xs::in<string>(aTHX_ sv);
-    if (newbody.length()) p->body.push_back(newbody);
+    if (newbody.length()) p->body()->parts.push_back(newbody);
 }
 
 Simple strings_to_sv (pTHX_ const string& s1, const string& s2) {

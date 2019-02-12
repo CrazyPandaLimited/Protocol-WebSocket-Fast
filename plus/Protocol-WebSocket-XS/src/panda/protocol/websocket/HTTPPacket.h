@@ -7,6 +7,7 @@
 #include <panda/ranges/KmpFinder.h>
 #include <panda/unordered_string_map.h>
 #include <panda/protocol/websocket/utils.h>
+#include <panda/protocol/http/Body.h>
 
 namespace panda { namespace protocol { namespace websocket {
 
@@ -23,14 +24,14 @@ public:
         HeaderValueParams params;
     };
     typedef std::vector<HeaderValue> HeaderValues;
-    typedef std::vector<string>      Body;
+    using BodySP = http::BodySP;
 
     size_t  max_headers_size;
     size_t  max_body_size;
     string  error;
     Headers headers;
-    Body    body;
 
+    BodySP body           () const { return _body; }
     bool   header_ok      () const { return _header_ok; }
     bool   parsed         () const { return _parsed; }
     size_t content_length () const { return _content_length; }
@@ -57,11 +58,11 @@ public:
     virtual ~HTTPPacket () {}
 
 protected:
-    typedef decltype(panda::ranges::joiner(Body::const_iterator(), Body::const_iterator())) StringRange;
+    typedef decltype(panda::ranges::joiner(BodySP()->parts.cbegin(), BodySP()->parts.cend())) StringRange;
 
     HTTPPacket () :
-        max_headers_size(0), max_body_size(0), headers(Headers(16)), _header_finder(fndr), _header_ok(false), _parsed(false), _buf_size(0),
-        _content_length(0) {
+        max_headers_size(0), max_body_size(0), headers(Headers(16)), _body(new http::Body), _header_finder(fndr), _header_ok(false), _parsed(false),
+        _buf_size(0), _content_length(0) {
     }
 
     virtual void _parse_header (StringRange range);
@@ -69,6 +70,7 @@ protected:
     virtual void _to_string (string& str);
 
 private:
+    BodySP         _body;
     decltype(fndr) _header_finder;
     bool           _header_ok;
     bool           _parsed;
@@ -81,7 +83,7 @@ private:
             _parsed = true;
             return false;
         }
-        body.push_back(buf);
+        _body->parts.push_back(buf);
         _buf_size += buf.length();
         return true;
     }

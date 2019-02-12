@@ -35,7 +35,7 @@ string ServerParser::accept_error () {
     if (!_connect_request->ws_version_supported()) {
         res.code    = 426;
         res.message = "Upgrade Required";
-        res.body.push_back("426 Upgrade Required");
+        res.body()->parts.push_back("426 Upgrade Required");
 
         string svers(50);
         for (int v : supported_ws_versions) {
@@ -48,8 +48,8 @@ string ServerParser::accept_error () {
     else {
         res.code    = 400;
         res.message = "Bad Request";
-        res.body.push_back("400 Bad Request\n");
-        res.body.push_back(_connect_request->error);
+        res.body()->parts.push_back("400 Bad Request\n");
+        res.body()->parts.push_back(_connect_request->error);
     }
 
     return res.to_string();
@@ -66,8 +66,8 @@ string ServerParser::accept_error (HTTPResponse* res) {
     }
     else if (!res->message) res->message = "Unknown";
 
-    if (!res->body.size()) {
-        res->body.push_back(string::from_number(res->code) + ' ' + res->message);
+    if (res->body()->empty()) {
+        res->body()->parts.push_back(string::from_number(res->code) + ' ' + res->message);
     }
 
     if (res->headers.find("Content-Type") == res->headers.end()) res->headers.emplace("Content-Type", "text/plain");

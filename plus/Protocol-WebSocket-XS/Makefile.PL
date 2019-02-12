@@ -6,7 +6,7 @@ my %params = (
     ABSTRACT_FROM => 'lib/Protocol/WebSocket/XS.pod',
     CPLUS         => 11,
     TEST_REQUIRES => {'Test::Exception' => 0},
-    BIN_DEPS      => ['Panda::Export', 'URI::XS', 'Encode::Base2N', 'Test::Catch'],
+    BIN_DEPS      => ['Protocol::HTTP', 'Panda::Export', 'URI::XS', 'Encode::Base2N', 'Test::Catch'],
     LIBS          => ['-lcrypto -lz'], #TODO: global path 0_0 RLY?
     SRC           => 'src',
     INC           => '-Isrc -I/usr/local/opt/openssl/include',

@@ -30,15 +30,15 @@ bool HTTPPacket::parse (string& buf) {
         assert(_buf_size < _content_length);
         size_t left = _content_length - _buf_size;
         if (buf.length() < left) {
-            body.push_back(buf);
+            _body->parts.push_back(buf);
             _buf_size += buf.length();
             return false;
         }
         if (buf.length() == left) {
-            body.push_back(buf);
+            _body->parts.push_back(buf);
             buf.clear();
         } else {
-            body.push_back(buf.substr(0, left));
+            _body->parts.push_back(buf.substr(0, left));
             buf.offset(left);
         }
         _parsed = true;
@@ -59,8 +59,8 @@ bool HTTPPacket::parse (string& buf) {
     }
 
     if (!add_header_chunk(last_chunk)) return true;
-    _parse_header(panda::ranges::joiner(body.cbegin(), body.cend()));
-    body.clear();
+    _parse_header(panda::ranges::joiner(_body->parts.cbegin(), _body->parts.cend()));
+    _body->parts.clear();
     _buf_size = 0;
 
     if (_header_ok && _content_length) {
@@ -228,14 +228,13 @@ void HTTPPacket::clear () {
     error.clear();
     headers.clear();
     _content_length = _buf_size = 0;
-    body.clear();
+    _body->parts.clear();
     _header_finder.reset();
     _header_ok = _parsed = false;
 }
 
 void HTTPPacket::_to_string (string& str) {
-    size_t blen = 0;
-    for (const auto& s : body) blen += s.length();
+    size_t blen = _body->length();
     headers.erase("Content-Length");
 
     size_t hlen = 0;
@@ -258,7 +257,7 @@ void HTTPPacket::_to_string (string& str) {
     }
     str += "\r\n";
 
-    if (blen) for (const auto& s : body) str += s;
+    if (blen) for (const auto& s : _body->parts) str += s;
 }
 
 }}}
