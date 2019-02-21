@@ -38,7 +38,7 @@ Array header_values_to_av (pTHX_ const HTTPPacket::HeaderValues& vals) {
 
 void http_packet_set_headers (pTHX_ HTTPPacket* p, const Hash& hv) {
     p->headers.clear();
-    for (const auto& row : hv) p->headers.emplace(string(row.key()), xs::in<string>(aTHX_ row.value()));
+    for (const auto& row : hv) p->headers.add_field(string(row.key()), xs::in<string>(aTHX_ row.value()));
 }
 
 void http_packet_set_body (pTHX_ HTTPPacket* p, const Simple& sv) {

@@ -66,8 +66,8 @@ void HTTPRequest::_to_string (string& str) {
     str += "HTTP/1.1\r\n";
 
 
-    if (headers.find("User-Agent") == headers.end()) headers.emplace("User-Agent", "Panda-WebSocket");
-    if (headers.find("Host") == headers.end())       headers.emplace("Host", uri->host());
+    if (!headers.has_field("User-Agent")) headers.add_field("User-Agent", "Panda-WebSocket");
+    if (!headers.has_field("Host"))       headers.add_field("Host", uri->host());
 
     HTTPPacket::_to_string(str);
 }

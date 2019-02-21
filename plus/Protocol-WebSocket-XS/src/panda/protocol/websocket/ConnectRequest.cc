@@ -19,21 +19,21 @@ void ConnectRequest::_parse_header (StringRange range) {
     }
 
     auto it = headers.find("Connection");
-    if (it == headers.end() || it->second.find("Upgrade") == string::npos) {
+    if (it == headers.fields.rend() || it->value.find("Upgrade") == string::npos) {
         error = "Connection must be 'Upgrade'";
         return;
     }
 
     it = headers.find("Upgrade");
-    if (it == headers.end() || !string_contains_ci(it->second, "websocket")) {
+    if (it == headers.fields.rend() || !string_contains_ci(it->value, "websocket")) {
         error = "Upgrade must be 'websocket'";
         return;
     }
 
     ok = false;
     it = headers.find("Sec-WebSocket-Key");
-    if (it != headers.end()) {
-        ws_key = it->second;
+    if (it != headers.fields.rend()) {
+        ws_key = it->value;
         auto decoded = panda::encode::decode_base64(ws_key);
         if (decoded.length() == 16) ok = true;
     }
@@ -41,8 +41,8 @@ void ConnectRequest::_parse_header (StringRange range) {
 
     _ws_version_supported = false;
     it = headers.find("Sec-WebSocket-Version");
-    if (it != headers.end()) {
-        it->second.to_number(ws_version);
+    if (it != headers.fields.rend()) {
+        it->value.to_number(ws_version);
         for (int v : supported_ws_versions) {
             if (ws_version != v) continue;
             _ws_version_supported = true;
@@ -52,12 +52,11 @@ void ConnectRequest::_parse_header (StringRange range) {
     if (!_ws_version_supported) { error = "client's Sec-WebSocket-Version is not supported"; return; }
 
     auto ext_range = headers.equal_range("Sec-WebSocket-Extensions");
-    for (auto it = ext_range.first; it != ext_range.second; ++it) {
-        parse_header_value(it->second, _ws_extensions);
+    for (auto& hv : ext_range) {
+        parse_header_value(hv.value, _ws_extensions);
     }
 
-    it = headers.find("Sec-WebSocket-Protocol");
-    if (it != headers.end()) ws_protocol = it->second;
+    ws_protocol = headers.get_field("Sec-WebSocket-Protocol");
 }
 
 void ConnectRequest::_to_string (string& str) {

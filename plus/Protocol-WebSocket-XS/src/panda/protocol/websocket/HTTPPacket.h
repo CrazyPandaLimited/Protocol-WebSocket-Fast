@@ -9,6 +9,7 @@
 #include <panda/protocol/websocket/utils.h>
 #include <panda/protocol/http/Body.h>
 #include <panda/protocol/http/HeaderValueParamsParser.h>
+#include <panda/protocol/http/Header.h>
 
 namespace panda { namespace protocol { namespace websocket {
 
@@ -18,16 +19,17 @@ static auto fndr = panda::ranges::make_kmp_finder("\r\n\r\n");
 
 class HTTPPacket : public virtual panda::Refcnt {
 public:
-    typedef panda::unordered_string_multimap<string, string, string_hash_ci, string_equal_ci> Headers;
+//    typedef panda::unordered_string_multimap<string, string, string_hash_ci, string_equal_ci> Headers;
 
     using HeaderValue = http::HeaderValue;
     using HeaderValues = http::HeaderValues;
 
+    using Headers = http::Header;
     using BodySP = http::BodySP;
 
-    size_t  max_headers_size;
-    size_t  max_body_size;
-    string  error;
+    size_t   max_headers_size;
+    size_t   max_body_size;
+    string   error;
     Headers headers;
 
     BodySP body           () const { return _body; }
@@ -39,8 +41,8 @@ public:
 
     void replace_header (const string& name, const string& value) {
         auto it = headers.find(name);
-        if (it != headers.end()) it->second = value;
-        else headers.emplace(name, value);
+        if (it != headers.fields.rend()) it->value = value;
+        else headers.add_field(name, value);
     }
 
     virtual void clear ();
@@ -57,7 +59,7 @@ protected:
     typedef decltype(panda::ranges::joiner(BodySP()->parts.cbegin(), BodySP()->parts.cend())) StringRange;
 
     HTTPPacket () :
-        max_headers_size(0), max_body_size(0), headers(Headers(16)), _body(new http::Body), _header_finder(fndr), _header_ok(false), _parsed(false),
+        max_headers_size(0), max_body_size(0), headers(), _body(new http::Body), _header_finder(fndr), _header_ok(false), _parsed(false),
         _buf_size(0), _content_length(0) {
     }
 

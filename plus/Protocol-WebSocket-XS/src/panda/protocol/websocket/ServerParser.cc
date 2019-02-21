@@ -30,7 +30,7 @@ string ServerParser::accept_error () {
     if (!_connect_request->error) throw ParserError("no errors found");
 
     HTTPResponse res;
-    res.headers.emplace("Content-Type", "text/plain");
+    res.headers.add_field("Content-Type", "text/plain");
 
     if (!_connect_request->ws_version_supported()) {
         res.code    = 426;
@@ -43,7 +43,7 @@ string ServerParser::accept_error () {
             svers += ", ";
         }
         if (svers) svers.length(svers.length()-2);
-        res.headers.emplace("Sec-WebSocket-Version", svers);
+        res.headers.add_field("Sec-WebSocket-Version", svers);
     }
     else {
         res.code    = 400;
@@ -70,7 +70,7 @@ string ServerParser::accept_error (HTTPResponse* res) {
         res->body()->parts.push_back(string::from_number(res->code) + ' ' + res->message);
     }
 
-    if (res->headers.find("Content-Type") == res->headers.end()) res->headers.emplace("Content-Type", "text/plain");
+    if (!res->headers.has_field("Content-Type")) res->headers.add_field("Content-Type", "text/plain");
 
     return res->to_string();
 }

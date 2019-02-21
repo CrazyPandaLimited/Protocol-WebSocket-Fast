@@ -114,7 +114,7 @@ void HTTPPacket::_parse_header (StringRange range) {
             if (curacc != valptr && *(curacc-1) == '\r') curacc--;
             if (curacc != valptr) value.assign(valptr, curacc - valptr);
 
-            headers.emplace(key, value);
+            headers.add_field(key, value);
             //std::cout << "found key='" << key << "' value='" << value << "'\n";
 
             mode = PARSE_MODE_KEY;
@@ -126,11 +126,9 @@ void HTTPPacket::_parse_header (StringRange range) {
 
     _header_ok = true;
 
-    auto it = headers.find("Content-Length");
-    if (it != headers.end()) {
-        auto res = it->second.to_number(_content_length);
-        assert(!res.ec);
-    }
+    auto cont_len_str = headers.get_field("Content-Length", "0");
+    auto res = cont_len_str.to_number(_content_length);
+    assert(!res.ec);
 }
 
 void HTTPPacket::clear () {
@@ -144,19 +142,19 @@ void HTTPPacket::clear () {
 
 void HTTPPacket::_to_string (string& str) {
     size_t blen = _body->length();
-    headers.erase("Content-Length");
+    headers.remove_field("Content-Length");
 
     size_t hlen = 0;
-    for (const auto& elem : headers) {
-        hlen += elem.first.length() + elem.second.length() + 4;
+    for (const auto& elem : headers.fields) {
+        hlen += elem.name.length() + elem.value.length() + 4;
     }
 
     str.reserve(str.length() + hlen + (blen ? (blen+30) : 0) + 10); // +30 for content-length: xxxxxxx
 
-    for (const auto& elem : headers) {
-        str += elem.first;
+    for (const auto& elem : headers.fields) {
+        str += elem.name;
         str += ": ";
-        str += elem.second;
+        str += elem.value;
         str += "\r\n";
     }
     if (blen) {

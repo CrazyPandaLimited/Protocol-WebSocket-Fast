@@ -60,7 +60,7 @@ void HTTPResponse::_to_string (string& str) {
     str += message;
     str += "\r\n";
 
-    if (headers.find("Server") == headers.end()) headers.emplace("Server", "Panda-WebSocket");
+    if (!headers.has_field("Server")) headers.add_field("Server", "Panda-WebSocket");
 
     HTTPPacket::_to_string(str);
 }
