@@ -74,6 +74,38 @@ TEST_CASE("FrameBuilder & Message builder", "[deflate-extension]") {
             REQUIRE(messages_it.begin()->payload[0] == "hello world");
         }
 
+        SECTION("MessageBuilder::send (fragmented message iterator, hole in the middle)") {
+            std::vector<string> fragments;
+            fragments.push_back("hello");
+            fragments.push_back("");
+            fragments.push_back("");
+            fragments.push_back(" world");
+            auto data = server.message().send(fragments.begin(), fragments.end());
+            auto data_string = to_string(data);
+            auto messages_it = client.get_messages(data_string);
+            REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
+            REQUIRE(messages_it.begin()->payload[0] == "hello world");
+        }
+
+        SECTION("MessageBuilder::send (empty string)") {
+            panda::string item = "";
+            auto data = server.message().send(item);
+            auto data_string = to_string(data);
+            auto messages_it = client.get_messages(data_string);
+            REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
+            REQUIRE(messages_it.begin()->payload.size() == 0);
+        }
+
+        SECTION("MessageBuilder::send (fragmented message iterator, empty)") {
+            std::vector<string> fragments;
+            fragments.push_back("");
+            auto data = server.message().send(fragments.begin(), fragments.end());
+            auto data_string = to_string(data);
+            auto messages_it = client.get_messages(data_string);
+            REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
+            REQUIRE(messages_it.begin()->payload.size() == 0);
+        }
+
         SECTION("MessageBuilder::send (fragmented multi-frame iterator, 1 fragment)") {
             std::vector<std::vector<string>> pieces;
 
@@ -141,6 +173,38 @@ TEST_CASE("FrameBuilder & Message builder", "[deflate-extension]") {
             auto it = messages_it.begin();
             REQUIRE(it->payload.size() == 1);
             REQUIRE(it->payload[0] == "hello world!");
+        }
+
+        SECTION("MessageBuilder::send (fragmented multi-frame iterator, 4 fragments, empty middle)") {
+            std::vector<std::vector<string>> pieces;
+
+            std::vector<string> fragments1;
+            fragments1.push_back("hello");
+            fragments1.push_back(" world");
+            pieces.push_back(fragments1);
+
+            std::vector<string> fragments2;
+            pieces.push_back(fragments2);
+
+            std::vector<string> fragments3;
+            fragments3.push_back("");
+            pieces.push_back(fragments3);
+
+            std::vector<string> fragments4;
+            fragments4.push_back("!");
+            pieces.push_back(fragments4);
+
+            auto builder = server.message();
+            auto data = builder.deflate(true).send(pieces.begin(), pieces.end());
+            auto data_string = to_string(data);
+            REQUIRE(data_string.find("hello") == std::string::npos);
+            auto messages_it = client.get_messages(data_string);
+            REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
+
+            auto it = messages_it.begin();
+            REQUIRE(it->payload.size() == 2);
+            REQUIRE(it->payload[0] == "hello world");
+            REQUIRE(it->payload[1] == "!");
         }
 
         SECTION("MessageBuilder::send (fragmented multi-frame iterator, 2 fragments, both empty)") {
