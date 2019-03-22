@@ -119,7 +119,7 @@ public:
                 });
             } while(tx_stream.avail_in);
             auto tx_out = avail_out - tx_stream.avail_out;
-            chunk_out->length(chunk_out->length() + tx_out);
+            if (chunk_out) { chunk_out->length(chunk_out->length() + tx_out); }
             it_in = it_next;
         }
         if(final) {
@@ -152,6 +152,7 @@ private:
     template<typename F>
     inline void deflate_iteration(int flush, F&& drain) {
         do {
+            if (!tx_stream.avail_in && flush == Z_NO_FLUSH) return;
             if (!tx_stream.avail_out) drain();
             auto r = deflate(&tx_stream, flush);
             // no known cases, when user input data might lead to the error

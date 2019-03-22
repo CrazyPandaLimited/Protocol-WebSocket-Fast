@@ -60,6 +60,23 @@ TEST_CASE("FrameBuilder & Message builder", "[deflate-extension]") {
             REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
             REQUIRE(messages_it.begin()->payload.empty());
         }
+
+        SECTION("send (iterator with holes)") {
+            std::vector<string> fragments;
+            fragments.push_back("");
+            fragments.push_back("hello");
+            fragments.push_back("");
+            fragments.push_back(" world");
+            fragments.push_back("");
+            auto data = server.start_message().deflate(true).final(true)
+                .send(fragments.begin(), fragments.end());
+            auto data_string = to_string(data);
+            auto messages_it = client.get_messages(data_string);
+            REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
+            auto it = messages_it.begin();
+            REQUIRE(it->payload.size() == 1);
+            REQUIRE(it->payload[0] == "hello world");
+        }
     }
 
     SECTION("MessageBuilder") {
