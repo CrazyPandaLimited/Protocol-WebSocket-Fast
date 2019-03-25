@@ -21,7 +21,7 @@ void ConnectResponse::_parse_header (StringRange range) {
     }
 
     auto it = headers.find("Connection");
-    if (it == headers.end() || it->second.find("Upgrade") == string::npos) {
+    if (it == headers.end() || !string_contains_ci(it->second, "upgrade")) {
         error = "Connection must be 'Upgrade'";
         return;
     }
