@@ -219,7 +219,11 @@ private:
 
     template<typename It>
     StringChain<It> send_frame(It payload_begin, It payload_end, const FrameBuilder& fb) {
-        bool non_empty = payload_begin != payload_end;
+        size_t payload_length = 0;
+        for(auto it = payload_begin; it != payload_end; ++it) {
+            payload_length += it->length();
+        }
+        bool non_empty = payload_length > 0;
         bool use_deflate = fb.deflate() && _deflate_ext && non_empty;
         bool is_final = fb.final();
         auto header = _prepare_frame_header(is_final, use_deflate, fb.opcode());
@@ -276,7 +280,11 @@ public:
 
     template <class It, typename = typename std::enable_if<std::is_same<typename It::value_type, string>::value>::type>
     StringChain<It> send(It payload_begin, It payload_end) {
-        bool apply_deflate = maybe_deflate(std::distance(payload_begin, payload_end));
+        size_t payload_length = 0;
+        for(auto it = payload_begin; it != payload_end; ++it) {
+            payload_length += it->length();
+        }
+        bool apply_deflate = maybe_deflate(payload_length);
         return _parser.start_message().final(true).opcode(_opcode).deflate(apply_deflate).send(payload_begin, payload_end);
     }
 
@@ -287,10 +295,15 @@ public:
         size_t sz = 0, idx = 0, payload_sz = 0, last_nonempty = 0;
         auto cont_range = IteratorPair<ContIt>(cont_begin, cont_end);
         for (const auto& range : cont_range) {
-            auto piece_size = range.end() - range.begin();
-            sz += piece_size;
-            for(const auto& it: range) payload_sz += it.length();
-            if (payload_sz) last_nonempty = idx++;
+            size_t piece_sz = 0;
+            for(const auto& it: range) {
+                auto length = it.length();
+                piece_sz += length;
+                if (length) ++sz;
+            }
+            if (piece_sz) { last_nonempty = idx; };
+            payload_sz += piece_sz;
+            ++idx;
         };
 
         auto fb = _parser.start_message();
@@ -305,10 +318,16 @@ public:
         ret.reserve(sz);
 
         fb.deflate(maybe_deflate(payload_sz));
-        for (size_t i = 0; i <= last_nonempty; ++i) {
-            auto& range = cont_begin[i];
-            auto frame_range = fb.final(i == last_nonempty).send(range.begin(), range.end());
-            for (const auto& s : frame_range) ret.push_back(s);
+        idx = 0;
+        for (auto& range : cont_range) {
+            size_t piece_sz = 0;
+            for(const auto& it: range) piece_sz += it.length();
+            if (piece_sz) {
+                auto frame_range = fb.final(idx == last_nonempty).send(range.begin(), range.end());
+                for (const auto& s : frame_range) ret.push_back(s);
+            }
+            if (idx == last_nonempty) break;
+            ++idx;
         }
 
         return ret;
@@ -325,7 +344,8 @@ private:
         case apply_deflate_t::TEXT_BY_THRESHOLD: r
                 =  _opcode == Opcode::TEXT
                 && _parser._deflate_cfg
-                && _parser._deflate_cfg->compression_threshold <= payload_length;
+                && _parser._deflate_cfg->compression_threshold <= payload_length
+                && payload_length > 0;
             break;
         }
         return r;
