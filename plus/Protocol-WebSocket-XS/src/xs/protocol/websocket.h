@@ -109,6 +109,7 @@ namespace xs {
     struct Typemap<panda::protocol::websocket::HTTPResponseSP, panda::iptr<TYPE>> : Typemap<TYPE*> {
         using Super = Typemap<TYPE*>;
         panda::iptr<TYPE> in (pTHX_ Sv arg) {
+            if (!arg.defined()) return {};
             Object obj = arg.is_object_ref() ? Object(std::move(arg)) : Super::default_stash().call("new", arg);
             return Super::in(aTHX_ obj);
         }
