@@ -101,6 +101,7 @@ public:
             auto avail_out = tx_stream.avail_out;
             do {
                 deflate_iteration(flush, [&](){
+                    bool reserve_something = false;
                     // the current chunk is already filled, try the next one
                     if (it_out < it_next) {
                         if (chunk_out) {
@@ -111,9 +112,13 @@ public:
                         chunk_out->length(0);
                         tx_stream.next_out = reinterpret_cast<Bytef*>(chunk_out->shared_buf());
                         avail_out = tx_stream.avail_out = static_cast<uInt>(chunk_out->shared_capacity());
+                        reserve_something = avail_out < TRAILER_RESERVED;
                     }
-                    // there are no more chunks, resize the last/current one
                     else {
+                        // there are no more chunks, resize the last/current one
+                        reserve_something = true;
+                    }
+                    if (reserve_something) {
                         avail_out = reserve_for_trailer(*chunk_out);
                     }
                 });
@@ -154,6 +159,7 @@ private:
         do {
             if (!tx_stream.avail_in && flush == Z_NO_FLUSH) return;
             if (!tx_stream.avail_out) drain();
+            assert(tx_stream.avail_out >= TRAILER_RESERVED);
             auto r = deflate(&tx_stream, flush);
             // no known cases, when user input data might lead to the error
             assert(r >= 0);
