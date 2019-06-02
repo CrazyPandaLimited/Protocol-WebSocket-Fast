@@ -12,7 +12,7 @@ struct ClientParser : Parser {
 
     ClientParser () : Parser(false) {}
 
-    string connect_request (ConnectRequestSP& req);
+    string connect_request (const ConnectRequestSP& req);
 
     ConnectResponseSP connect (string& buf);
 
