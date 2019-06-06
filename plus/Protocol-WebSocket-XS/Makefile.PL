@@ -7,14 +7,14 @@ my %params = (
     CPLUS         => 11,
     TEST_REQUIRES => {'Test::Exception' => 0},
     BIN_DEPS      => ['Protocol::HTTP', 'Panda::Export', 'URI::XS', 'Encode::Base2N', 'Test::Catch'],
-    LIBS          => ['-lcrypto -lz'], #TODO: global path 0_0 RLY?
+    LIBS          => ['-lcrypto -lz'],
     SRC           => 'src',
     INC           => '-Isrc -I/usr/local/opt/openssl/include',
     BIN_SHARE => {
     	CPLUS    => 11,
         INCLUDE  => {'src' => '/'},
     },
-    CCFLAGS  => '-fno-omit-frame-pointer -Wall -Wextra',
+    CCFLAGS  => '-Wall -Wextra',
     test     => {
         SRC                  => 't',
         RECURSIVE_TEST_FILES => 1,

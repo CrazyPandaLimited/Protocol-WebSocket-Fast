@@ -14,6 +14,16 @@ subtest 'parser create' => sub {
     ok(!$p->established, "not established");
 };
 
+subtest 'case sensetive values' => sub {
+    my $data = accept_packet();
+    $data =~ s/Upgrade: websocket\r\n/upgrade: websocket\r\n/;
+    $data =~ s/Connection: Upgrade\r\n/connection: upgrade\r\n/;
+    my $creq = $p->accept($data);
+    ok($creq, "accept done");
+    ok($p->accepted, "now accepted");
+};
+$p->reset();
+
 subtest 'accept chunks' => sub {
     my @data = accept_packet();
     my $last = pop @data;

@@ -19,7 +19,7 @@ void ConnectRequest::_parse_header (StringRange range) {
     }
 
     auto it = headers.find("Connection");
-    if (it == headers.fields.rend() || it->value.find("Upgrade") == string::npos) {
+    if (it == headers.fields.rend() || !string_contains_ci(it->value, "upgrade")) {
         error = "Connection must be 'Upgrade'";
         return;
     }

@@ -86,12 +86,12 @@ namespace xs {
 
     template <class TYPE>
     struct Typemap<panda::protocol::websocket::ClientParser*, TYPE> : Typemap<panda::protocol::websocket::Parser*, TYPE> {
-        std::string package () { return "Protocol::WebSocket::XS::ClientParser"; }
+        static std::string package () { return "Protocol::WebSocket::XS::ClientParser"; }
     };
 
     template <class TYPE>
     struct Typemap<panda::protocol::websocket::ServerParser*, TYPE> : Typemap<panda::protocol::websocket::Parser*, TYPE> {
-        std::string package () { return "Protocol::WebSocket::XS::ServerParser"; }
+        static std::string package () { return "Protocol::WebSocket::XS::ServerParser"; }
     };
 
     template <class TYPE>
@@ -102,13 +102,14 @@ namespace xs {
 
     template <class TYPE>
     struct Typemap<panda::protocol::websocket::HTTPResponse*, TYPE> : Typemap<panda::protocol::websocket::HTTPPacket*, TYPE> {
-        std::string package () { return "Protocol::WebSocket::XS::HTTPResponse"; }
+        static std::string package () { return "Protocol::WebSocket::XS::HTTPResponse"; }
     };
 
     template <class TYPE>
     struct Typemap<panda::protocol::websocket::HTTPResponseSP, panda::iptr<TYPE>> : Typemap<TYPE*> {
         using Super = Typemap<TYPE*>;
-        panda::iptr<TYPE> in (pTHX_ Sv arg) {
+        static panda::iptr<TYPE> in (pTHX_ Sv arg) {
+            if (!arg.defined()) return {};
             Object obj = arg.is_object_ref() ? Object(std::move(arg)) : Super::default_stash().call("new", arg);
             return Super::in(aTHX_ obj);
         }
@@ -116,13 +117,13 @@ namespace xs {
 
     template <class TYPE>
     struct Typemap<panda::protocol::websocket::ConnectRequest*, TYPE> : Typemap<panda::protocol::websocket::HTTPRequest*, TYPE> {
-        std::string package () { return "Protocol::WebSocket::XS::ConnectRequest"; }
+        static std::string package () { return "Protocol::WebSocket::XS::ConnectRequest"; }
     };
 
     template <class TYPE>
     struct Typemap<panda::protocol::websocket::ConnectRequestSP, panda::iptr<TYPE>> : Typemap<TYPE*> {
         using Super = Typemap<TYPE*>;
-        panda::iptr<TYPE> in (pTHX_ Sv arg) {
+        static panda::iptr<TYPE> in (pTHX_ Sv arg) {
             Object obj = arg.is_object_ref() ? Object(std::move(arg)) : Super::default_stash().call("new", arg);
             return Super::in(aTHX_ obj);
         }
@@ -130,13 +131,13 @@ namespace xs {
 
     template <class TYPE>
     struct Typemap<panda::protocol::websocket::ConnectResponse*, TYPE> : Typemap<panda::protocol::websocket::HTTPResponse*, TYPE> {
-        std::string package () { return "Protocol::WebSocket::XS::ConnectResponse"; }
+        static std::string package () { return "Protocol::WebSocket::XS::ConnectResponse"; }
     };
 
     template <class TYPE>
     struct Typemap<panda::protocol::websocket::ConnectResponseSP, panda::iptr<TYPE>> : Typemap<TYPE*> {
         using Super = Typemap<TYPE*>;
-        panda::iptr<TYPE> in (pTHX_ Sv arg) {
+        static panda::iptr<TYPE> in (pTHX_ Sv arg) {
             Object obj = arg.is_object_ref() ? Object(std::move(arg)) : Super::default_stash().call("new", arg);
             return Super::in(aTHX_ obj);
         }
@@ -144,31 +145,31 @@ namespace xs {
 
     template <class TYPE>
     struct Typemap<panda::protocol::websocket::Frame*, TYPE> : TypemapObject<panda::protocol::websocket::Frame*, TYPE, ObjectTypeRefcntPtr, ObjectStorageMG> {
-        std::string package () { return "Protocol::WebSocket::XS::Frame"; }
+        static std::string package () { return "Protocol::WebSocket::XS::Frame"; }
     };
 
     template <class TYPE>
     struct Typemap<panda::protocol::websocket::Message*, TYPE> : TypemapObject<panda::protocol::websocket::Message*, TYPE, ObjectTypeRefcntPtr, ObjectStorageMG> {
-        std::string package () { return "Protocol::WebSocket::XS::Message"; }
+        static std::string package () { return "Protocol::WebSocket::XS::Message"; }
     };
 
     template <class TYPE>
     struct Typemap<xs::protocol::websocket::XSFrameIterator*, TYPE> : TypemapObject<xs::protocol::websocket::XSFrameIterator*, TYPE, ObjectTypePtr, ObjectStorageMG> {
-        std::string package () { return "Protocol::WebSocket::XS::FrameIterator"; }
+        static std::string package () { return "Protocol::WebSocket::XS::FrameIterator"; }
     };
 
     template <class TYPE>
     struct Typemap<xs::protocol::websocket::XSMessageIterator*, TYPE> : TypemapObject<xs::protocol::websocket::XSMessageIterator*, TYPE, ObjectTypePtr, ObjectStorageMG> {
-        std::string package () { return "Protocol::WebSocket::XS::MessageIterator"; }
+        static std::string package () { return "Protocol::WebSocket::XS::MessageIterator"; }
     };
 
     template <class TYPE>
     struct Typemap<xs::protocol::websocket::XSFrameBuilder*, TYPE> : TypemapObject<xs::protocol::websocket::XSFrameBuilder*, TYPE, ObjectTypePtr, ObjectStorageMG> {
-        std::string package () { return "Protocol::WebSocket::XS::FrameBuilder"; }
+        static std::string package () { return "Protocol::WebSocket::XS::FrameBuilder"; }
     };
 
     template <class TYPE> struct Typemap<panda::protocol::websocket::DeflateExt::Config, TYPE> : TypemapBase<panda::protocol::websocket::DeflateExt::Config, TYPE> {
-        TYPE in (pTHX_ SV* arg) {
+        static TYPE in (pTHX_ SV* arg) {
             const Hash h = arg;
             TYPE cfg;
             Scalar val;
@@ -184,7 +185,7 @@ namespace xs {
             return cfg;
         }
 
-        Sv out (pTHX_ TYPE var, const Sv& = Sv()) {
+        static Sv out (pTHX_ TYPE var, const Sv& = Sv()) {
             Hash settings = Hash::create();
             settings.store("server_max_window_bits",     Simple(var.server_max_window_bits));
             settings.store("client_max_window_bits",     Simple(var.client_max_window_bits));
@@ -200,7 +201,7 @@ namespace xs {
     };
 
     template <class TYPE> struct Typemap<panda::protocol::websocket::Parser::Config, TYPE> : TypemapBase<panda::protocol::websocket::Parser::Config, TYPE> {
-        TYPE in (pTHX_ SV* arg) {
+        static TYPE in (pTHX_ SV* arg) {
             TYPE cfg;
             const Hash h = arg;
 
