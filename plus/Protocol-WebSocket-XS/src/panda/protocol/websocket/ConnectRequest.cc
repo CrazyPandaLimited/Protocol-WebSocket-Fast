@@ -62,7 +62,7 @@ void ConnectRequest::_parse_header (StringRange range) {
 void ConnectRequest::_to_string (string& str) {
     if (uri && uri->scheme() && uri->scheme() != "ws" && uri->scheme() != "wss")
         throw std::logic_error("ConnectRequest[to_string] uri scheme must be 'ws' or 'wss'");
-    if (body()->length()) throw std::logic_error("ConnectRequest[to_string] http body is not allowed for websocket handshake request");
+    if (body->length()) throw std::logic_error("ConnectRequest[to_string] http body is not allowed for websocket handshake request");
 
     method = "GET";
 

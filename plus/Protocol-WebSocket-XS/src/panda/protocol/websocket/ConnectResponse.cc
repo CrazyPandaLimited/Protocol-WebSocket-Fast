@@ -58,7 +58,7 @@ void ConnectResponse::_to_string (string& str) {
 
     if (_ws_extensions.size()) headers.add_field("Sec-WebSocket-Extensions", compile_header_value(_ws_extensions));
 
-    body()->parts.clear(); // body not supported in WS responses
+    body->parts.clear(); // body not supported in WS responses
 
     HTTPResponse::_to_string(str);
 }

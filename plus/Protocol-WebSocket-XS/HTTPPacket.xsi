@@ -47,7 +47,7 @@ Simple HTTPPacket::body (SV* newval = NULL) {
         http_packet_set_body(aTHX_ THIS, newval);
         XSRETURN_UNDEF;
     }
-    RETVAL = strings_to_sv(aTHX_ THIS->body()->parts);
+    RETVAL = strings_to_sv(aTHX_ THIS->body->parts);
 }
 
 void HTTPPacket::clear ()
