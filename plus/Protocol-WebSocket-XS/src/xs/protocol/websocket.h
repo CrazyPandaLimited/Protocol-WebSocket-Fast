@@ -1,5 +1,6 @@
 #pragma once
 #include <xs.h>
+#include <xs/protocol/http.h>
 #include <panda/protocol/websocket.h>
 
 namespace xs { namespace protocol { namespace websocket {
@@ -94,29 +95,8 @@ namespace xs {
         static std::string package () { return "Protocol::WebSocket::XS::ServerParser"; }
     };
 
-//    template <class TYPE>
-//    struct Typemap<panda::protocol::websocket::HTTPPacket*, TYPE> : TypemapObject<panda::protocol::websocket::HTTPPacket*, TYPE, ObjectTypeRefcntPtr, ObjectStorageMG> {};
-
-//    template <class TYPE>
-//    struct Typemap<panda::protocol::websocket::HTTPRequest*, TYPE> : Typemap<panda::protocol::websocket::HTTPPacket*, TYPE> {};
-
-//    template <class TYPE>
-//    struct Typemap<panda::protocol::websocket::HTTPResponse*, TYPE> : Typemap<panda::protocol::websocket::HTTPPacket*, TYPE> {
-//        static std::string package () { return "Protocol::WebSocket::XS::HTTPResponse"; }
-//    };
-
-//    template <class TYPE>
-//    struct Typemap<panda::protocol::websocket::HTTPResponseSP, panda::iptr<TYPE>> : Typemap<TYPE*> {
-//        using Super = Typemap<TYPE*>;
-//        static panda::iptr<TYPE> in (pTHX_ Sv arg) {
-//            if (!arg.defined()) return {};
-//            Object obj = arg.is_object_ref() ? Object(std::move(arg)) : Super::default_stash().call("new", arg);
-//            return Super::in(aTHX_ obj);
-//        }
-//    };
-
     template <class TYPE>
-    struct Typemap<panda::protocol::websocket::ConnectRequest*, TYPE> : Typemap<panda::protocol::websocket::HTTPRequest*, TYPE> {
+    struct Typemap<panda::protocol::websocket::ConnectRequest*, TYPE> : Typemap<panda::protocol::http::Request*, TYPE> {
         static std::string package () { return "Protocol::WebSocket::XS::ConnectRequest"; }
     };
 
@@ -130,7 +110,7 @@ namespace xs {
     };
 
     template <class TYPE>
-    struct Typemap<panda::protocol::websocket::ConnectResponse*, TYPE> : Typemap<panda::protocol::websocket::HTTPResponse*, TYPE> {
+    struct Typemap<panda::protocol::websocket::ConnectResponse*, TYPE> : Typemap<panda::protocol::http::Response*, TYPE> {
         static std::string package () { return "Protocol::WebSocket::XS::ConnectResponse"; }
     };
 
