@@ -102,7 +102,7 @@ DeflateExt::EffectiveConfig DeflateExt::select(const http::HeaderValues& values,
     return EffectiveConfig(EffectiveConfig::NegotiationsResult::NOT_FOUND);
 }
 
-DeflateExt* DeflateExt::uplift(const EffectiveConfig& ecfg, HTTPPacket::HeaderValues& extensions, Role role) {
+DeflateExt* DeflateExt::uplift(const EffectiveConfig& ecfg, http::HeaderValues& extensions, Role role) {
     http::HeaderValueParams params;
     if (ecfg.flags & EffectiveConfig::HAS_SERVER_NO_CONTEXT_TAKEOVER) {
         params.emplace(PARAM_SERVER_NO_CONTEXT_TAKEOVER, "");

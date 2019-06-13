@@ -2,7 +2,7 @@
 
 namespace xs { namespace protocol { namespace websocket {
 
-void av_to_header_values (pTHX_ const Array& av, HTTPPacket::HeaderValues* vals) {
+void av_to_header_values (pTHX_ const Array& av, HeaderValues* vals) {
     if (!av.size()) return;
     vals->reserve(av.size());
     for (const auto& sv : av) {
@@ -10,7 +10,7 @@ void av_to_header_values (pTHX_ const Array& av, HTTPPacket::HeaderValues* vals)
         if (!subav) continue;
         auto namesv = subav.fetch(0);
         if (!namesv) continue;
-        HTTPPacket::HeaderValue elem;
+        HeaderValue elem;
         elem.name = xs::in<string>(aTHX_ namesv);
         Hash args = subav.fetch(1);
         if (args) for (const auto& row : args) elem.params.emplace(string(row.key()), xs::in<string>(aTHX_ row.value()));
@@ -18,7 +18,7 @@ void av_to_header_values (pTHX_ const Array& av, HTTPPacket::HeaderValues* vals)
     }
 }
 
-Array header_values_to_av (pTHX_ const HTTPPacket::HeaderValues& vals) {
+Array header_values_to_av (pTHX_ const HeaderValues& vals) {
     if (!vals.size()) return Array();
     auto ret = Array::create(vals.size());
     for (const auto& elem : vals) {
@@ -36,12 +36,12 @@ Array header_values_to_av (pTHX_ const HTTPPacket::HeaderValues& vals) {
     return ret;
 }
 
-void http_packet_set_headers (pTHX_ HTTPPacket* p, const Hash& hv) {
+void http_packet_set_headers (pTHX_ panda::protocol::http::Message* p, const Hash& hv) {
     p->headers.clear();
     for (const auto& row : hv) p->headers.add_field(string(row.key()), xs::in<string>(aTHX_ row.value()));
 }
 
-void http_packet_set_body (pTHX_ HTTPPacket* p, const Simple& sv) {
+void http_packet_set_body (pTHX_ panda::protocol::http::Message* p, const Simple& sv) {
     p->body->parts.clear();
     auto newbody = xs::in<string>(aTHX_ sv);
     if (newbody.length()) p->body->parts.push_back(newbody);

@@ -56,12 +56,6 @@ INCLUDE: ServerParser.xsi
 
 INCLUDE: ClientParser.xsi
 
-INCLUDE: HTTPPacket.xsi
-
-INCLUDE: HTTPRequest.xsi
-
-INCLUDE: HTTPResponse.xsi
-
 INCLUDE: ConnectRequest.xsi
 
 INCLUDE: ConnectResponse.xsi

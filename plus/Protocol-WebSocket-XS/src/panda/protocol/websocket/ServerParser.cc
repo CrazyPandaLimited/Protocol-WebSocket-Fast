@@ -1,6 +1,8 @@
 #include <panda/protocol/websocket/ServerParser.h>
 #include <exception>
 #include <panda/protocol/websocket/ParserError.h>
+#include <panda/protocol/http/RequestParser.h>
+#include <strstream>
 
 namespace panda { namespace protocol { namespace websocket {
 
@@ -9,10 +11,12 @@ ConnectRequestSP ServerParser::accept (string& buf) {
 
     if (!_connect_request) {
         _connect_request = new ConnectRequest();
-        _connect_request->max_headers_size = _max_handshake_size;
+//        _connect_request->max_headers_size = _max_handshake_size; // TODO: add support of max headers size
     }
 
-    if (!_connect_request->parse(buf)) return NULL;
+//    if (!_connect_request->parse(buf)) return NULL;
+    http::RequestParser::Result res = _connect_parser->parse_first(buf);
+    _connect_request = dynamic_pointer_cast<ConnectRequest>(res.request);
 
     _state.set(STATE_ACCEPT_PARSED);
 
@@ -29,13 +33,13 @@ string ServerParser::accept_error () {
     if (established()) throw ParserError("already established");
     if (!_connect_request->error) throw ParserError("no errors found");
 
-    HTTPResponse res;
-    res.headers.add_field("Content-Type", "text/plain");
+    HTTPResponseSP res = new HTTPResponse();
+    res->headers.add_field("Content-Type", "text/plain");
 
     if (!_connect_request->ws_version_supported()) {
-        res.code    = 426;
-        res.message = "Upgrade Required";
-        res.body->parts.push_back("426 Upgrade Required");
+        res->code    = 426;
+        res->message = "Upgrade Required";
+        res->body->parts.push_back("426 Upgrade Required");
 
         string svers(50);
         for (int v : supported_ws_versions) {
@@ -43,16 +47,19 @@ string ServerParser::accept_error () {
             svers += ", ";
         }
         if (svers) svers.length(svers.length()-2);
-        res.headers.add_field("Sec-WebSocket-Version", svers);
+        res->headers.add_field("Sec-WebSocket-Version", svers);
     }
     else {
-        res.code    = 400;
-        res.message = "Bad Request";
-        res.body->parts.push_back("400 Bad Request\n");
-        res.body->parts.push_back(_connect_request->error);
+        res->code    = 400;
+        res->message = "Bad Request";
+        res->body->parts.push_back("400 Bad Request\n");
+        res->body->parts.push_back(_connect_request->error);
     }
 
-    return res.to_string();
+    std::ostringstream ss;
+    ss << *res;
+    ss.flush();
+    return string(ss.str().data());
 }
 
 string ServerParser::accept_error (HTTPResponse* res) {
@@ -72,7 +79,10 @@ string ServerParser::accept_error (HTTPResponse* res) {
 
     if (!res->headers.has_field("Content-Type")) res->headers.add_field("Content-Type", "text/plain");
 
-    return res->to_string();
+    std::ostringstream ss;
+    ss << *res;
+    ss.flush();
+    return string(ss.str().data());
 }
 
 string ServerParser::accept_response (ConnectResponse* res) {
@@ -84,7 +94,7 @@ string ServerParser::accept_response (ConnectResponse* res) {
     if (!res->ws_extensions_set()) res->ws_extensions(_connect_request->ws_extensions());
 
     const auto& exts = res->ws_extensions();
-    HTTPPacket::HeaderValues used_extensions;
+    HeaderValues used_extensions;
     if (_deflate_cfg && exts.size()) {
         // filter extensions
         auto role = DeflateExt::Role::SERVER;
@@ -104,5 +114,7 @@ void ServerParser::reset () {
     _connect_request = NULL;
     Parser::reset();
 }
+
+ServerParser::~ServerParser() {}
 
 }}}

@@ -19,7 +19,7 @@ void ConnectRequest::init (Hash params) {
     
     if ((val = params.fetch("ws_extensions"))) {
         auto exts_av = xs::in<Array>(val);
-        HTTPPacket::HeaderValues exts;
+        HeaderValues exts;
         if (exts_av) av_to_header_values(aTHX_ exts_av, &exts);
         THIS->ws_extensions(exts);
     }
@@ -45,7 +45,7 @@ int ConnectRequest::ws_version (SV* newval = NULL) {
 
 Array ConnectRequest::ws_extensions (Array exts_av = Array()) {
     if (exts_av) {
-        HTTPPacket::HeaderValues exts;
+        HeaderValues exts;
         av_to_header_values(aTHX_ exts_av, &exts);
         THIS->ws_extensions(exts);
         XSRETURN_UNDEF;

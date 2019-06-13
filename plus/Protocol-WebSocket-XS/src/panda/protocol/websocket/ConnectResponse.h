@@ -7,6 +7,7 @@ namespace panda { namespace protocol { namespace websocket {
 class ConnectResponse : public HTTPResponse {
 public:
     string ws_protocol;
+    string error;
 
     ConnectResponse () : _ws_extensions_set(false) {}
 
@@ -21,12 +22,14 @@ public:
         _ws_extensions_set = true;
     }
 
+    string to_string();
+
     friend struct ServerParser;
     friend struct ClientParser;
 
 protected:
-    virtual void _parse_header (StringRange range);
-    virtual void _to_string    (string& str);
+//    virtual void _parse_header (StringRange range);
+//    virtual void _to_string    (string& str);
 
 private:
     string       _ws_key;

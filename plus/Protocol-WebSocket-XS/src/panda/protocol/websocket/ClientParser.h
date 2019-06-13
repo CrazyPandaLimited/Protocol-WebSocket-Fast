@@ -3,6 +3,7 @@
 #include <panda/protocol/websocket/Parser.h>
 #include <panda/protocol/websocket/ConnectRequest.h>
 #include <panda/protocol/websocket/ConnectResponse.h>
+#include <panda/protocol/http/ResponseParser.h>
 
 namespace panda { namespace protocol { namespace websocket {
 
@@ -26,6 +27,7 @@ private:
 
     ConnectRequestSP  _connect_request;
     ConnectResponseSP _connect_response;
+    http::ResponseParserSP _connect_response_parser;
 };
 
 }}}

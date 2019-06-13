@@ -14,7 +14,7 @@ void ConnectResponse::init (Hash params) {
     Scalar val;
     
     if ((val = params.fetch("ws_extensions"))) {
-        HTTPPacket::HeaderValues exts;
+        HeaderValues exts;
         av_to_header_values(aTHX_ xs::in<Array>(val), &exts);
         THIS->ws_extensions(exts);
     }
@@ -30,7 +30,7 @@ string ConnectResponse::ws_versions ()
 
 Array ConnectResponse::ws_extensions (Array exts_av = Array()) {
     if (exts_av) {
-        HTTPPacket::HeaderValues exts;
+        HeaderValues exts;
         av_to_header_values(aTHX_ exts_av, &exts);
         THIS->ws_extensions(exts);
         XSRETURN_UNDEF;
