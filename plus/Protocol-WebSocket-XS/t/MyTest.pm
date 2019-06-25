@@ -10,7 +10,8 @@ use Protocol::WebSocket::XS;
 use Data::Dumper 'Dumper';
 use Panda::Lib qw/crypt_xor/;
 use Encode::Base2N 'decode_base64';
-XS::Loader::load_tests();
+
+XS::Loader::load();
 
 init();
 
