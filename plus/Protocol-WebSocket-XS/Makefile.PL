@@ -3,21 +3,18 @@ use XS::Install;
 
 my %params = (
     NAME          => 'Protocol::WebSocket::XS',
-    ABSTRACT_FROM => 'lib/Protocol/WebSocket/XS.pod',
     CPLUS         => 11,
     TEST_REQUIRES => {'Test::Exception' => 0},
-    BIN_DEPS      => ['Protocol::HTTP', 'Panda::Export', 'URI::XS', 'Encode::Base2N', 'Test::Catch'],
+    BIN_DEPS      => ['Protocol::HTTP', 'Panda::Export', 'URI::XS', 'Encode::Base2N'],
     LIBS          => ['-lcrypto -lz'],
     SRC           => 'src',
     INC           => '-Isrc -I/usr/local/opt/openssl/include',
-    BIN_SHARE => {
-    	CPLUS    => 11,
-        INCLUDE  => {'src' => '/'},
-    },
-    CCFLAGS  => '-Wall -Wextra',
-    test     => {
+    BIN_SHARE     => {INCLUDE  => {'src' => '/'}},
+    CCFLAGS       => '-Wall -Wextra',
+    test          => {
         SRC                  => 't',
         RECURSIVE_TEST_FILES => 1,
+        BIN_DEPS             => 'Test::Catch',
     },
 );
 
@@ -26,7 +23,4 @@ if ($ENV{SANITIZE}) {
     $params{LIBS}[0] .= ' -lubsan -lasan'; #sanitizer
 }
 
-
 write_makefile(%params);
-
-
