@@ -2,7 +2,7 @@
 #include <exception>
 #include <panda/protocol/websocket/ParserError.h>
 #include <panda/protocol/http/RequestParser.h>
-#include <strstream>
+#include <sstream>
 
 namespace panda { namespace protocol { namespace websocket {
 

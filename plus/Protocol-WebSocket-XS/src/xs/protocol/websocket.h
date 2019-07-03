@@ -10,9 +10,6 @@ using namespace panda::protocol::websocket;
 void  av_to_header_values (pTHX_ const Array& av, HeaderValues* vals);
 Array header_values_to_av (pTHX_ const HeaderValues& vals);
 
-void http_packet_set_headers (pTHX_ panda::protocol::http::Message* p, const Hash& headers);
-void http_packet_set_body    (pTHX_ panda::protocol::http::Message* p, const Simple& body);
-
 void av_to_vstring (pTHX_ const Array& av, std::vector<string>& v);
 
 template <class T>
