@@ -14,6 +14,7 @@ using std::string_view;
 using xs::my_perl;
 
 using namespace xs::protocol::websocket;
+using namespace xs::protocol::http;
 using namespace panda::protocol::websocket;
 
 MODULE = Protocol::WebSocket::XS                PACKAGE = Protocol::WebSocket::XS

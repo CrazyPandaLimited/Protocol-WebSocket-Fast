@@ -72,6 +72,19 @@ string ConnectResponse::_calc_accept_key (string ws_key) {
 }
 
 string ConnectResponse::to_string() {
+    code    = 101;
+    message = "Switching Protocols";
+    headers.add_field("Upgrade", "websocket");
+    headers.add_field("Connection", "Upgrade");
+
+    if (ws_protocol) headers.add_field("Sec-WebSocket-Protocol", ws_protocol);
+
+    headers.add_field("Sec-WebSocket-Accept", _calc_accept_key(_ws_key));
+
+    if (_ws_extensions.size()) headers.add_field("Sec-WebSocket-Extensions", compile_header_value(_ws_extensions));
+
+    body->parts.clear(); // body not supported in WS responses
+
     string res;
     for (const auto& s : to_vector(this)) {
         res += s;

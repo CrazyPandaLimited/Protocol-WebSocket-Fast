@@ -91,6 +91,28 @@ void ConnectRequest::add_deflate(const DeflateExt::Config& cfg) {
 }
 
 string ConnectRequest::to_string() {
+    if (uri && uri->scheme() && uri->scheme() != "ws" && uri->scheme() != "wss")
+        throw std::logic_error("ConnectRequest[to_string] uri scheme must be 'ws' or 'wss'");
+    if (body->length()) throw std::logic_error("ConnectRequest[to_string] http body is not allowed for websocket handshake request");
+
+    method = Request::Method::GET;
+
+    if (!ws_key) {
+        int32_t keybuf[] = {std::rand(), std::rand(), std::rand(), std::rand()};
+        ws_key = panda::encode::encode_base64(std::string_view((const char*)keybuf, sizeof(keybuf)), false, true);
+    }
+    headers.set_field("Sec-WebSocket-Key", ws_key);
+
+    if (ws_protocol) headers.set_field("Sec-WebSocket-Protocol", ws_protocol);
+
+    if (!ws_version) ws_version = 13;
+    headers.set_field("Sec-WebSocket-Version", string::from_number(ws_version));
+
+    if (_ws_extensions.size()) headers.set_field("Sec-WebSocket-Extensions", compile_header_value(_ws_extensions));
+
+    headers.set_field("Connection", "Upgrade");
+    headers.set_field("Upgrade", "websocket");
+
     string res;
     for (const auto& s : to_vector(this)) {
         res += s;

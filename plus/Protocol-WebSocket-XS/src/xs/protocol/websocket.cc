@@ -36,19 +36,6 @@ Array header_values_to_av (pTHX_ const HeaderValues& vals) {
     return ret;
 }
 
-Simple strings_to_sv (pTHX_ const string& s1, const string& s2) {
-    auto len = s1.length() + s2.length();
-    if (!len) return Simple::undef;
-
-    auto ret = Simple::create(len);
-    char* dest = SvPVX(ret);
-    std::memcpy(dest, s1.data(), s1.length());
-    std::memcpy(dest + s1.length(), s2.data(), s2.length());
-    dest[len] = 0;
-    ret.length(len);
-    return ret;
-}
-
 void av_to_vstring (pTHX_ const Array& av, std::vector<string>& v) {
     for (const auto& elem : av) {
         if (!elem.defined()) continue;

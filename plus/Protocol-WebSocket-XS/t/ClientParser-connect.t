@@ -10,9 +10,13 @@ my $test_connect = sub {
         my $p = new Protocol::WebSocket::XS::ClientParser;
         my $str = $p->connect_request($req);
         my $sp = new Protocol::WebSocket::XS::ServerParser;
+        warn($str);
+        warn("!!!!!!!!!!!!!!!!!!!!!");
         my $creq = $sp->accept($str) or die "should not happen";
         my $res_str = $creq->error ? $sp->accept_error : $sp->accept_response;
+        warn($res_str);
         my $cres = $p->connect($res_str);
+        warn $cres;
         cmp_deeply($cres, methods(%$check), "response ok");
         $cres->error ? ok(!$p->established, "not established on error") : ok($p->established, "established");
     };

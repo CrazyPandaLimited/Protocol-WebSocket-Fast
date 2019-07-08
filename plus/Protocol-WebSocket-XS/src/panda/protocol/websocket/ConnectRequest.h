@@ -3,6 +3,7 @@
 #include <panda/refcnt.h>
 #include <panda/protocol/websocket/HTTPRequest.h>
 #include <panda/protocol/websocket/DeflateExt.h>
+#include <iostream>
 
 namespace panda { namespace protocol { namespace websocket {
 
@@ -17,6 +18,7 @@ public:
     string error;
 
     ConnectRequest () : ws_version(0), _ws_version_supported(true) {
+        method = Request::Method::GET;
 //        max_body_size = -1;
     }
 

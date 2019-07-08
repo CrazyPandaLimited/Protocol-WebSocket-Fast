@@ -6,23 +6,38 @@
 
 namespace panda { namespace protocol { namespace websocket {
 
+struct RequestFactory : http::RequestFactory {
+    http::RequestSP create() const override {
+        return make_iptr<ConnectRequest>();
+    }
+};
+
+ServerParser::ServerParser()
+    : Parser(true)
+    , _connect_parser(new http::RequestParser(new RequestFactory))
+{}
+
 ConnectRequestSP ServerParser::accept (string& buf) {
     if (_state[STATE_ACCEPT_PARSED]) throw ParserError("already parsed accept");
 
-    if (!_connect_request) {
-        _connect_request = new ConnectRequest();
-//        _connect_request->max_headers_size = _max_handshake_size; // TODO: add support of max headers size
-    }
+//    if (!_connect_request) {
+//        _connect_request = new ConnectRequest();
+//
+//    }
 
 //    if (!_connect_request->parse(buf)) return NULL;
     http::RequestParser::Result res = _connect_parser->parse_first(buf);
     _connect_request = dynamic_pointer_cast<ConnectRequest>(res.request);
+//    _connect_request->max_headers_size = _max_handshake_size; // TODO: add support of max headers size
 
     _state.set(STATE_ACCEPT_PARSED);
 
     if (!_connect_request->error) {
-        if (buf) _connect_request->error = "garbage found after http request";
-        else _state.set(STATE_ACCEPTED);
+        if (res.position != buf.size()) {
+            _connect_request->error = "garbage found after http request";
+        } else {
+            _state.set(STATE_ACCEPTED);
+        }
     }
 
     return _connect_request;

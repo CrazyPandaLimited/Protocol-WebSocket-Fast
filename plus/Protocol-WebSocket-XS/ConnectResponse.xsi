@@ -2,7 +2,7 @@ MODULE = Protocol::WebSocket::XS                PACKAGE = Protocol::WebSocket::X
 PROTOTYPES: DISABLE
 
 BOOT {
-    Stash(__PACKAGE__).inherit("Protocol::WebSocket::XS::HTTPResponse");
+    Stash(__PACKAGE__).inherit("Protocol::HTTP::Response");
 }
 
 Object new (SV* CLASS, Hash params = Hash()) {
@@ -45,4 +45,8 @@ string ConnectResponse::ws_protocol (SV* newval = NULL) {
         XSRETURN_UNDEF;
     }
     RETVAL = THIS->ws_protocol;
+}
+
+string ConnectResponse::error () {
+    RETVAL = THIS->error;
 }

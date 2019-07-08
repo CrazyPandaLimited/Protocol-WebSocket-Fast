@@ -31,18 +31,16 @@ ConnectResponseSP ClientParser::connect (string& buf) {
 //    if (!_connect_response) {
 //        _connect_response = new ConnectResponse();
         //_connect_response->max_headers_size = _max_handshake_size; // TODO: add support of max
-        _connect_response->_ws_key = _connect_request->ws_key;
 //    }
 
     http::ResponseParser::Result res = _connect_response_parser->parse_first(buf);
-    if (res.state != http::ResponseParser::State::got_body && res.state != http::ResponseParser::State::failed) {
+    std::cerr << "result!!! " << (int(res.state)) << std::endl;
+    if (res.state != http::ResponseParser::State::got_header) {
         return nullptr;
     }
     _connect_response = dynamic_pointer_cast<ConnectResponse>(res.response);
+    _connect_response->_ws_key = _connect_request->ws_key;
     //if (!_connect_response->parse(buf)) return nullptr;
-    if (res.state == http::ResponseParser::State::failed) {
-        _connect_response->error = "http error";
-    }
 
     _state.set(STATE_CONNECTION_RESPONSE_PARSED);
 

@@ -2,7 +2,7 @@ MODULE = Protocol::WebSocket::XS                PACKAGE = Protocol::WebSocket::X
 PROTOTYPES: DISABLE
 
 BOOT {
-    Stash(__PACKAGE__).inherit("Protocol::WebSocket::XS::HTTPRequest");
+    Stash(__PACKAGE__).inherit("Protocol::HTTP::Request");
 }
 
 Object new (SV* CLASS, Hash params = Hash()) {
@@ -63,3 +63,7 @@ string ConnectRequest::ws_protocol (SV* newval = NULL) {
 }
 
 bool ConnectRequest::ws_version_supported ()
+
+string ConnectRequest::error () {
+    RETVAL = THIS->error;
+}
