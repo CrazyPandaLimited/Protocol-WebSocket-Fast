@@ -10,7 +10,7 @@ using xs::exp::create_constant;
 using xs::exp::create_constants;
 
 using panda::string;
-using std::string_view;
+using panda::string_view;
 using xs::my_perl;
 
 using namespace xs::protocol::websocket;

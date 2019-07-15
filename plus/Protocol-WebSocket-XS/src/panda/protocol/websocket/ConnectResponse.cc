@@ -70,7 +70,7 @@ string ConnectResponse::_calc_accept_key (string ws_key) {
     auto key_base = ws_key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
     unsigned char sha1bin[21];
     SHA1((const unsigned char*)key_base.data(), key_base.length(), sha1bin);
-    return panda::encode::encode_base64(std::string_view((const char*)sha1bin, 20), false, true);
+    return panda::encode::encode_base64(string_view((const char*)sha1bin, 20), false, true);
 }
 
 }}}
