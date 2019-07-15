@@ -69,7 +69,7 @@ void ConnectRequest::_to_string (string& str) {
 
     if (!ws_key) {
         int32_t keybuf[] = {std::rand(), std::rand(), std::rand(), std::rand()};
-        ws_key = panda::encode::encode_base64(std::string_view((const char*)keybuf, sizeof(keybuf)), false, true);
+        ws_key = panda::encode::encode_base64(string_view((const char*)keybuf, sizeof(keybuf)), false, true);
     }
     replace_header("Sec-WebSocket-Key", ws_key);
 
