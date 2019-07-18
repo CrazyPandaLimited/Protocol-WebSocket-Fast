@@ -3,10 +3,14 @@ use strict;
 use warnings;
 use Test::Builder;
 use Test::More;
-use Path::Tiny;
 
 plan skip_all => 'set WITH_LEAKS=1 to enable leaks test' unless $ENV{WITH_LEAKS};
-plan skip_all => 'BSD::Resource required to test for leaks' unless eval { require BSD::Resource; 1 };
+plan skip_all => 'BSD::Resource and Path::Tiny required to test for leaks' unless eval {
+    require BSD::Resource;
+    require Path::Tiny;
+    Path::Tiny->import;
+    1;
+};
 
 my %exclude = map {$_ => 1} qw/ 00-compile.t 98-synopsis.t 99-leaks.t /;
 my @files;

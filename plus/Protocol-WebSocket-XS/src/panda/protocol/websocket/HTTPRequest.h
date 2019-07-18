@@ -7,8 +7,7 @@ namespace panda { namespace protocol { namespace websocket {
 
 using panda::uri::URI;
 
-class HTTPRequest : public HTTPPacket {
-public:
+struct HTTPRequest : HTTPPacket {
     string    method;
     iptr<URI> uri;
 

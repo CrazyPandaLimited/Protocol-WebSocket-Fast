@@ -8,8 +8,7 @@ namespace panda { namespace protocol { namespace websocket {
 
 static const int supported_ws_versions[] = {13};
 
-class ConnectRequest : public HTTPRequest {
-public:
+struct ConnectRequest : HTTPRequest {
     string       ws_key;
     int          ws_version;
     string       ws_protocol;

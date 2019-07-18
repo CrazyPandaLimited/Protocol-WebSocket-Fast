@@ -18,7 +18,7 @@ namespace panda { namespace protocol { namespace websocket {
 using panda::string;
 using panda::IteratorPair;
 
-class MessageBuilder;
+struct MessageBuilder;
 
 struct Parser : virtual panda::Refcnt {
 public:
@@ -248,8 +248,8 @@ private:
     bool      _apply_deflate_frame();
 
     FrameHeader _prepare_frame_header (bool final, bool deflate, Opcode opcode);
-    friend class FrameBuilder;
-    friend class MessageBuilder;
+    friend struct FrameBuilder;
+    friend struct MessageBuilder;
 
 };
 
@@ -260,9 +260,7 @@ StringChain<It> FrameBuilder::send(It payload_begin, It payload_end) {
     return _parser.send_frame(payload_begin, payload_end, *this);
 }
 
-class MessageBuilder {
-public:
-
+struct MessageBuilder {
     MessageBuilder(MessageBuilder&&) = default;
     Opcode opcode() const noexcept;
     MessageBuilder& opcode(Opcode value) noexcept { _opcode = value; return *this; }
@@ -356,7 +354,7 @@ private:
     Parser& _parser;
     apply_deflate_t _deflate = apply_deflate_t::TEXT_BY_THRESHOLD;
     Opcode _opcode = Opcode::BINARY;
-    friend class Parser;
+    friend struct Parser;
 };
 
 using FrameIteratorPair   = Parser::FrameIteratorPair;

@@ -4,8 +4,7 @@
 
 namespace panda { namespace protocol { namespace websocket {
 
-class HTTPResponse : public HTTPPacket {
-public:
+struct HTTPResponse : HTTPPacket {
     int    code;
     string message;
 

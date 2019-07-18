@@ -2,7 +2,6 @@ use 5.020;
 use warnings;
 use lib 't'; use MyTest;
 use Test::Fatal;
-use Path::Tiny;
 use Encode::Base2N qw/encode_base64pad decode_base64/;
 
 my $create_pair = sub {
@@ -259,7 +258,7 @@ subtest "no_deflate" => sub {
 };
 
 subtest "SRV-1236/12.3 inflate error" => sub {
-    my $data = path(__FILE__)->slurp;
+    my $data = read_file(__FILE__);
     my ($c, $s) = $create_pair->(sub {
         my ($c, $s) = @_;
         $_->configure({client_no_context_takeover => 1}) for ($c, $s);
@@ -369,5 +368,14 @@ subtest "windowBits == 8 zlib tests" => sub {
         ok $s;
     };
 };
+
+sub read_file {
+    my $file = shift;
+    open my $fh, '<', $file or die "cannot open $file: $!";
+    local $/ = undef;
+    my $ret = <$fh>;
+    close $fh;
+    return $ret;
+} 
 
 done_testing;

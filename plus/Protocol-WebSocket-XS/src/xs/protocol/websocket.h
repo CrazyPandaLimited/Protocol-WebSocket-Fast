@@ -34,8 +34,7 @@ Simple strings_to_sv (pTHX_ const T& v) {
 Simple strings_to_sv (pTHX_ const string& s1, const string& s2);
 
 
-class XSFrameIterator : public FrameIterator {
-public:
+struct XSFrameIterator : FrameIterator {
     XSFrameIterator (Parser* parser, const FrameSP& start_frame) : FrameIterator(parser, start_frame), nexted(false) { parser->retain(); }
     XSFrameIterator (const XSFrameIterator& oth)                 : FrameIterator(oth), nexted(oth.nexted)            { parser->retain(); }
     XSFrameIterator (const FrameIterator& oth)                   : FrameIterator(oth), nexted(false)                 { parser->retain(); }
@@ -51,8 +50,7 @@ private:
     bool nexted;
 };
 
-class XSMessageIterator : public MessageIterator {
-public:
+struct XSMessageIterator : MessageIterator {
     XSMessageIterator (Parser* parser, const MessageSP& start_msg) : MessageIterator(parser, start_msg), nexted(false) { parser->retain(); }
     XSMessageIterator (const XSMessageIterator& oth)               : MessageIterator(oth), nexted(oth.nexted)          { parser->retain(); }
     XSMessageIterator (const MessageIterator& oth)                 : MessageIterator(oth), nexted(false)               { parser->retain(); }
@@ -68,8 +66,7 @@ private:
     bool nexted;
 };
 
-class XSFrameBuilder: public FrameBuilder {
-public:
+struct XSFrameBuilder : FrameBuilder {
     XSFrameBuilder(FrameBuilder&& fb): FrameBuilder(std::move(fb)) {
         // keep link to make XSFrameBuilder perl-safe
         _parser.retain();
