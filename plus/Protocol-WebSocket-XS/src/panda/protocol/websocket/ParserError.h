@@ -4,8 +4,7 @@
 
 namespace panda { namespace protocol { namespace websocket {
 
-class ParserError : public std::exception {
-public:
+struct ParserError : std::exception {
     ParserError () {}
     ParserError (const string& what) : _what(what) {}
     ParserError (const char* what)   : _what(string(what)) {}

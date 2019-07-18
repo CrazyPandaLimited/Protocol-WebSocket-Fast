@@ -135,21 +135,3 @@ void Parser::reset ()
 
 void Parser::no_deflate()
 
-int Parser::test_parse_frame (string buf) {
-    int cnt = 0;
-    for (int i = 0; i < 1000; ++i) {
-        auto it = THIS->get_frames(buf);
-        for (const auto& f : it) cnt++;
-    }
-    RETVAL = cnt;
-}
-
-int Parser::test_send_frame (string pl) {
-    int cnt = 0;
-    for (int i = 0; i < 1000; ++i) {
-        auto range = THIS->start_message().final(true).send(pl);
-        for (const string& s : range) cnt += s.length();
-    }
-    RETVAL = cnt;
-}
-

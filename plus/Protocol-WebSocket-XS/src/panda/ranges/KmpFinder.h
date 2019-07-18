@@ -5,8 +5,7 @@
 namespace panda { namespace ranges {
 
 template<typename PatternRange, size_t PATTERN_SIZE>
-class KmpFinder {
-public:
+struct KmpFinder {
     KmpFinder (const PatternRange& pattern) : j(0), pattern(pattern) {
         size_t len = 0;
         prefix[0] = 0;

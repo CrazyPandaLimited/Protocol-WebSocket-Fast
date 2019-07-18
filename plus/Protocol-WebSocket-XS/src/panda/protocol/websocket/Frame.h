@@ -12,8 +12,7 @@ namespace panda { namespace protocol { namespace websocket {
 
 using panda::string;
 
-class Frame : public virtual panda::Refcnt, public panda::lib::AllocatedObject<Frame> {
-public:
+struct Frame : virtual panda::Refcnt, panda::lib::AllocatedObject<Frame> {
     static constexpr int MAX_CONTROL_PAYLOAD = 125;
     static constexpr int MAX_CLOSE_PAYLOAD   = MAX_CONTROL_PAYLOAD - 2;
 

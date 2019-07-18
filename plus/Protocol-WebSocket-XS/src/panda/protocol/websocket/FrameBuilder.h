@@ -5,11 +5,9 @@
 
 namespace panda { namespace protocol { namespace websocket {
 
-class Parser;
+struct Parser;
 
-class FrameBuilder {
-public:
-
+struct FrameBuilder {
     FrameBuilder(FrameBuilder&& other);
     virtual ~FrameBuilder();
     FrameBuilder(FrameBuilder&) = delete;
@@ -43,7 +41,7 @@ private:
     std::uint32_t _frame_index = 0;
     Opcode _opcode = Opcode::BINARY;
 
-    friend class Parser;
+    friend struct Parser;
 };
 
 }}}
