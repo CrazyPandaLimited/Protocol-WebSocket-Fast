@@ -2,7 +2,7 @@
 #include <cassert>
 #include <cstring>
 #include <iostream>
-#include <panda/lib/endian.h>
+#include <panda/endian.h>
 #include <panda/protocol/websocket/utils.h>
 
 namespace panda { namespace protocol { namespace websocket {
@@ -62,13 +62,13 @@ bool FrameHeader::parse (string& buf) {
         else if (data == end) return false;
         else if (_slen == 126) {
             if (!parse_binary_number(_len16, data, end - data)) return false;
-            length = panda::lib::be2h16(_len16);
+            length = be2h16(_len16);
             _state = State::MASK;
             //cout << "FrameHeader[parse]: LENGTH(16)=" << length << endl;
         }
         else { // 127
             if (!parse_binary_number(length, data, end - data)) return false;
-            length = panda::lib::be2h64(length);
+            length = be2h64(length);
             _state = State::MASK;
             //cout << "FrameHeader[parse]: LENGTH(64)=" << length << endl;
         }
@@ -101,11 +101,11 @@ string FrameHeader::compile (size_t plen) const {
         *((BinarySecond*)ptr++) = BinarySecond{(uint8_t)plen, has_mask};
     } else if (plen < 65536) {
         *((BinarySecond*)ptr++) = BinarySecond{126, has_mask};
-        *((uint16_t*)ptr) = panda::lib::h2be16(plen);
+        *((uint16_t*)ptr) = h2be16(plen);
         ptr += sizeof(uint16_t);
     } else {
         *((BinarySecond*)ptr++) = BinarySecond{127, has_mask};
-        *((uint64_t*)ptr) = panda::lib::h2be64(plen);
+        *((uint64_t*)ptr) = h2be64(plen);
         ptr += sizeof(uint64_t);
     }
 
@@ -125,7 +125,7 @@ bool FrameHeader::parse_close_payload (const string& payload, uint16_t& code, st
         return false;
     } else {
         auto ptr = payload.data();
-        code = panda::lib::be2h16(*((uint16_t*)ptr));
+        code = be2h16(*((uint16_t*)ptr));
         message = payload.substr(sizeof(code));
     }
     return true;
@@ -135,7 +135,7 @@ string FrameHeader::compile_close_payload (uint16_t code, const string& message)
     size_t sz = sizeof(code) + message.length();
     string ret(sz);
     char* buf = ret.buf();
-    *((uint16_t*)buf) = panda::lib::h2be16(code);
+    *((uint16_t*)buf) = h2be16(code);
     buf += sizeof(code);
     if (message.length()) std::memcpy(buf, message.data(), message.length());
     ret.length(sz);

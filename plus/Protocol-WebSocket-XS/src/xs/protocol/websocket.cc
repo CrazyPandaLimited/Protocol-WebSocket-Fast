@@ -53,8 +53,8 @@ Simple strings_to_sv (pTHX_ const string& s1, const string& s2) {
 
     auto ret = Simple::create(len);
     char* dest = SvPVX(ret);
-    std::memcpy(dest, s1.data(), s1.length());
-    std::memcpy(dest + s1.length(), s2.data(), s2.length());
+    memcpy(dest, s1.data(), s1.length());
+    memcpy(dest + s1.length(), s2.data(), s2.length());
     dest[len] = 0;
     ret.length(len);
     return ret;
