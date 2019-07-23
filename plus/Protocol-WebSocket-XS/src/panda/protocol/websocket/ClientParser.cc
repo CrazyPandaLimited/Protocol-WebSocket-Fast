@@ -13,7 +13,7 @@ static bool _init () {
 
 static const bool _inited = _init();
 
-string ClientParser::connect_request (ConnectRequestSP& req) {
+string ClientParser::connect_request (const ConnectRequestSP& req) {
     if (_state[STATE_CONNECTION_REQUESTED]) {
         throw ParserError("already requested connection");
     }
