@@ -1,5 +1,4 @@
 #include <panda/protocol/websocket/HTTPResponse.h>
-#include <panda/lib/from_chars.h>
 
 namespace panda { namespace protocol { namespace websocket {
 
