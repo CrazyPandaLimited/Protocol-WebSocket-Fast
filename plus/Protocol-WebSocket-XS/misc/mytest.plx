@@ -1,5 +1,5 @@
 #!/usr/local/bin/perl
-use 5.020;
+use 5.012;
 use lib 'blib/lib', 'blib/arch', 't/lib';
 use Benchmark qw/timethis timethese/;
 use JSON::XS qw/encode_json/;
