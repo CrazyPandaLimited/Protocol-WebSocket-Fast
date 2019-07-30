@@ -7,13 +7,7 @@ namespace panda { namespace protocol { namespace websocket {
 using panda::string;
 using panda::IteratorPair;
 
-class StringPairIterator : public std::iterator<std::random_access_iterator_tag, string> {
-
-    string&    s1;
-    string&    s2;
-    ptrdiff_t i;
-
-public:
+struct StringPairIterator : std::iterator<std::random_access_iterator_tag, string> {
     StringPairIterator ()                               : s1(global_empty), s2(global_empty), i(2) {}
     StringPairIterator (string& str1, string& str2)     : s1(str1), s2(str2), i(0) {}
     StringPairIterator (const StringPairIterator& oth)  : s1(oth.s1), s2(oth.s2), i(oth.i) {}
@@ -54,6 +48,11 @@ public:
     void swap (StringPairIterator& rhs) { std::swap(i, rhs.i); }
 
     static string global_empty;
+
+private:
+    string&    s1;
+    string&    s2;
+    ptrdiff_t i;
 };
 
 inline StringPairIterator operator+ (ptrdiff_t n, const StringPairIterator& rhs) { auto ret = rhs; ret += n; return ret; }
@@ -64,16 +63,16 @@ inline StringPairIteratorPair make_iterator_pair (string& str1, string& str2) {
     return StringPairIteratorPair(StringPairIterator(str1, str2), StringPairIterator());
 }
 
-class StringPair : public StringPairIteratorPair {
-    string str1;
-    string str2;
-
-public:
+struct StringPair : StringPairIteratorPair {
     StringPair(string s1, string s2)
         : StringPairIteratorPair(StringPairIterator(str1, str2), StringPairIterator())
         , str1(s1)
         , str2(s2)
     {}
+
+private:
+    string str1;
+    string str2;
 };
 
 inline StringPair make_string_pair (const string& str1, const string& str2) {
@@ -81,12 +80,7 @@ inline StringPair make_string_pair (const string& str1, const string& str2) {
 }
 
 template <class It>
-class StringChainIterator : public std::iterator<std::random_access_iterator_tag, string> {
-    string&   s;
-    It        it;
-    ptrdiff_t i;
-
-public:
+struct StringChainIterator : std::iterator<std::random_access_iterator_tag, string> {
     StringChainIterator (It last, ptrdiff_t n)           : s(StringPairIterator::global_empty), it(last), i(n+1) {}
     StringChainIterator (string& str, It first)          : s(str), it(first), i(0) {}
     StringChainIterator (const StringChainIterator& oth) : s(oth.s), it(oth.it), i(oth.i) {}
@@ -125,6 +119,11 @@ public:
     string& operator[] (size_t idx) { size_t n = idx + i; return n == 0 ? s : it[n-1]; }
 
     void swap (StringChainIterator& rhs) { std::swap(i, rhs.i); }
+
+private:
+    string&   s;
+    It        it;
+    ptrdiff_t i;
 };
 
 template <class It>
@@ -139,14 +138,14 @@ inline StringChainIteratorPair<It> make_iterator_pair (string& str, It first, It
 }
 
 template<typename It>
-class StringChain : public StringChainIteratorPair<It> {
-    string str;
-
-public:
+struct StringChain : StringChainIteratorPair<It> {
     StringChain(const string& s, It begin, It end)
         : StringChainIteratorPair<It>(StringChainIterator<It>(str, begin), StringChainIterator<It>(end, end - begin))
         , str(s)
     {}
+
+private:
+    string str;
 };
 
 template <class It>

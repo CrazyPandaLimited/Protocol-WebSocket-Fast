@@ -8,8 +8,7 @@ namespace panda { namespace protocol { namespace websocket {
 using panda::string;
 using panda::IteratorPair;
 
-class FrameHeader {
-public:
+struct FrameHeader {
     Opcode   opcode;
     bool     fin;
     bool     rsv1;

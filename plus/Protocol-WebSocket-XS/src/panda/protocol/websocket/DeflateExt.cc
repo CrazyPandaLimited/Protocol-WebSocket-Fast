@@ -1,5 +1,5 @@
 #include "DeflateExt.h"
-#include <panda/lib/from_chars.h>
+#include <panda/from_chars.h>
 #include <panda/encode/base64.h>
 
 namespace panda { namespace protocol { namespace websocket {
@@ -36,7 +36,7 @@ void DeflateExt::request(http::HeaderValues& ws_extensions, const Config& cfg) {
 
 
 static bool get_window_bits(const string& value, std::uint8_t& bits) {
-    auto res = std::from_chars(value.data(), value.data() + value.size(), bits, 10);
+    auto res = from_chars(value.data(), value.data() + value.size(), bits, 10);
     return !res.ec && (bits >= 9) && (bits <= 15);
 }
 

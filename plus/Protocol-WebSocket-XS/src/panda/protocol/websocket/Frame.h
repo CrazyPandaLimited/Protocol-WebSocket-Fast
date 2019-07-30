@@ -3,7 +3,7 @@
 #include <cassert>
 #include <panda/refcnt.h>
 #include <panda/string.h>
-#include <panda/lib/memory.h>
+#include <panda/memory.h>
 #include <panda/protocol/websocket/inc.h>
 #include <panda/protocol/websocket/utils.h>
 #include <panda/protocol/websocket/FrameHeader.h>
@@ -12,8 +12,7 @@ namespace panda { namespace protocol { namespace websocket {
 
 using panda::string;
 
-class Frame : public virtual panda::Refcnt, public panda::lib::AllocatedObject<Frame> {
-public:
+struct Frame : virtual panda::Refcnt, AllocatedObject<Frame> {
     static constexpr int MAX_CONTROL_PAYLOAD = 125;
     static constexpr int MAX_CLOSE_PAYLOAD   = MAX_CONTROL_PAYLOAD - 2;
 

@@ -7,7 +7,7 @@ BOOT {
 
 Object new (SV* CLASS, Hash params = Hash()) {
     RETVAL = xs::out(new HTTPRequest(), CLASS);
-    if (params) RETVAL.call("init", ST(1));
+    if (params) RETVAL.call<void>("init", ST(1));
 }
 
 void HTTPRequest::init (Hash params) {

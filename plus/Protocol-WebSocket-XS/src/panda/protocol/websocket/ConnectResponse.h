@@ -4,8 +4,7 @@
 
 namespace panda { namespace protocol { namespace websocket {
 
-class ConnectResponse : public HTTPResponse {
-public:
+struct ConnectResponse : HTTPResponse {
     string ws_protocol;
     string error;
 
