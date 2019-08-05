@@ -21,6 +21,10 @@ struct ConnectRequest : HTTPRequest {
 //        max_body_size = -1;
     }
 
+    ~ConnectRequest();
+
+    virtual void process_headers ();
+
     const HeaderValues& ws_extensions        () const { return _ws_extensions; }
     bool                ws_version_supported () const { return _ws_version_supported; }
 
@@ -33,7 +37,6 @@ struct ConnectRequest : HTTPRequest {
     http::ResponseSP create_response() const override;
 
 protected:
-//    virtual void _parse_header (StringRange range);
 //    virtual void _to_string    (string& str);
 
 private:

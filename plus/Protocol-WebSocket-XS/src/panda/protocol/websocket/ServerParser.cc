@@ -28,6 +28,7 @@ ConnectRequestSP ServerParser::accept (string& buf) {
 //    if (!_connect_request->parse(buf)) return NULL;
     http::RequestParser::Result res = _connect_parser->parse_first(buf);
     _connect_request = dynamic_pointer_cast<ConnectRequest>(res.request);
+    _connect_request->process_headers();
 //    _connect_request->max_headers_size = _max_handshake_size; // TODO: add support of max headers size
 
     _state.set(STATE_ACCEPT_PARSED);
@@ -70,6 +71,7 @@ string ServerParser::accept_error () {
         res->body->parts.push_back("400 Bad Request\n");
         res->body->parts.push_back(_connect_request->error);
     }
+    res->headers.set_field("Content-Length", panda::to_string(res->body->content_length()));
 
     std::ostringstream ss;
     ss << *res;
@@ -93,6 +95,7 @@ string ServerParser::accept_error (HTTPResponse* res) {
     }
 
     if (!res->headers.has_field("Content-Type")) res->headers.add_field("Content-Type", "text/plain");
+    if (!res->headers.has_field("Content-Length")) res->headers.add_field("Content-Length", panda::to_string(res->body->content_length()));
 
     std::ostringstream ss;
     ss << *res;

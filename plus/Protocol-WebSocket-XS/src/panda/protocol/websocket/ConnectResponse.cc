@@ -4,47 +4,53 @@
 
 namespace panda { namespace protocol { namespace websocket {
 
-//void ConnectResponse::_parse_header (StringRange range) {
-//    HTTPResponse::_parse_header(range);
-//    if (error) return;
+void ConnectResponse::process_headers () {
+    std::cerr << "Heders:" << std::endl;
+    for (auto h : headers.fields) {
+        std::cerr << h.name << ":" << h.value << std::endl;
+    }
+    if (code == 426) {
+        _ws_versions = headers.get_field("Sec-WebSocket-Version");
+        error = "websocket version upgrade required";
+        return;
+    }
 
-//    if (code == 426) {
-//        _ws_versions = headers.get_field("Sec-WebSocket-Version");
-//        error = "websocket version upgrade required";
-//        return;
-//    }
+    if (code != 101) {
+        error = "websocket handshake response code must be 101";
+        return;
+    }
 
-//    if (code != 101) {
-//        error = "websocket handshake response code must be 101";
-//        return;
-//    }
+    auto it = headers.find("Connection");
+    if (it == headers.fields.rend() || !string_contains_ci(it->value, "upgrade")) {
+        error = "Connection must be 'Upgrade'";
+        return;
+    }
 
-//    auto it = headers.find("Connection");
-//    if (it == headers.fields.rend() || !string_contains_ci(it->value, "upgrade")) {
-//        error = "Connection must be 'Upgrade'";
-//        return;
-//    }
+    it = headers.find("Upgrade");
+    if (it == headers.end() || !string_contains_ci(it->value, "websocket")) {
+        error = "Upgrade must be 'websocket'";
+        return;
+    }
 
-//    it = headers.find("Upgrade");
-//    if (it == headers.end() || !string_contains_ci(it->value, "websocket")) {
-//        error = "Upgrade must be 'websocket'";
-//        return;
-//    }
+    std::cerr << "Sec-WebSocket-Accept:" << headers.has_field("Sec-WebSocket-Accept") << std::endl;
 
-//    it = headers.find("Sec-WebSocket-Accept");
-//    if (it == headers.end() || it->value != _calc_accept_key(_ws_key)) {
-//        error = "Sec-WebSocket-Accept missing or invalid";
-//        return;
-//    }
-//    else _ws_accept_key = it->value;
+    it = headers.find("Sec-WebSocket-Accept");
+    if (it == headers.end() || it->value != _calc_accept_key(_ws_key)) {
+        error = "Sec-WebSocket-Accept missing or invalid";
+        std::cerr << "err acc" << std::endl;
+        return;
+    }
+    else _ws_accept_key = it->value;
 
-//    auto ext_range = headers.equal_range("Sec-WebSocket-Extensions");
-//    for (auto& hv : ext_range) {
-//        http::parse_header_value(hv.value, _ws_extensions);
-//    }
 
-//    ws_protocol = headers.get_field("Sec-WebSocket-Protocol");
-//}
+    auto ext_range = headers.equal_range("Sec-WebSocket-Extensions");
+    for (auto& hv : ext_range) {
+        http::parse_header_value(hv.value, _ws_extensions);
+    }
+
+    ws_protocol = headers.get_field("Sec-WebSocket-Protocol");
+    std::cerr << "ws_protocol:" << ws_protocol << std::endl;
+}
 
 //void ConnectResponse::_to_string (string& str) {
 //    code    = 101;
@@ -80,6 +86,7 @@ string ConnectResponse::to_string() {
     if (ws_protocol) headers.add_field("Sec-WebSocket-Protocol", ws_protocol);
 
     headers.add_field("Sec-WebSocket-Accept", _calc_accept_key(_ws_key));
+    if (!headers.has_field("Server")) headers.add_field("Server", "Panda-WebSocket");
 
     if (_ws_extensions.size()) headers.add_field("Sec-WebSocket-Extensions", compile_header_value(_ws_extensions));
 

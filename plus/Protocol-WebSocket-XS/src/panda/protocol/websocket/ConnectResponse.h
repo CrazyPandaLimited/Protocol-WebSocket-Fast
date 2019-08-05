@@ -10,6 +10,8 @@ struct ConnectResponse : HTTPResponse {
 
     ConnectResponse () : _ws_extensions_set(false) {}
 
+    virtual void process_headers ();
+
     const string& ws_accept_key () const { return _ws_accept_key; }
     const string& ws_versions   () const { return _ws_versions; }
 
@@ -27,7 +29,6 @@ struct ConnectResponse : HTTPResponse {
     friend struct ClientParser;
 
 protected:
-//    virtual void _parse_header (StringRange range);
 //    virtual void _to_string    (string& str);
 
 private:

@@ -1,64 +1,67 @@
 #include <panda/protocol/websocket/ConnectRequest.h>
 #include <panda/encode/base64.h>
+#include <panda/log.h>
 #include "ConnectResponse.h"
 
 namespace panda { namespace protocol { namespace websocket {
 
-//void ConnectRequest::_parse_header (StringRange range) {
-//    HTTPRequest::_parse_header(range);
-//    if (error) return;
-//    bool ok;
+ConnectRequest::~ConnectRequest() {
+    std::cerr << "ws::~ConnectRequest " << this << std::endl;
+}
 
-//    if (method != "GET") {
-//        error = "method must be GET";
-//        return;
-//    }
+void ConnectRequest::process_headers () {
+    bool ok;
 
-//    if (content_length()) {
-//        error = "body must not present";
-//        return;
-//    }
+    if (method != Method::GET) {
+        error = "method must be GET";
+        return;
+    }
 
-//    auto it = headers.find("Connection");
-//    if (it == headers.fields.rend() || !string_contains_ci(it->value, "upgrade")) {
-//        error = "Connection must be 'Upgrade'";
-//        return;
-//    }
+    if (!body->empty()) {
+        error = "body must not present";
+        return;
+    }
 
-//    it = headers.find("Upgrade");
-//    if (it == headers.fields.rend() || !string_contains_ci(it->value, "websocket")) {
-//        error = "Upgrade must be 'websocket'";
-//        return;
-//    }
+    auto it = headers.find("Connection");
+    if (it == headers.fields.rend() || !string_contains_ci(it->value, "upgrade")) {
+        error = "Connection must be 'Upgrade'";
+        return;
+    }
 
-//    ok = false;
-//    it = headers.find("Sec-WebSocket-Key");
-//    if (it != headers.fields.rend()) {
-//        ws_key = it->value;
-//        auto decoded = panda::encode::decode_base64(ws_key);
-//        if (decoded.length() == 16) ok = true;
-//    }
-//    if (!ok) {error = "Sec-WebSocket-Key missing or invalid"; return; }
+    it = headers.find("Upgrade");
+    if (it == headers.fields.rend() || !string_contains_ci(it->value, "websocket")) {
+        error = "Upgrade must be 'websocket'";
+        return;
+    }
 
-//    _ws_version_supported = false;
-//    it = headers.find("Sec-WebSocket-Version");
-//    if (it != headers.fields.rend()) {
-//        it->value.to_number(ws_version);
-//        for (int v : supported_ws_versions) {
-//            if (ws_version != v) continue;
-//            _ws_version_supported = true;
-//            break;
-//        }
-//    }
-//    if (!_ws_version_supported) { error = "client's Sec-WebSocket-Version is not supported"; return; }
+    ok = false;
+    it = headers.find("Sec-WebSocket-Key");
+    if (it != headers.fields.rend()) {
+        ws_key = it->value;
+        auto decoded = panda::encode::decode_base64(ws_key);
+        if (decoded.length() == 16) ok = true;
+    }
+    if (!ok) {error = "Sec-WebSocket-Key missing or invalid"; return; }
 
-//    auto ext_range = headers.equal_range("Sec-WebSocket-Extensions");
-//    for (auto& hv : ext_range) {
-//        parse_header_value(hv.value, _ws_extensions);
-//    }
+    _ws_version_supported = false;
+    it = headers.find("Sec-WebSocket-Version");
+    if (it != headers.fields.rend()) {
+        it->value.to_number(ws_version);
+        for (int v : supported_ws_versions) {
+            if (ws_version != v) continue;
+            _ws_version_supported = true;
+            break;
+        }
+    }
+    if (!_ws_version_supported) { error = "client's Sec-WebSocket-Version is not supported"; return; }
 
-//    ws_protocol = headers.get_field("Sec-WebSocket-Protocol");
-//}
+    auto ext_range = headers.equal_range("Sec-WebSocket-Extensions");
+    for (auto& hv : ext_range) {
+        parse_header_value(hv.value, _ws_extensions);
+    }
+
+    ws_protocol = headers.get_field("Sec-WebSocket-Protocol");
+}
 
 //void ConnectRequest::_to_string (string& str) {
 //    if (uri && uri->scheme() && uri->scheme() != "ws" && uri->scheme() != "wss")
