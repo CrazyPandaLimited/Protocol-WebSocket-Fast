@@ -6,7 +6,6 @@
 namespace panda { namespace protocol { namespace websocket {
 
 ConnectRequest::~ConnectRequest() {
-    std::cerr << "ws::~ConnectRequest " << this << std::endl;
 }
 
 void ConnectRequest::process_headers () {

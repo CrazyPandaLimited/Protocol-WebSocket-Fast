@@ -27,6 +27,9 @@ ConnectRequestSP ServerParser::accept (string& buf) {
 
 //    if (!_connect_request->parse(buf)) return NULL;
     http::RequestParser::Result res = _connect_parser->parse_first(buf);
+    if (res.state != http::RequestParser::State::done) {
+        return nullptr;
+    }
     _connect_request = dynamic_pointer_cast<ConnectRequest>(res.request);
     _connect_request->process_headers();
 //    _connect_request->max_headers_size = _max_handshake_size; // TODO: add support of max headers size

@@ -10,13 +10,9 @@ my $test_connect = sub {
         my $p = new Protocol::WebSocket::XS::ClientParser;
         my $str = $p->connect_request($req);
         my $sp = new Protocol::WebSocket::XS::ServerParser;
-        warn($str);
-        warn("!!!!!!!!!!!!!!!!!!!!!");
         my $creq = $sp->accept($str) or die "should not happen";
         my $res_str = $creq->error ? $sp->accept_error : $sp->accept_response;
-        warn($res_str);
         my $cres = $p->connect($res_str);
-        warn $cres;
         cmp_deeply($cres, methods(%$check), "response ok");
         $cres->error ? ok(!$p->established, "not established on error") : ok($p->established, "established");
     };
@@ -28,9 +24,7 @@ my $test_connect = sub {
         #warn $creq->error;
         my $res_str = $creq->error ? $sp->accept_error : $sp->accept_response;
         my $cres;
-        warn $res_str;
         while (length($res_str) && !$cres) { $cres = $p->connect(substr($res_str, 0, 5, '')) }
-        warn $res_str;
         is(length($res_str), 0, "all chunks used:");
         cmp_deeply($cres, methods(%$check), "response ok");
         $cres->error ? ok(!$p->established, "not established on error") : ok($p->established, "established");
@@ -88,7 +82,7 @@ subtest 'wrong code' => sub {
     my $sp = new Protocol::WebSocket::XS::ServerParser;
     $sp->accept($str);
     my $res_str = $sp->accept_response;
-    $res_str =~ s/^(HTTP\/1.1) (\d+)/$1 200/i;
+    $res_str =~ s/^(HTTP\/1.1) (\d+)/$1 102/i; # code must be "bodyless", otherwise http parser waits for body
     my $cres = $p->connect($res_str);
     is ($cres->error, "websocket handshake response code must be 101", "error ok");
 };

@@ -34,16 +34,13 @@ ConnectResponseSP ClientParser::connect (string& buf) {
 //    }
 
     http::ResponseParser::Result res = _connect_response_parser->parse_first(buf);
-    std::cerr << "result!!! " << (int(res.state)) << std::endl;
     // state should be only one State::done, now we have to check  got_header or got_body
-    if (res.state != http::ResponseParser::State::got_header) {
+    if (res.state != http::ResponseParser::State::done) {
         return nullptr;
     }
     _connect_response = dynamic_pointer_cast<ConnectResponse>(res.response);
     _connect_response->_ws_key = _connect_request->ws_key;
     _connect_response->process_headers();
-    std::cerr << _connect_response->error << std::endl;
-    //if (!_connect_response->parse(buf)) return nullptr;
 
     _state.set(STATE_CONNECTION_RESPONSE_PARSED);
 
@@ -67,13 +64,11 @@ ConnectResponseSP ClientParser::connect (string& buf) {
     }
 
     if (!_connect_response->error) {
-        _buffer = buf;       // if something remains in buf, user can get it via get_frames() or get_messages() without buf param.
+        _buffer = buf.substr(res.position);// if something remains in buf, user can get it via get_frames() or get_messages() without buf param.
         _state.set(STATE_ESTABLISHED);
     }
 
-    std::cerr << "refcnt: " << res.request->refcnt()  << ", " << res.request.get() << std::endl;
     ConnectResponseSP ret(_connect_response);
-    std::cerr << "refcnt: " << res.request->refcnt()  << ", " << res.request.get() << std::endl;
     _connect_request = NULL;
     _connect_response = NULL;
     return ret;

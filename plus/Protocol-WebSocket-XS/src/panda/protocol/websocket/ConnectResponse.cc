@@ -5,10 +5,6 @@
 namespace panda { namespace protocol { namespace websocket {
 
 void ConnectResponse::process_headers () {
-    std::cerr << "Heders:" << std::endl;
-    for (auto h : headers.fields) {
-        std::cerr << h.name << ":" << h.value << std::endl;
-    }
     if (code == 426) {
         _ws_versions = headers.get_field("Sec-WebSocket-Version");
         error = "websocket version upgrade required";
@@ -32,12 +28,9 @@ void ConnectResponse::process_headers () {
         return;
     }
 
-    std::cerr << "Sec-WebSocket-Accept:" << headers.has_field("Sec-WebSocket-Accept") << std::endl;
-
     it = headers.find("Sec-WebSocket-Accept");
     if (it == headers.end() || it->value != _calc_accept_key(_ws_key)) {
         error = "Sec-WebSocket-Accept missing or invalid";
-        std::cerr << "err acc" << std::endl;
         return;
     }
     else _ws_accept_key = it->value;
@@ -49,7 +42,6 @@ void ConnectResponse::process_headers () {
     }
 
     ws_protocol = headers.get_field("Sec-WebSocket-Protocol");
-    std::cerr << "ws_protocol:" << ws_protocol << std::endl;
 }
 
 //void ConnectResponse::_to_string (string& str) {
