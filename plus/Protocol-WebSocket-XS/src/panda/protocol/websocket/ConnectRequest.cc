@@ -93,9 +93,15 @@ void ConnectRequest::add_deflate(const DeflateExt::Config& cfg) {
 }
 
 string ConnectRequest::to_string() {
-    if (uri && uri->scheme() && uri->scheme() != "ws" && uri->scheme() != "wss")
+    if (!uri || !uri->host()) {
+        throw std::logic_error("HTTPRequest[to_string] uri with net location must be defined");
+    }
+    if (uri && uri->scheme() && uri->scheme() != "ws" && uri->scheme() != "wss") {
         throw std::logic_error("ConnectRequest[to_string] uri scheme must be 'ws' or 'wss'");
-    if (body->length()) throw std::logic_error("ConnectRequest[to_string] http body is not allowed for websocket handshake request");
+    }
+    if (body->length()) {
+        throw std::logic_error("ConnectRequest[to_string] http body is not allowed for websocket handshake request");
+    }
 
     method = Request::Method::GET;
 
@@ -114,6 +120,9 @@ string ConnectRequest::to_string() {
 
     headers.set_field("Connection", "Upgrade");
     headers.set_field("Upgrade", "websocket");
+
+    if (!headers.has_field("User-Agent")) headers.add_field("User-Agent", "Panda-WebSocket");
+    if (!headers.has_field("Host"))       headers.add_field("Host", uri->host());
 
     string res;
     for (const auto& s : to_vector(this)) {
