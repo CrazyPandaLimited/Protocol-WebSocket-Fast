@@ -18,7 +18,6 @@ struct ConnectRequest : HTTPRequest {
 
     ConnectRequest () : ws_version(0), _ws_version_supported(true) {
         method = Request::Method::GET;
-//        max_body_size = -1;
     }
 
     ~ConnectRequest();

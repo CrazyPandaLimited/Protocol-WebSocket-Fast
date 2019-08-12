@@ -15,7 +15,9 @@ struct RequestFactory : http::RequestFactory {
 ServerParser::ServerParser()
     : Parser(true)
     , _connect_parser(new http::RequestParser(new RequestFactory))
-{}
+{
+    _connect_parser->max_body_size = http::RequestParser::BODY_PROHIBITED;
+}
 
 ConnectRequestSP ServerParser::accept (string& buf) {
     if (_state[STATE_ACCEPT_PARSED]) throw ParserError("already parsed accept");
