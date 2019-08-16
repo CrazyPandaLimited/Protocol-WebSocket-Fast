@@ -1,5 +1,5 @@
 package MyTest;
-use 5.020;
+use 5.012;
 use warnings;
 use Test::Catch;
 use Test::More;
