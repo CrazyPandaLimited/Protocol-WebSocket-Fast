@@ -1,5 +1,5 @@
 package Protocol::WebSocket::XS;
-use 5.020;
+use 5.012;
 use URI::XS;
 use Export::XS();
 use Encode::Base2N;

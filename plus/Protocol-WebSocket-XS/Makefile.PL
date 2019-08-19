@@ -1,4 +1,4 @@
-use 5.020;
+use 5.012;
 use XS::Install;
 
 my %params = (
