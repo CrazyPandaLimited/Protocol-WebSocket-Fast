@@ -21,12 +21,12 @@ Sv XSFrameBuilder::final(SV* value = NULL) {
 
 Simple XSFrameBuilder::send(string payload) {
     auto range = THIS->send(payload);
-    RETVAL = strings_to_sv(aTHX_ range);
+    RETVAL = strings_to_sv(range);
 }
 
 Simple XSFrameBuilder::send_av(Array payload) {
     std::vector<string> list;
-    av_to_vstring(aTHX_ payload, list);
+    av_to_vstring(payload, list);
     auto range = THIS->send(list.begin(), list.end());
-    RETVAL = strings_to_sv(aTHX_ range);
+    RETVAL = strings_to_sv(range);
 }

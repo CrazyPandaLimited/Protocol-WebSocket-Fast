@@ -3,8 +3,8 @@ PROTOTYPES: DISABLE
 
 void HTTPPacket::init (Hash params) {
     Scalar val;
-    if ((val = params.fetch("headers"))) http_packet_set_headers(aTHX_ THIS, xs::in<Hash>(val));
-    if ((val = params.fetch("body")))    http_packet_set_body(aTHX_ THIS, val);
+    if ((val = params.fetch("headers"))) http_packet_set_headers(THIS, xs::in<Hash>(val));
+    if ((val = params.fetch("body")))    http_packet_set_body(THIS, val);
 }
 
 string HTTPPacket::error () {
@@ -18,7 +18,7 @@ size_t HTTPPacket::content_length ()
 
 Hash HTTPPacket::headers (Hash new_headers = Hash()) {
     if (new_headers) {
-        http_packet_set_headers(aTHX_ THIS, new_headers);
+        http_packet_set_headers(THIS, new_headers);
         XSRETURN_UNDEF;
     }
 
@@ -33,7 +33,7 @@ Hash HTTPPacket::headers (Hash new_headers = Hash()) {
 
 string HTTPPacket::header (string_view name, SV* val = NULL) {
     if (val) {
-        string value = xs::in<string>(aTHX_ val);
+        string value = xs::in<string>(val);
         auto it = THIS->headers.find(name);
         if (it == THIS->headers.cend()) THIS->headers.emplace(string(name), value);
         else it->second = value;
@@ -47,10 +47,10 @@ string HTTPPacket::header (string_view name, SV* val = NULL) {
 
 Simple HTTPPacket::body (SV* newval = NULL) {
     if (newval) {
-        http_packet_set_body(aTHX_ THIS, newval);
+        http_packet_set_body(THIS, newval);
         XSRETURN_UNDEF;
     }
-    RETVAL = strings_to_sv(aTHX_ THIS->body);
+    RETVAL = strings_to_sv(THIS->body);
 }
 
 void HTTPPacket::clear ()

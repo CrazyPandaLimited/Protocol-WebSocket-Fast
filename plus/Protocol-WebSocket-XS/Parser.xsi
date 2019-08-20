@@ -65,23 +65,23 @@ XSFrameBuilder* Parser::start_message(SV* config = NULL) {
 
 Simple Parser::send_control (int opcode, string payload = string()) {
     auto range = THIS->send_control((Opcode)opcode, payload);
-    RETVAL = strings_to_sv(aTHX_ range);
+    RETVAL = strings_to_sv(range);
 }
 
 Simple Parser::send_ping (string payload = string()) {
     auto range = THIS->send_ping(payload);
-    RETVAL = strings_to_sv(aTHX_ range);
+    RETVAL = strings_to_sv(range);
 }
 
 Simple Parser::send_pong (string payload = string()) {
     auto range = THIS->send_pong(payload);
-    RETVAL = strings_to_sv(aTHX_ range);
+    RETVAL = strings_to_sv(range);
 }
 
 Simple Parser::send_close (SV* code = NULL, string message = string()) {
     if (code) {
         auto range = THIS->send_close((uint16_t)SvUV(code), message);
-        RETVAL = strings_to_sv(aTHX_ range);
+        RETVAL = strings_to_sv(range);
     }
     else RETVAL = xs::out(THIS->send_close());
 }
@@ -93,7 +93,7 @@ Simple Parser::send_message (Hash settings) {
     Simple payload = settings.at("payload");
     auto payload_string = payload.as_string();
     auto range = builder.send(payload_string);
-    RETVAL = strings_to_sv(aTHX_ range);
+    RETVAL = strings_to_sv(range);
 }
 
 Simple Parser::send_message_av (Hash settings) {
@@ -105,10 +105,10 @@ Simple Parser::send_message_av (Hash settings) {
     if (!payload) throw "invalid argument (payload must point to array)";
 
     std::vector<string> list;
-    av_to_vstring(aTHX_ payload, list);
+    av_to_vstring(payload, list);
 
     auto range = builder.send(list.begin(), list.end());
-    RETVAL = strings_to_sv(aTHX_ range);
+    RETVAL = strings_to_sv(range);
 }
 
 Simple Parser::send_message_multiframe (Hash settings) {
@@ -123,12 +123,12 @@ Simple Parser::send_message_multiframe (Hash settings) {
     for (const auto& payload : payloads) {
         if (!payload.defined()) continue;
         std::vector<string> tmp;
-        tmp.push_back(xs::in<string>(aTHX_ payload));
+        tmp.push_back(xs::in<string>(payload));
         cont.push_back(std::move(tmp));
     }
 
     auto range = builder.send(cont.begin(), cont.end());
-    RETVAL = strings_to_sv(aTHX_ range);
+    RETVAL = strings_to_sv(range);
 }
 
 void Parser::reset ()
