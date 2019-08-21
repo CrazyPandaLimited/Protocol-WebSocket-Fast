@@ -13,7 +13,7 @@ Object new (SV* CLASS, Hash params = Hash()) {
 void HTTPResponse::init (Hash params) {
     Scalar val;
     if ((val = params.fetch("code")))    THIS->code = SvIV(val);
-    if ((val = params.fetch("message"))) THIS->message = xs::in<string>(aTHX_ val);
+    if ((val = params.fetch("message"))) THIS->message = xs::in<string>(val);
     Object(ST(0)).call_super(cv, &ST(1), items-1);
 }
 
@@ -27,7 +27,7 @@ int HTTPResponse::code (SV* newval = NULL) {
 
 string HTTPResponse::message (SV* newval = NULL) {
     if (newval) {
-        THIS->message = xs::in<string>(aTHX_ newval);
+        THIS->message = xs::in<string>(newval);
         XSRETURN_UNDEF;
     }
     RETVAL = THIS->message;

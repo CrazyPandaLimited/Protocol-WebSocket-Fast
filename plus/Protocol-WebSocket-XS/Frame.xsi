@@ -17,7 +17,7 @@ bool Frame::final ()
 size_t Frame::payload_length ()
 
 Simple Frame::payload () {
-    RETVAL = strings_to_sv(aTHX_ THIS->payload);
+    RETVAL = strings_to_sv(THIS->payload);
 }
 
 uint16_t Frame::close_code ()

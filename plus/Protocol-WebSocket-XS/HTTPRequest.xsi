@@ -13,11 +13,11 @@ Object new (SV* CLASS, Hash params = Hash()) {
 void HTTPRequest::init (Hash params) {
     Scalar val;
     
-    if ((val = params.fetch("method"))) THIS->method = xs::in<string>(aTHX_ val);
+    if ((val = params.fetch("method"))) THIS->method = xs::in<string>(val);
     
     if ((val = params.fetch("uri"))) {
         if (val.is_object_ref()) THIS->uri = xs::in<URI*>(val);
-        else THIS->uri = new URI(xs::in<string>(aTHX_ val));
+        else THIS->uri = new URI(xs::in<string>(val));
     }
     
     Object(ST(0)).call_super(cv, &ST(1), items-1);
@@ -25,7 +25,7 @@ void HTTPRequest::init (Hash params) {
 
 string HTTPRequest::method (SV* newval = NULL) {
     if (newval) {
-        THIS->method = xs::in<string>(aTHX_ newval);
+        THIS->method = xs::in<string>(newval);
         XSRETURN_UNDEF;
     }
     RETVAL = THIS->method;

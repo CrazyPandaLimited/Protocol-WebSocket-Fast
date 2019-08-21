@@ -15,11 +15,11 @@ void ConnectResponse::init (Hash params) {
     
     if ((val = params.fetch("ws_extensions"))) {
         HTTPPacket::HeaderValues exts;
-        av_to_header_values(aTHX_ xs::in<Array>(val), &exts);
+        av_to_header_values(xs::in<Array>(val), &exts);
         THIS->ws_extensions(exts);
     }
     
-    if ((val = params.fetch("ws_protocol"))) THIS->ws_protocol = xs::in<string>(aTHX_ val);
+    if ((val = params.fetch("ws_protocol"))) THIS->ws_protocol = xs::in<string>(val);
     
     Object(ST(0)).call_super(cv, &ST(1), items-1);
 }
@@ -31,17 +31,17 @@ string ConnectResponse::ws_versions ()
 Array ConnectResponse::ws_extensions (Array exts_av = Array()) {
     if (exts_av) {
         HTTPPacket::HeaderValues exts;
-        av_to_header_values(aTHX_ exts_av, &exts);
+        av_to_header_values(exts_av, &exts);
         THIS->ws_extensions(exts);
         XSRETURN_UNDEF;
     }
     
-    RETVAL = header_values_to_av(aTHX_ THIS->ws_extensions());
+    RETVAL = header_values_to_av(THIS->ws_extensions());
 }
 
 string ConnectResponse::ws_protocol (SV* newval = NULL) {
     if (newval) {
-        THIS->ws_protocol = xs::in<string>(aTHX_ newval);
+        THIS->ws_protocol = xs::in<string>(newval);
         XSRETURN_UNDEF;
     }
     RETVAL = THIS->ws_protocol;
