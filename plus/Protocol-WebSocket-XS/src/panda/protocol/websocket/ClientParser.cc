@@ -35,10 +35,18 @@ ConnectResponseSP ClientParser::connect (string& buf) {
 
     http::ResponseParser::Result res = _connect_response_parser->parse_first(buf);
     // state should be only one State::done, now we have to check  got_header or got_body
-    if (res.state != http::ResponseParser::State::done) {
+
+    _connect_response = dynamic_pointer_cast<ConnectResponse>(res.response);
+    if (!res.state) {
+        _connect_response->error = res.state.error().what();
+        ConnectResponseSP ret(_connect_response);
+        _connect_request = NULL;
+        _connect_response = NULL;
+        return ret;
+    }
+    else if (res.state != http::ResponseParser::State::done) {
         return nullptr;
     }
-    _connect_response = dynamic_pointer_cast<ConnectResponse>(res.response);
     _connect_response->_ws_key = _connect_request->ws_key;
     _connect_response->process_headers();
 

@@ -52,6 +52,7 @@ $p->reset();
 subtest 'accept with body' => sub {
     my @data = accept_packet();
     splice(@data, 1, 0, "Content-Length: 1\r\n");
+    push @data, '1';
     my $creq;
     $creq = $p->accept($_) for @data;
     ok($creq && $creq->error, "body disallowed");

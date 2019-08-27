@@ -11,9 +11,7 @@ using panda::string;
 
 struct ClientParser : Parser {
 
-    ClientParser () : Parser(false), _connect_response_parser(new http::ResponseParser) {
-        _connect_response_parser->max_body_size = http::ResponseParser::BODY_PROHIBITED;
-    }
+    ClientParser () : Parser(false), _connect_response_parser(new http::ResponseParser) {}
 
     string connect_request (const ConnectRequestSP& req);
 
