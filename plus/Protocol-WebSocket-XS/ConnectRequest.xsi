@@ -13,14 +13,14 @@ Object new (SV* CLASS, Hash params = Hash()) {
 void ConnectRequest::init (Hash params) {
     Scalar val;
     
-    if ((val = params.fetch("ws_key")))      THIS->ws_key      = xs::in<string>(aTHX_ val);
+    if ((val = params.fetch("ws_key")))      THIS->ws_key      = xs::in<string>(val);
     if ((val = params.fetch("ws_version")))  THIS->ws_version  = SvIV(val);
-    if ((val = params.fetch("ws_protocol"))) THIS->ws_protocol = xs::in<string>(aTHX_ val);
+    if ((val = params.fetch("ws_protocol"))) THIS->ws_protocol = xs::in<string>(val);
     
     if ((val = params.fetch("ws_extensions"))) {
         auto exts_av = xs::in<Array>(val);
         HeaderValues exts;
-        if (exts_av) av_to_header_values(aTHX_ exts_av, &exts);
+        if (exts_av) av_to_header_values(exts_av, &exts);
         THIS->ws_extensions(exts);
     }
     
@@ -29,7 +29,7 @@ void ConnectRequest::init (Hash params) {
 
 string ConnectRequest::ws_key (SV* newval = NULL) {
     if (newval) {
-        THIS->ws_key = xs::in<string>(aTHX_ newval);
+        THIS->ws_key = xs::in<string>(newval);
         XSRETURN_UNDEF;
     }
     RETVAL = THIS->ws_key;
@@ -46,17 +46,17 @@ int ConnectRequest::ws_version (SV* newval = NULL) {
 Array ConnectRequest::ws_extensions (Array exts_av = Array()) {
     if (exts_av) {
         HeaderValues exts;
-        av_to_header_values(aTHX_ exts_av, &exts);
+        av_to_header_values(exts_av, &exts);
         THIS->ws_extensions(exts);
         XSRETURN_UNDEF;
     }
     
-    RETVAL = header_values_to_av(aTHX_ THIS->ws_extensions());
+    RETVAL = header_values_to_av(THIS->ws_extensions());
 }
 
 string ConnectRequest::ws_protocol (SV* newval = NULL) {
     if (newval) {
-        THIS->ws_protocol = xs::in<string>(aTHX_ newval);
+        THIS->ws_protocol = xs::in<string>(newval);
         XSRETURN_UNDEF;
     }
     RETVAL = THIS->ws_protocol;

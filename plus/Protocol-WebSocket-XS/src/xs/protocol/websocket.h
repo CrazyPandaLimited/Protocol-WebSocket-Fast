@@ -7,10 +7,10 @@ namespace xs { namespace protocol { namespace websocket {
 
 using namespace panda::protocol::websocket;
 
-void  av_to_header_values (pTHX_ const Array& av, HeaderValues* vals);
-Array header_values_to_av (pTHX_ const HeaderValues& vals);
+void  av_to_header_values (const Array& av, HeaderValues* vals);
+Array header_values_to_av (const HeaderValues& vals);
 
-void av_to_vstring (pTHX_ const Array& av, std::vector<string>& v);
+void av_to_vstring (const Array& av, std::vector<string>& v);
 
 struct XSFrameIterator : FrameIterator {
     XSFrameIterator (Parser* parser, const FrameSP& start_frame) : FrameIterator(parser, start_frame), nexted(false) { parser->retain(); }
@@ -77,9 +77,9 @@ namespace xs {
     template <class TYPE>
     struct Typemap<panda::protocol::websocket::ConnectRequestSP, panda::iptr<TYPE>> : Typemap<TYPE*> {
         using Super = Typemap<TYPE*>;
-        static panda::iptr<TYPE> in (pTHX_ Sv arg) {
+        static panda::iptr<TYPE> in (Sv arg) {
             if (!arg.is_object_ref()) arg = Super::default_stash().call("new", arg);
-            return Super::in(aTHX_ arg);
+            return Super::in(arg);
         }
     };
 
@@ -91,9 +91,9 @@ namespace xs {
     template <class TYPE>
     struct Typemap<panda::protocol::websocket::ConnectResponseSP, panda::iptr<TYPE>> : Typemap<TYPE*> {
         using Super = Typemap<TYPE*>;
-        static panda::iptr<TYPE> in (pTHX_ Sv arg) {
+        static panda::iptr<TYPE> in (Sv arg) {
             if (!arg.is_object_ref()) arg = Super::default_stash().call("new", arg);
-            return Super::in(aTHX_ arg);
+            return Super::in(arg);
         }
     };
 
@@ -123,7 +123,7 @@ namespace xs {
     };
 
     template <class TYPE> struct Typemap<panda::protocol::websocket::DeflateExt::Config, TYPE> : TypemapBase<panda::protocol::websocket::DeflateExt::Config, TYPE> {
-        static TYPE in (pTHX_ SV* arg) {
+        static TYPE in (SV* arg) {
             const Hash h = arg;
             TYPE cfg;
             Scalar val;
@@ -139,7 +139,7 @@ namespace xs {
             return cfg;
         }
 
-        static Sv out (pTHX_ TYPE var, const Sv& = Sv()) {
+        static Sv out (TYPE var, const Sv& = Sv()) {
             Hash settings = Hash::create();
             settings.store("server_max_window_bits",     Simple(var.server_max_window_bits));
             settings.store("client_max_window_bits",     Simple(var.client_max_window_bits));
@@ -155,7 +155,7 @@ namespace xs {
     };
 
     template <class TYPE> struct Typemap<panda::protocol::websocket::Parser::Config, TYPE> : TypemapBase<panda::protocol::websocket::Parser::Config, TYPE> {
-        static TYPE in (pTHX_ SV* arg) {
+        static TYPE in (SV* arg) {
             TYPE cfg;
             const Hash h = arg;
 
