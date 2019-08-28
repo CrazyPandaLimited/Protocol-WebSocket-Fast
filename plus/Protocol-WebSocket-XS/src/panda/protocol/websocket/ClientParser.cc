@@ -34,9 +34,8 @@ ConnectResponseSP ClientParser::connect (string& buf) {
 //    }
 
     http::ResponseParser::Result res = _connect_response_parser->parse_first(buf);
-    // state should be only one State::done, now we have to check  got_header or got_body
-
     _connect_response = dynamic_pointer_cast<ConnectResponse>(res.response);
+
     if (!res.state) {
         _connect_response->error = res.state.error().what();
         ConnectResponseSP ret(_connect_response);

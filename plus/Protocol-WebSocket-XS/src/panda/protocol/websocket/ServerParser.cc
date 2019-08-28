@@ -16,7 +16,7 @@ ServerParser::ServerParser()
     : Parser(true)
     , _connect_parser(new http::RequestParser(new RequestFactory))
 {
-    _connect_parser->max_body_size = http::RequestParser::BODY_PROHIBITED;
+    _connect_parser->max_body_size = http::RequestParser::SIZE_PROHIBITED;
 }
 
 ConnectRequestSP ServerParser::accept (string& buf) {
