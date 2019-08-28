@@ -28,6 +28,7 @@ ConnectRequestSP ServerParser::accept (string& buf) {
 //    }
 
 //    if (!_connect_request->parse(buf)) return NULL;
+    _connect_parser->max_message_size = _max_handshake_size;
     http::RequestParser::Result res = _connect_parser->parse_first(buf);
     _connect_request = dynamic_pointer_cast<ConnectRequest>(res.request);
     if (!res.state) {

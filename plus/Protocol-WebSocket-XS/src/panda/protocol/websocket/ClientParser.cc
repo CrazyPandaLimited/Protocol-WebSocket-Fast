@@ -33,6 +33,7 @@ ConnectResponseSP ClientParser::connect (string& buf) {
         //_connect_response->max_headers_size = _max_handshake_size; // TODO: add support of max
 //    }
 
+    _connect_response_parser->max_message_size = _max_handshake_size;
     http::ResponseParser::Result res = _connect_response_parser->parse_first(buf);
     _connect_response = dynamic_pointer_cast<ConnectResponse>(res.response);
 

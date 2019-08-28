@@ -78,7 +78,7 @@ subtest 'max_handshake_size' => sub {
     $p->accept($_) for @data;
     $creq = $p->accept($big);
     ok($creq, "buffer limit exceeded");
-    like($creq->error, qr/exceeded/, "buffer limit exceeded");
+    like($creq->error, qr/message is bigger than max_message_size/, "buffer limit exceeded");
 };
 
 $p->reset();
