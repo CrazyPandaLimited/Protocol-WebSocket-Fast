@@ -13,7 +13,7 @@ bool Frame::parse (string& buf) {
     if (_state == State::HEADER) {
         if (!_header.parse(buf)) return false;
 
-        if (opcode() > Opcode::PONG) {
+        if (opcode() > Opcode::PONG || (opcode() > Opcode::BINARY && opcode() < Opcode::CLOSE)) {
             error = "invalid opcode received";
             _state = State::DONE;
             return true;

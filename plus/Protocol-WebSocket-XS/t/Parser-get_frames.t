@@ -57,6 +57,8 @@ subtest "server parser" => sub {
     subtest 'big frame'    => $test_frame,  $p, {opcode => OPCODE_TEXT,   mask => 1, fin => 1, data => ("1" x 70000)};
     subtest 'empty frame'  => $test_frame,  $p, {opcode => OPCODE_TEXT,   mask => 1, fin => 1};
 
+    subtest "bad opcode $_"   => $test_frame,  $p, {opcode => $_, mask => 1, fin => 1, data => "hello world"}, "invalid opcode received" for (3..7);
+
     subtest 'max frame size' => sub {
         $p->configure({max_frame_size => 1000});
         subtest 'allowed' => $test_frame,  $p, {opcode => OPCODE_TEXT, mask => 1, fin => 1, data => ("1" x 1000)};
