@@ -14,8 +14,8 @@ using panda::string_view;
 using xs::my_perl;
 
 using namespace xs::protocol::websocket;
-using namespace xs::protocol::http;
 using namespace panda::protocol::websocket;
+using xs::protocol::http::strings_to_sv;
 
 MODULE = Protocol::WebSocket::XS                PACKAGE = Protocol::WebSocket::XS
 PROTOTYPES: DISABLE
