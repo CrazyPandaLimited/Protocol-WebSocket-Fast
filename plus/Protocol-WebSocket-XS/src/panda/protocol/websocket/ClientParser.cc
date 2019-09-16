@@ -39,6 +39,8 @@ ConnectResponseSP ClientParser::connect (string& buf) {
 
     if (!res.state) {
         _connect_response->error = res.state.error().what();
+        _state.set(STATE_CONNECTION_RESPONSE_PARSED);
+
         ConnectResponseSP ret(_connect_response);
         _connect_request = NULL;
         _connect_response = NULL;

@@ -32,15 +32,14 @@ ConnectRequestSP ServerParser::accept (string& buf) {
     http::RequestParser::Result res = _connect_parser->parse_first(buf);
     _connect_request = dynamic_pointer_cast<ConnectRequest>(res.request);
     if (!res.state) {
-        std::cerr << "http err" << std::endl;
+        _state.set(STATE_ACCEPT_PARSED);
         _connect_request->error = res.state.error().what();
         return _connect_request;
     } else if (res.state != http::RequestParser::State::done) {
         return nullptr;
     }
-    _connect_request->process_headers();
-//    _connect_request->max_headers_size = _max_handshake_size; // TODO: add support of max headers size
 
+    _connect_request->process_headers();
     _state.set(STATE_ACCEPT_PARSED);
 
     if (!_connect_request->error) {

@@ -6,20 +6,31 @@ my $p = new Protocol::WebSocket::XS::ServerParser;
 
 *accept_packet = \&MyTest::accept_packet;
 
-subtest 'bad http' => sub {
+sub bad_http {
+    my ($from,$to) = @_;
     my @data = accept_packet();
-    $data[0] =~ s/GET/POST/;
+    $data[0] =~ s/$from/$to/;
     my $creq;
-    $creq = $p->accept($_) for @data;
+    for my $chunk (@data) {
+        $creq = $p->accept($chunk);
+        last if $p->accept_parsed;
+    }
     ok($creq, "request returned");
     ok($creq->error, "error present");
-    is($creq->header('connection'), "Upgrade", "parsed");
     ok($p->accept_parsed, "accept parsed");
     ok(!$p->accepted, "not accepted");
     ok(!$p->established, "not established");
     my $ans = $p->accept_error;
     like($ans, qr/^HTTP\/1\.1 400 Bad Request\r\n/, "answer ok");
     $p->reset();
+    return $creq;
+}
+
+subtest 'bad http' => sub {
+    my $creq = bad_http('GET', 'POST');
+    is($creq->header('connection'), "Upgrade", "parsed");
+
+    bad_http('HTTP/1.1', 'Error');
 };
 
 subtest 'bad websocket http' => sub {
