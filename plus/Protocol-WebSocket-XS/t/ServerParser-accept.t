@@ -52,6 +52,7 @@ $p->reset();
 subtest 'accept with body' => sub {
     my @data = accept_packet();
     splice(@data, 1, 0, "Content-Length: 1\r\n");
+    push @data, '1';
     my $creq;
     $creq = $p->accept($_) for @data;
     ok($creq && $creq->error, "body disallowed");
@@ -77,7 +78,7 @@ subtest 'max_handshake_size' => sub {
     $p->accept($_) for @data;
     $creq = $p->accept($big);
     ok($creq, "buffer limit exceeded");
-    like($creq->error, qr/exceeded/, "buffer limit exceeded");
+    like($creq->error, qr/message is bigger than max_message_size/, "buffer limit exceeded");
 };
 
 $p->reset();

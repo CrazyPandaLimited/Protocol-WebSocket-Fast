@@ -3,6 +3,7 @@
 #include <panda/refcnt.h>
 #include <panda/protocol/websocket/HTTPRequest.h>
 #include <panda/protocol/websocket/DeflateExt.h>
+#include <iostream>
 
 namespace panda { namespace protocol { namespace websocket {
 
@@ -13,9 +14,15 @@ struct ConnectRequest : HTTPRequest {
     int          ws_version;
     string       ws_protocol;
 
+    string error;
+
     ConnectRequest () : ws_version(0), _ws_version_supported(true) {
-        max_body_size = -1;
+        method = Request::Method::GET;
     }
+
+    ~ConnectRequest();
+
+    virtual void process_headers ();
 
     const HeaderValues& ws_extensions        () const { return _ws_extensions; }
     bool                ws_version_supported () const { return _ws_version_supported; }
@@ -24,9 +31,12 @@ struct ConnectRequest : HTTPRequest {
 
     void add_deflate(const DeflateExt::Config& cfg);
 
+    string to_string();
+
+    http::ResponseSP create_response() const override;
+
 protected:
-    virtual void _parse_header (StringRange range);
-    virtual void _to_string    (string& str);
+//    virtual void _to_string    (string& str);
 
 private:
     HeaderValues _ws_extensions;

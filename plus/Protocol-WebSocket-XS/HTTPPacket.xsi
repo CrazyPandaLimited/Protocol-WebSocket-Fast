@@ -23,26 +23,23 @@ Hash HTTPPacket::headers (Hash new_headers = Hash()) {
     }
 
     RETVAL = Hash::create(THIS->headers.size());
-    for (const auto& elem : THIS->headers) {
-        auto len = elem.first.length();
+    for (const auto& elem : THIS->headers.fields) {
+        auto len = elem.name.length();
         char key[len];
-        std::transform(elem.first.data(), elem.first.data() + len, key, ::tolower);
-        RETVAL.store(string_view(key, len), xs::out(elem.second));
+        std::transform(elem.name.data(), elem.name.data() + len, key, ::tolower);
+        RETVAL.store(string_view(key, len), xs::out(elem.value));
     }
 }
 
 string HTTPPacket::header (string_view name, SV* val = NULL) {
     if (val) {
         string value = xs::in<string>(val);
-        auto it = THIS->headers.find(name);
-        if (it == THIS->headers.cend()) THIS->headers.emplace(string(name), value);
-        else it->second = value;
+        THIS->headers.set_field(name, value);
         XSRETURN_UNDEF;
     }
 
-    auto it = THIS->headers.find(name);
-    if (it == THIS->headers.cend()) XSRETURN_UNDEF;
-    RETVAL = it->second;
+    if (!THIS->headers.has_field(name)) XSRETURN_UNDEF;
+    RETVAL = THIS->headers.get_field(name);
 }
 
 Simple HTTPPacket::body (SV* newval = NULL) {
@@ -50,7 +47,7 @@ Simple HTTPPacket::body (SV* newval = NULL) {
         http_packet_set_body(THIS, newval);
         XSRETURN_UNDEF;
     }
-    RETVAL = strings_to_sv(THIS->body);
+    RETVAL = strings_to_sv(THIS->body->parts);
 }
 
 void HTTPPacket::clear ()

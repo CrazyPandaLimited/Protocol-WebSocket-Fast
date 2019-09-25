@@ -203,7 +203,7 @@ subtest "permessage-deflate extension in server reply" => sub {
             my $res_str =<<END;
 HTTP/1.1 101 Switching Protocols\r
 Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=\r
-Sec-WebSocket-Extensions: permessage-deflate; server_max_window_bits=13; client_max_window_bits=15
+Sec-WebSocket-Extensions: permessage-deflate; server_max_window_bits=13; client_max_window_bits=15\r
 Connection: Upgrade\r
 Server: Panda-WebSocket\r
 Upgrade: websocket\r
@@ -222,7 +222,7 @@ END
             my $res_str =<<END;
 HTTP/1.1 101 Switching Protocols\r
 Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=\r
-Sec-WebSocket-Extensions: permessage-deflate; server_max_window_bits=zzzz; client_max_window_bits=15
+Sec-WebSocket-Extensions: permessage-deflate; server_max_window_bits=zzzz; client_max_window_bits=15\r
 Connection: Upgrade\r
 Server: Panda-WebSocket\r
 Upgrade: websocket\r
@@ -241,7 +241,7 @@ END
             my $res_str =<<END;
 HTTP/1.1 101 Switching Protocols\r
 Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=\r
-Sec-WebSocket-Extensions: permessage-deflate; server_max_window_bits=15; client_max_window_bits=15; hello=world
+Sec-WebSocket-Extensions: permessage-deflate; server_max_window_bits=15; client_max_window_bits=15; hello=world\r
 Connection: Upgrade\r
 Server: Panda-WebSocket\r
 Upgrade: websocket\r

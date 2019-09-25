@@ -2,7 +2,7 @@ MODULE = Protocol::WebSocket::XS                PACKAGE = Protocol::WebSocket::X
 PROTOTYPES: DISABLE
 
 BOOT {
-    Stash(__PACKAGE__).inherit("Protocol::WebSocket::XS::HTTPResponse");
+    Stash(__PACKAGE__).inherit("Protocol::HTTP::Response");
 }
 
 Object new (SV* CLASS, Hash params = Hash()) {
@@ -14,7 +14,7 @@ void ConnectResponse::init (Hash params) {
     Scalar val;
     
     if ((val = params.fetch("ws_extensions"))) {
-        HTTPPacket::HeaderValues exts;
+        HeaderValues exts;
         av_to_header_values(xs::in<Array>(val), &exts);
         THIS->ws_extensions(exts);
     }
@@ -30,7 +30,7 @@ string ConnectResponse::ws_versions ()
 
 Array ConnectResponse::ws_extensions (Array exts_av = Array()) {
     if (exts_av) {
-        HTTPPacket::HeaderValues exts;
+        HeaderValues exts;
         av_to_header_values(exts_av, &exts);
         THIS->ws_extensions(exts);
         XSRETURN_UNDEF;
@@ -45,4 +45,9 @@ string ConnectResponse::ws_protocol (SV* newval = NULL) {
         XSRETURN_UNDEF;
     }
     RETVAL = THIS->ws_protocol;
+}
+
+string ConnectResponse::error () {
+    RETVAL = THIS->error;
+    if (!RETVAL) XSRETURN_UNDEF;
 }

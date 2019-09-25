@@ -15,6 +15,7 @@ using xs::my_perl;
 
 using namespace xs::protocol::websocket;
 using namespace panda::protocol::websocket;
+using xs::protocol::http::strings_to_sv;
 
 MODULE = Protocol::WebSocket::XS                PACKAGE = Protocol::WebSocket::XS
 PROTOTYPES: DISABLE
@@ -53,12 +54,6 @@ INCLUDE: Parser.xsi
 INCLUDE: ServerParser.xsi
 
 INCLUDE: ClientParser.xsi
-
-INCLUDE: HTTPPacket.xsi
-
-INCLUDE: HTTPRequest.xsi
-
-INCLUDE: HTTPResponse.xsi
 
 INCLUDE: ConnectRequest.xsi
 

@@ -67,9 +67,9 @@ public:
 
     static panda::optional<panda::string> bootstrap();
 
-    static EffectiveConfig select(const HTTPPacket::HeaderValues& values, const Config& cfg, Role role);
-    static void request(HTTPPacket::HeaderValues& ws_extensions, const Config& cfg);
-    static DeflateExt* uplift(const EffectiveConfig& cfg, HTTPPacket::HeaderValues& extensions, Role role);
+    static EffectiveConfig select(const http::HeaderValues& values, const Config& cfg, Role role);
+    static void request(http::HeaderValues& ws_extensions, const Config& cfg);
+    static DeflateExt* uplift(const EffectiveConfig& cfg, http::HeaderValues& extensions, Role role);
 
     ~DeflateExt();
 

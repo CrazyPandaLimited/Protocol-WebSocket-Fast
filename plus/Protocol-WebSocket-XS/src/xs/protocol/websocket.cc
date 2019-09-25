@@ -2,7 +2,7 @@
 
 namespace xs { namespace protocol { namespace websocket {
 
-void av_to_header_values (const Array& av, HTTPPacket::HeaderValues* vals) {
+void av_to_header_values (const Array& av, HeaderValues* vals) {
     if (!av.size()) return;
     vals->reserve(av.size());
     for (const auto& sv : av) {
@@ -10,7 +10,7 @@ void av_to_header_values (const Array& av, HTTPPacket::HeaderValues* vals) {
         if (!subav) continue;
         auto namesv = subav.fetch(0);
         if (!namesv) continue;
-        HTTPPacket::HeaderValue elem;
+        HeaderValue elem;
         elem.name = xs::in<string>(namesv);
         Hash args = subav.fetch(1);
         if (args) for (const auto& row : args) elem.params.emplace(string(row.key()), xs::in<string>(row.value()));
@@ -18,7 +18,7 @@ void av_to_header_values (const Array& av, HTTPPacket::HeaderValues* vals) {
     }
 }
 
-Array header_values_to_av (const HTTPPacket::HeaderValues& vals) {
+Array header_values_to_av (const HeaderValues& vals) {
     if (!vals.size()) return Array();
     auto ret = Array::create(vals.size());
     for (const auto& elem : vals) {
@@ -33,30 +33,6 @@ Array header_values_to_av (const HTTPPacket::HeaderValues& vals) {
         }
         ret.push(Ref::create(elemav));
     }
-    return ret;
-}
-
-void http_packet_set_headers (HTTPPacket* p, const Hash& hv) {
-    p->headers.clear();
-    for (const auto& row : hv) p->headers.emplace(string(row.key()), xs::in<string>(row.value()));
-}
-
-void http_packet_set_body (HTTPPacket* p, const Simple& sv) {
-    p->body.clear();
-    auto newbody = xs::in<string>(sv);
-    if (newbody.length()) p->body.push_back(newbody);
-}
-
-Simple strings_to_sv (const string& s1, const string& s2) {
-    auto len = s1.length() + s2.length();
-    if (!len) return Simple::undef;
-
-    auto ret = Simple::create(len);
-    char* dest = SvPVX(ret);
-    memcpy(dest, s1.data(), s1.length());
-    memcpy(dest + s1.length(), s2.data(), s2.length());
-    dest[len] = 0;
-    ret.length(len);
     return ret;
 }
 

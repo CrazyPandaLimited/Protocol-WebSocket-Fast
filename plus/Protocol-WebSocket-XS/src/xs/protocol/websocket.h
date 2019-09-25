@@ -1,38 +1,16 @@
 #pragma once
 #include <xs.h>
+#include <xs/protocol/http.h>
 #include <panda/protocol/websocket.h>
 
 namespace xs { namespace protocol { namespace websocket {
 
 using namespace panda::protocol::websocket;
 
-void  av_to_header_values (const Array& av, HTTPPacket::HeaderValues* vals);
-Array header_values_to_av (const HTTPPacket::HeaderValues& vals);
-
-void http_packet_set_headers (HTTPPacket* p, const Hash& headers);
-void http_packet_set_body    (HTTPPacket* p, const Simple& body);
+void  av_to_header_values (const Array& av, HeaderValues* vals);
+Array header_values_to_av (const HeaderValues& vals);
 
 void av_to_vstring (const Array& av, std::vector<string>& v);
-
-template <class T>
-Simple strings_to_sv (const T& v) {
-    size_t len = 0;
-    for (const string& s : v) len += s.length();
-    if (!len) return Simple::undef;
-
-    auto ret = Simple::create(len);
-    char* dest = ret.get<char*>();
-    for (const string& s : v) {
-        memcpy(dest, s.data(), s.length());
-        dest += s.length();
-    }
-    *dest = 0;
-    ret.length(len);
-    return ret;
-}
-
-Simple strings_to_sv (const string& s1, const string& s2);
-
 
 struct XSFrameIterator : FrameIterator {
     XSFrameIterator (Parser* parser, const FrameSP& start_frame) : FrameIterator(parser, start_frame), nexted(false) { parser->retain(); }
@@ -92,28 +70,7 @@ namespace xs {
     };
 
     template <class TYPE>
-    struct Typemap<panda::protocol::websocket::HTTPPacket*, TYPE> : TypemapObject<panda::protocol::websocket::HTTPPacket*, TYPE, ObjectTypeRefcntPtr, ObjectStorageMG> {};
-
-    template <class TYPE>
-    struct Typemap<panda::protocol::websocket::HTTPRequest*, TYPE> : Typemap<panda::protocol::websocket::HTTPPacket*, TYPE> {};
-
-    template <class TYPE>
-    struct Typemap<panda::protocol::websocket::HTTPResponse*, TYPE> : Typemap<panda::protocol::websocket::HTTPPacket*, TYPE> {
-        static std::string package () { return "Protocol::WebSocket::XS::HTTPResponse"; }
-    };
-
-    template <class TYPE>
-    struct Typemap<panda::protocol::websocket::HTTPResponseSP, panda::iptr<TYPE>> : Typemap<TYPE*> {
-        using Super = Typemap<TYPE*>;
-        static panda::iptr<TYPE> in (Sv arg) {
-            if (!arg.defined()) return {};
-            if (!arg.is_object_ref()) arg = Super::default_stash().call("new", arg);
-            return Super::in(arg);
-        }
-    };
-
-    template <class TYPE>
-    struct Typemap<panda::protocol::websocket::ConnectRequest*, TYPE> : Typemap<panda::protocol::websocket::HTTPRequest*, TYPE> {
+    struct Typemap<panda::protocol::websocket::ConnectRequest*, TYPE> : Typemap<panda::protocol::http::Request*, TYPE> {
         static std::string package () { return "Protocol::WebSocket::XS::ConnectRequest"; }
     };
 
@@ -127,7 +84,7 @@ namespace xs {
     };
 
     template <class TYPE>
-    struct Typemap<panda::protocol::websocket::ConnectResponse*, TYPE> : Typemap<panda::protocol::websocket::HTTPResponse*, TYPE> {
+    struct Typemap<panda::protocol::websocket::ConnectResponse*, TYPE> : Typemap<panda::protocol::http::Response*, TYPE> {
         static std::string package () { return "Protocol::WebSocket::XS::ConnectResponse"; }
     };
 
