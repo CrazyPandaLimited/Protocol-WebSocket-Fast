@@ -109,7 +109,7 @@ TEST_CASE("FrameBuilder & Message builder", "[deflate-extension]") {
             const char* buff_23 = "12345678901234567890123";
             string sso_23(buff_23);
             fragments.emplace_back(sso_23.substr(23, 0));
-            REQUIRE(fragments.back().shared_buf());
+            REQUIRE(bool(fragments.back().shared_buf())); // bool to prevent Catch printing data
             REQUIRE(fragments.back().shared_capacity() == 0);
             auto data = server.start_message().deflate(true).final(true)
                 .send(fragments.begin(), fragments.end());
