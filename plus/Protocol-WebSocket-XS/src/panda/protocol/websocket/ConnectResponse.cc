@@ -17,7 +17,7 @@ void ConnectResponse::process_headers () {
     }
 
     auto it = headers.find("Connection");
-    if (it == headers.fields.rend() || !string_contains_ci(it->value, "upgrade")) {
+    if (it == headers.end() || !string_contains_ci(it->value, "upgrade")) {
         error = "Connection must be 'Upgrade'";
         return;
     }

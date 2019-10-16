@@ -6,40 +6,40 @@ CONFIG -= qt
 INCLUDEPATH += src ../CPP-panda-lib/src
 
 SOURCES += \
-    src/panda/websocket/ClientParser.cc \
-    src/panda/websocket/ConnectRequest.cc \
-    src/panda/websocket/ConnectResponse.cc \
-    src/panda/websocket/Frame.cc \
-    src/panda/websocket/FrameHeader.cc \
-    src/panda/websocket/HTTPPacket.cc \
-    src/panda/websocket/HTTPRequest.cc \
-    src/panda/websocket/HTTPResponse.cc \
-    src/panda/websocket/Message.cc \
-    src/panda/websocket/Parser.cc \
-    src/panda/websocket/ServerParser.cc \
-    src/panda/websocket/utils.cc \
+    src/panda/protocol/websocket/ClientParser.cc \
+    src/panda/protocol/websocket/ConnectRequest.cc \
+    src/panda/protocol/websocket/ConnectResponse.cc \
+    src/panda/protocol/websocket/Frame.cc \
+    src/panda/protocol/websocket/FrameHeader.cc \
+    src/panda/protocol/websocket/HTTPPacket.cc \
+    src/panda/protocol/websocket/HTTPRequest.cc \
+    src/panda/protocol/websocket/HTTPResponse.cc \
+    src/panda/protocol/websocket/Message.cc \
+    src/panda/protocol/websocket/Parser.cc \
+    src/panda/protocol/websocket/ServerParser.cc \
+    src/panda/protocol/websocket/utils.cc \
     src/xs/websocket.cc
 
 HEADERS += \
     src/panda/ranges/Joiner.h \
     src/panda/ranges/KmpFinder.h \
-    src/panda/websocket/ClientParser.h \
-    src/panda/websocket/ConnectRequest.h \
-    src/panda/websocket/ConnectResponse.h \
-    src/panda/websocket/Frame.h \
-    src/panda/websocket/FrameHeader.h \
-    src/panda/websocket/HTTPPacket.h \
-    src/panda/websocket/HTTPRequest.h \
-    src/panda/websocket/HTTPResponse.h \
-    src/panda/websocket/inc.h \
-    src/panda/websocket/iterator.h \
-    src/panda/websocket/Message.h \
-    src/panda/websocket/Parser.h \
-    src/panda/websocket/ParserError.h \
-    src/panda/websocket/ServerParser.h \
-    src/panda/websocket/utils.h \
-    src/panda/websocket.h \
-    src/xs/websocket.h
+    src/panda/protocol/websocket/ClientParser.h \
+    src/panda/protocol/websocket/ConnectRequest.h \
+    src/panda/protocol/websocket/ConnectResponse.h \
+    src/panda/protocol/websocket/Frame.h \
+    src/panda/protocol/websocket/FrameHeader.h \
+    src/panda/protocol/websocket/HTTPPacket.h \
+    src/panda/protocol/websocket/HTTPRequest.h \
+    src/panda/protocol/websocket/HTTPResponse.h \
+    src/panda/protocol/websocket/inc.h \
+    src/panda/protocol/websocket/iterator.h \
+    src/panda/protocol/websocket/Message.h \
+    src/panda/protocol/websocket/Parser.h \
+    src/panda/protocol/websocket/ParserError.h \
+    src/panda/protocol/websocket/ServerParser.h \
+    src/panda/protocol/websocket/utils.h \
+    src/panda/protocol/websocket.h \
+    src/xs/protocol/websocket.h
 
 DISTFILES += \
     ClientParser.xsi \
