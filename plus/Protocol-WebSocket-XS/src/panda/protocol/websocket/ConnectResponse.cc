@@ -82,13 +82,9 @@ string ConnectResponse::to_string() {
 
     if (_ws_extensions.size()) headers.add_field("Sec-WebSocket-Extensions", compile_header_value(_ws_extensions));
 
-    body->parts.clear(); // body not supported in WS responses
+    body.parts.clear(); // body not supported in WS responses
 
-    string res;
-    for (const auto& s : to_vector(this)) {
-        res += s;
-    }
-    return res;
+    return http::Response::to_string();
 }
 
 }}}

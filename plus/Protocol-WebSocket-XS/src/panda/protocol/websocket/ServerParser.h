@@ -36,7 +36,7 @@ private:
     static const int STATE_ACCEPT_PARSED = STATE_LAST + 1;
     static const int STATE_ACCEPTED      = STATE_ACCEPT_PARSED + 1;
 
-    http::RequestParserSP _connect_parser;
+    http::RequestParser _connect_parser;
     ConnectRequestSP _connect_request;
 };
 

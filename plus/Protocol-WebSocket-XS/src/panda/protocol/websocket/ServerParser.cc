@@ -6,17 +6,17 @@
 
 namespace panda { namespace protocol { namespace websocket {
 
-struct RequestFactory : http::RequestFactory {
-    http::RequestSP create() const override {
+struct RequestFactory : http::IRequestFactory {
+    http::RequestSP create_request() override {
         return make_iptr<ConnectRequest>();
     }
 };
 
 ServerParser::ServerParser()
     : Parser(true)
-    , _connect_parser(new http::RequestParser(new RequestFactory))
+    , _connect_parser(new RequestFactory)
 {
-    _connect_parser->max_body_size = http::RequestParser::SIZE_PROHIBITED;
+    _connect_parser.max_body_size = http::RequestParser::SIZE_PROHIBITED;
 }
 
 ConnectRequestSP ServerParser::accept (string& buf) {
@@ -28,14 +28,15 @@ ConnectRequestSP ServerParser::accept (string& buf) {
 //    }
 
 //    if (!_connect_request->parse(buf)) return NULL;
-    _connect_parser->max_message_size = _max_handshake_size;
-    http::RequestParser::Result res = _connect_parser->parse(buf);
+    _connect_parser.max_message_size = _max_handshake_size;
+    http::RequestParser::Result res = _connect_parser.parse(buf);
     _connect_request = dynamic_pointer_cast<ConnectRequest>(res.request);
     if (res.error) {
         _state.set(STATE_ACCEPT_PARSED);
-        _connect_request->error = res.error.what();
+        auto msg = res.error.message();
+        _connect_request->error = string(msg.data(), msg.size());
         return _connect_request;
-    } else if (res.state != http::RequestParser::State::done) {
+    } else if (res.state != http::State::done) {
         return nullptr;
     }
 
@@ -64,7 +65,7 @@ string ServerParser::accept_error () {
     if (!_connect_request->ws_version_supported()) {
         res->code    = 426;
         res->message = "Upgrade Required";
-        res->body->parts.push_back("426 Upgrade Required");
+        res->body.parts.push_back("426 Upgrade Required");
 
         string svers(50);
         for (int v : supported_ws_versions) {
@@ -77,15 +78,12 @@ string ServerParser::accept_error () {
     else {
         res->code    = 400;
         res->message = "Bad Request";
-        res->body->parts.push_back("400 Bad Request\n");
-        res->body->parts.push_back(_connect_request->error);
+        res->body.parts.push_back("400 Bad Request\n");
+        res->body.parts.push_back(_connect_request->error);
     }
-    res->headers.set_field("Content-Length", panda::to_string(res->body->content_length()));
+    res->headers.set_field("Content-Length", panda::to_string(res->body.length()));
 
-    std::ostringstream ss;
-    ss << *res;
-    ss.flush();
-    return string(ss.str().data());
+    return res->to_string(_connect_request);
 }
 
 string ServerParser::accept_error (HTTPResponse* res) {
@@ -99,17 +97,14 @@ string ServerParser::accept_error (HTTPResponse* res) {
     }
     else if (!res->message) res->message = "Unknown";
 
-    if (res->body->empty()) {
-        res->body->parts.push_back(string::from_number(res->code) + ' ' + res->message);
+    if (res->body.empty()) {
+        res->body.parts.push_back(string::from_number(res->code) + ' ' + res->message);
     }
 
     if (!res->headers.has_field("Content-Type")) res->headers.add_field("Content-Type", "text/plain");
-    if (!res->headers.has_field("Content-Length")) res->headers.add_field("Content-Length", panda::to_string(res->body->content_length()));
+    if (!res->headers.has_field("Content-Length")) res->headers.add_field("Content-Length", panda::to_string(res->body.length()));
 
-    std::ostringstream ss;
-    ss << *res;
-    ss.flush();
-    return string(ss.str().data());
+    return res->to_string(_connect_request);
 }
 
 string ServerParser::accept_response (ConnectResponse* res) {

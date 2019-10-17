@@ -16,26 +16,26 @@ void ConnectRequest::process_headers () {
         return;
     }
 
-    if (!body->empty()) {
+    if (!body.empty()) {
         error = "body must not present";
         return;
     }
 
     auto it = headers.find("Connection");
-    if (it == headers.fields.rend() || !string_contains_ci(it->value, "upgrade")) {
+    if (it == headers.end() || !string_contains_ci(it->value, "upgrade")) {
         error = "Connection must be 'Upgrade'";
         return;
     }
 
     it = headers.find("Upgrade");
-    if (it == headers.fields.rend() || !string_contains_ci(it->value, "websocket")) {
+    if (it == headers.end() || !string_contains_ci(it->value, "websocket")) {
         error = "Upgrade must be 'websocket'";
         return;
     }
 
     ok = false;
     it = headers.find("Sec-WebSocket-Key");
-    if (it != headers.fields.rend()) {
+    if (it != headers.end()) {
         ws_key = it->value;
         auto decoded = panda::encode::decode_base64(ws_key);
         if (decoded.length() == 16) ok = true;
@@ -44,7 +44,7 @@ void ConnectRequest::process_headers () {
 
     _ws_version_supported = false;
     it = headers.find("Sec-WebSocket-Version");
-    if (it != headers.fields.rend()) {
+    if (it != headers.end()) {
         it->value.to_number(ws_version);
         for (int v : supported_ws_versions) {
             if (ws_version != v) continue;
@@ -65,7 +65,7 @@ void ConnectRequest::process_headers () {
 //void ConnectRequest::_to_string (string& str) {
 //    if (uri && uri->scheme() && uri->scheme() != "ws" && uri->scheme() != "wss")
 //        throw std::logic_error("ConnectRequest[to_string] uri scheme must be 'ws' or 'wss'");
-//    if (body->length()) throw std::logic_error("ConnectRequest[to_string] http body is not allowed for websocket handshake request");
+//    if (body.length()) throw std::logic_error("ConnectRequest[to_string] http body is not allowed for websocket handshake request");
 
 //    method = "GET";
 
@@ -99,7 +99,7 @@ string ConnectRequest::to_string() {
     if (uri && uri->scheme() && uri->scheme() != "ws" && uri->scheme() != "wss") {
         throw std::logic_error("ConnectRequest[to_string] uri scheme must be 'ws' or 'wss'");
     }
-    if (body->length()) {
+    if (body.length()) {
         throw std::logic_error("ConnectRequest[to_string] http body is not allowed for websocket handshake request");
     }
 
@@ -124,11 +124,7 @@ string ConnectRequest::to_string() {
     if (!headers.has_field("User-Agent")) headers.add_field("User-Agent", "Panda-WebSocket");
     if (!headers.has_field("Host"))       headers.add_field("Host", uri->host());
 
-    string res;
-    for (const auto& s : to_vector(this)) {
-        res += s;
-    }
-    return res;
+    return to_string();
 }
 
 http::ResponseSP ConnectRequest::create_response() const{
