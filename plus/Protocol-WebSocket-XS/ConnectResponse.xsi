@@ -5,9 +5,9 @@ BOOT {
     Stash(__PACKAGE__).inherit("Protocol::HTTP::Response");
 }
 
-Object new (SV* CLASS, Hash params = Hash()) {
-    RETVAL = xs::out(new ConnectResponse(), CLASS);
-    if (params) RETVAL.call<void>("init", ST(1));
+ConnectResponseSP ConnectResponse::new (Hash params = Hash()) {
+    RETVAL = new ConnectResponse();
+    make_response(params, RETVAL);
 }
 
 void ConnectResponse::init (Hash params) {

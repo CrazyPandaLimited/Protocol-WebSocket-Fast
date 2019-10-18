@@ -12,6 +12,9 @@ Array header_values_to_av (const HeaderValues& vals);
 
 void av_to_vstring (const Array& av, std::vector<string>& v);
 
+ConnectRequestSP  make_request  (const Hash& params, const ConnectRequestSP& = {});
+ConnectResponseSP make_response (const Hash& params, const ConnectResponseSP& = {});
+
 struct XSFrameIterator : FrameIterator {
     XSFrameIterator (Parser* parser, const FrameSP& start_frame) : FrameIterator(parser, start_frame), nexted(false) { parser->retain(); }
     XSFrameIterator (const XSFrameIterator& oth)                 : FrameIterator(oth), nexted(oth.nexted)            { parser->retain(); }

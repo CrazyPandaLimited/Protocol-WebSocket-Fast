@@ -16,6 +16,11 @@ void ConnectRequest::process_headers () {
         return;
     }
 
+    if (http_version != http::HttpVersion::v1_1) {
+        error = "HTTP/1.1 or higher required";
+        return;
+    }
+
     if (!body.empty()) {
         error = "body must not present";
         return;
@@ -124,7 +129,7 @@ string ConnectRequest::to_string() {
     if (!headers.has_field("User-Agent")) headers.add_field("User-Agent", "Panda-WebSocket");
     if (!headers.has_field("Host"))       headers.add_field("Host", uri->host());
 
-    return to_string();
+    return http::Request::to_string();
 }
 
 http::ResponseSP ConnectRequest::create_response() const{

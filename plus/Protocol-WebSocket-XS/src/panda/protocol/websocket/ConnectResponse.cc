@@ -70,6 +70,7 @@ string ConnectResponse::_calc_accept_key (string ws_key) {
 }
 
 string ConnectResponse::to_string() {
+//    http_version = http::HttpVersion::v1_1;
     code    = 101;
     message = "Switching Protocols";
     headers.add_field("Upgrade", "websocket");

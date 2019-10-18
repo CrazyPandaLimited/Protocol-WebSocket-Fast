@@ -43,4 +43,40 @@ void av_to_vstring (const Array& av, std::vector<string>& v) {
     }
 }
 
+ConnectRequestSP make_request(const Hash& params, const ConnectRequestSP& dest) {
+    auto ret = dest ? dest : ConnectRequestSP(new ConnectRequest());
+    http::make_request(params, ret);
+
+    Scalar val;
+
+    if ((val = params.fetch("ws_key")))      ret->ws_key      = xs::in<string>(val);
+    if ((val = params.fetch("ws_version")))  ret->ws_version  = SvIV(val);
+    if ((val = params.fetch("ws_protocol"))) ret->ws_protocol = xs::in<string>(val);
+
+    if ((val = params.fetch("ws_extensions"))) {
+        auto exts_av = xs::in<Array>(val);
+        HeaderValues exts;
+        if (exts_av) av_to_header_values(exts_av, &exts);
+        ret->ws_extensions(exts);
+    }
+    return ret;
+}
+
+ConnectResponseSP make_response(const Hash& params, const ConnectResponseSP& dest) {
+    auto ret = dest ? dest : ConnectResponseSP(new ConnectResponse());
+    http::make_response(params, ret);
+
+    Scalar val;
+
+    if ((val = params.fetch("ws_extensions"))) {
+        HeaderValues exts;
+        av_to_header_values(xs::in<Array>(val), &exts);
+        ret->ws_extensions(exts);
+    }
+
+    if ((val = params.fetch("ws_protocol"))) ret->ws_protocol = xs::in<string>(val);
+
+    return ret;
+}
+
 }}}
