@@ -2,6 +2,7 @@
 #include <panda/encode/base64.h>
 #include <panda/log.h>
 #include "ConnectResponse.h"
+#include "Error.h"
 
 namespace panda { namespace protocol { namespace websocket {
 
@@ -12,29 +13,29 @@ void ConnectRequest::process_headers () {
     bool ok;
 
     if (method != Method::GET) {
-        error = "method must be GET";
+        error = ProtocolError::METHOD_ISNOT_GET;
         return;
     }
 
     if (http_version != http::HttpVersion::v1_1) {
-        error = "HTTP/1.1 or higher required";
+        error = ProtocolError::HTTP_1_1_REQUIRED;
         return;
     }
 
     if (!body.empty()) {
-        error = "body must not present";
+        error = ProtocolError::BODY_PROHIBITED;
         return;
     }
 
     auto it = headers.find("Connection");
     if (it == headers.end() || !string_contains_ci(it->value, "upgrade")) {
-        error = "Connection must be 'Upgrade'";
+        error = ProtocolError::CONNECTION_ISNOT_UPGRADE;
         return;
     }
 
     it = headers.find("Upgrade");
     if (it == headers.end() || !string_contains_ci(it->value, "websocket")) {
-        error = "Upgrade must be 'websocket'";
+        error = ProtocolError::UPGRADE_ISNOT_WEBSOCKET;
         return;
     }
 
@@ -45,7 +46,7 @@ void ConnectRequest::process_headers () {
         auto decoded = panda::encode::decode_base64(ws_key);
         if (decoded.length() == 16) ok = true;
     }
-    if (!ok) {error = "Sec-WebSocket-Key missing or invalid"; return; }
+    if (!ok) {error = ProtocolError::SEC_ACCEPT_MISSING; return; }
 
     _ws_version_supported = false;
     it = headers.find("Sec-WebSocket-Version");
@@ -57,7 +58,7 @@ void ConnectRequest::process_headers () {
             break;
         }
     }
-    if (!_ws_version_supported) { error = "client's Sec-WebSocket-Version is not supported"; return; }
+    if (!_ws_version_supported) { error = ProtocolError::UNSUPPORTED_VERSION; return; }
 
     auto ext_range = headers.equal_range("Sec-WebSocket-Extensions");
     for (auto& hv : ext_range) {

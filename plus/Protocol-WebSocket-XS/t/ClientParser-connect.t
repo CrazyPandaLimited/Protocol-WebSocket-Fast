@@ -62,7 +62,7 @@ subtest 'wrong accept key' => sub {
     my $res_str = $sp->accept_response;
     $res_str =~ s/^(Sec-WebSocket-Accept: )/$1 a/im;
     my $cres = $p->connect($res_str);
-    is ($cres->error, "Sec-WebSocket-Accept missing or invalid", "error ok");
+    is ($cres->error, "Websocket: Sec-WebSocket-Accept missing or invalid", "error ok");
 };
 
 subtest 'version upgrade required' => sub {
@@ -72,7 +72,7 @@ subtest 'version upgrade required' => sub {
     }, {
         code    => 426,
         message => "Upgrade Required",
-        error   => "websocket version upgrade required",
+        error   => "Websocket: version upgrade required",
     });
 };
 
@@ -84,7 +84,7 @@ subtest 'wrong code' => sub {
     my $res_str = $sp->accept_response;
     $res_str =~ s/^(HTTP\/1.1) (\d+)/$1 102/i; # code must be "bodyless", otherwise http parser waits for body
     my $cres = $p->connect($res_str);
-    is ($cres->error, "websocket handshake response code must be 101", "error ok");
+    is ($cres->error, "Websocket: handshake response code must be 101", "error ok");
 };
 
 subtest 'wrong connection header' => sub {
@@ -95,7 +95,7 @@ subtest 'wrong connection header' => sub {
     my $res_str = $sp->accept_response;
     $res_str =~ s/^(Connection:) (\S+)/$1 migrate/im;
     my $cres = $p->connect($res_str);
-    is ($cres->error, "Connection must be 'Upgrade'", "error ok");
+    is ($cres->error, "Websocket: Connection must be 'Upgrade'", "error ok");
 };
 
 subtest 'wrong upgrade header' => sub {
@@ -106,7 +106,7 @@ subtest 'wrong upgrade header' => sub {
     my $res_str = $sp->accept_response;
     $res_str =~ s/^(Upgrade:) (\S+)/$1 huysocket/im;
     my $cres = $p->connect($res_str);
-    is ($cres->error, "Upgrade must be 'websocket'", "error ok");
+    is ($cres->error, "Websocket: Upgrade must be 'websocket'", "error ok");
 };
 
 subtest 'frame just after handshake is reachable' => sub {

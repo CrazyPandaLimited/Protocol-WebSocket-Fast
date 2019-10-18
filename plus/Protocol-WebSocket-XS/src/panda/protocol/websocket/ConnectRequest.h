@@ -3,7 +3,7 @@
 #include <panda/refcnt.h>
 #include <panda/protocol/websocket/HTTPRequest.h>
 #include <panda/protocol/websocket/DeflateExt.h>
-#include <iostream>
+#include <panda/error.h>
 
 namespace panda { namespace protocol { namespace websocket {
 
@@ -14,7 +14,7 @@ struct ConnectRequest : HTTPRequest {
     int          ws_version;
     string       ws_protocol;
 
-    string error;
+    ErrorCode error;
 
     ConnectRequest () : ws_version(0), _ws_version_supported(true) {
         method = Request::Method::GET;

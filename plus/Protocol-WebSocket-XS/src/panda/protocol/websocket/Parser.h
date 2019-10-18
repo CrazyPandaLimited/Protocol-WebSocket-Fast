@@ -13,6 +13,8 @@
 #include <panda/protocol/websocket/FrameBuilder.h>
 #include <panda/protocol/websocket/ParserError.h>
 
+#include "Error.h"
+
 namespace panda { namespace protocol { namespace websocket {
 
 using panda::string;

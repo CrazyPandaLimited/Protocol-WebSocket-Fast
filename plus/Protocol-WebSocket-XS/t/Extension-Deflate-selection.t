@@ -212,7 +212,7 @@ END
             my $conn_res = $client->connect($res_str);
             ok !$client->established;
             ok !$client->is_deflate_active;
-            is $conn_res->error, 'deflate paramenters negotiation error';
+            is $conn_res->error, 'Websocket: deflate paramenters negotiation error';
         };
 
         subtest "offected garbage windows size" => sub {
@@ -231,7 +231,7 @@ END
             my $conn_res = $client->connect($res_str);
             ok !$client->established;
             ok !$client->is_deflate_active;
-            is $conn_res->error, 'deflate paramenters negotiation error';
+            is $conn_res->error, 'Websocket: deflate paramenters negotiation error';
         };
 
         subtest "offected garbage extension parameter" => sub {
@@ -250,7 +250,7 @@ END
             my $conn_res = $client->connect($res_str);
             ok !$client->established;
             ok !$client->is_deflate_active;
-            is $conn_res->error, 'deflate paramenters negotiation error';
+            is $conn_res->error, 'Websocket: deflate paramenters negotiation error';
         };
 
     };
@@ -318,7 +318,7 @@ subtest "8-bit windows are not allowed" => sub {
             my $conn_res = $client->connect($res_str);
             ok !$client->established;
             ok !$client->is_deflate_active;
-            is $conn_res->error, 'deflate paramenters negotiation error';
+            is $conn_res->error, 'Websocket: deflate paramenters negotiation error';
         };
 
         subtest "9-bit window is OK" => sub {

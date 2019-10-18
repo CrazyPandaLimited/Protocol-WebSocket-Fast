@@ -1,36 +1,37 @@
 #include <panda/protocol/websocket/ConnectResponse.h>
 #include <openssl/sha.h>
 #include <panda/encode/base64.h>
+#include "Error.h"
 
 namespace panda { namespace protocol { namespace websocket {
 
 void ConnectResponse::process_headers () {
     if (code == 426) {
         _ws_versions = headers.get_field("Sec-WebSocket-Version");
-        error = "websocket version upgrade required";
+        error = ProtocolError::VERSION_UPGRADE_REQUIRED;
         return;
     }
 
     if (code != 101) {
-        error = "websocket handshake response code must be 101";
+        error = ProtocolError::RESPONSE_CODE_101;
         return;
     }
 
     auto it = headers.find("Connection");
     if (it == headers.end() || !string_contains_ci(it->value, "upgrade")) {
-        error = "Connection must be 'Upgrade'";
+        error = ProtocolError::CONNECTION_ISNOT_UPGRADE;
         return;
     }
 
     it = headers.find("Upgrade");
     if (it == headers.end() || !string_contains_ci(it->value, "websocket")) {
-        error = "Upgrade must be 'websocket'";
+        error = ProtocolError::UPGRADE_ISNOT_WEBSOCKET;
         return;
     }
 
     it = headers.find("Sec-WebSocket-Accept");
     if (it == headers.end() || it->value != _calc_accept_key(_ws_key)) {
-        error = "Sec-WebSocket-Accept missing or invalid";
+        error = ProtocolError::SEC_ACCEPT_MISSING;
         return;
     }
     else _ws_accept_key = it->value;

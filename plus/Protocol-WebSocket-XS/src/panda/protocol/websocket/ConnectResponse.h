@@ -1,12 +1,13 @@
 #pragma once
 #include <panda/refcnt.h>
 #include <panda/protocol/websocket/HTTPResponse.h>
+#include <panda/error.h>
 
 namespace panda { namespace protocol { namespace websocket {
 
 struct ConnectResponse : HTTPResponse {
     string ws_protocol;
-    string error;
+    ErrorCode error;
 
     ConnectResponse () : _ws_extensions_set(false) {}
 

@@ -38,8 +38,7 @@ ConnectResponseSP ClientParser::connect (string& buf) {
     _connect_response = dynamic_pointer_cast<ConnectResponse>(res.response);
 
     if (res.error) {
-        auto msg = res.error.message();
-        _connect_response->error = string(msg.data(), msg.size());
+        _connect_response->error = res.error;
         _state.set(STATE_CONNECTION_RESPONSE_PARSED);
 
         ConnectResponseSP ret(_connect_response);
@@ -70,7 +69,7 @@ ConnectResponseSP ClientParser::connect (string& buf) {
             /* NOOP */
             break;
         case result_t::ERROR:
-            _connect_response->error = "deflate paramenters negotiation error";
+            _connect_response->error = ProtocolError::DEFLATE_NEGOTIATION_FAILED;
         }
     }
 
