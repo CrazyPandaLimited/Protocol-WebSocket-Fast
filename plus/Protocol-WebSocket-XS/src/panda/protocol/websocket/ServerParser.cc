@@ -134,6 +134,7 @@ string ServerParser::accept_response (ConnectResponse* res) {
 
 void ServerParser::reset () {
     _connect_request = NULL;
+    _connect_parser.reset();
     Parser::reset();
 }
 

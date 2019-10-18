@@ -87,6 +87,7 @@ ConnectResponseSP ClientParser::connect (string& buf) {
 
 void ClientParser::reset () {
     _connect_request = NULL;
+    _connect_response_parser.reset();
     Parser::reset();
 }
 
