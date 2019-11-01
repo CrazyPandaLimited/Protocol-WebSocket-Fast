@@ -12,7 +12,7 @@ plan skip_all => 'BSD::Resource and Path::Tiny required to test for leaks' unles
     1;
 };
 
-my %exclude = map {$_ => 1} qw/ 00-compile.t 98-synopsis.t 99-leaks.t /;
+my %exclude = map {$_ => 1} qw/zleaks.t bug-SRV-1608.t/;
 my @files;
 
 if ($ENV{LEAK_FILE}) { push @files, $ENV{LEAK_FILE}; }
