@@ -13,29 +13,29 @@ void ConnectRequest::process_headers () {
     bool ok;
 
     if (method != Method::GET) {
-        error = ProtocolError::METHOD_ISNOT_GET;
+        error = errc::METHOD_MUSTBE_GET;
         return;
     }
 
     if (http_version != http::HttpVersion::v1_1) {
-        error = ProtocolError::HTTP_1_1_REQUIRED;
+        error = errc::HTTP_1_1_REQUIRED;
         return;
     }
 
     if (!body.empty()) {
-        error = ProtocolError::BODY_PROHIBITED;
+        error = errc::BODY_PROHIBITED;
         return;
     }
 
     auto it = headers.find("Connection");
     if (it == headers.end() || !string_contains_ci(it->value, "upgrade")) {
-        error = ProtocolError::CONNECTION_ISNOT_UPGRADE;
+        error = errc::CONNECTION_MUSTBE_UPGRADE;
         return;
     }
 
     it = headers.find("Upgrade");
     if (it == headers.end() || !string_contains_ci(it->value, "websocket")) {
-        error = ProtocolError::UPGRADE_ISNOT_WEBSOCKET;
+        error = errc::UPGRADE_MUSTBE_WEBSOCKET;
         return;
     }
 
@@ -46,7 +46,7 @@ void ConnectRequest::process_headers () {
         auto decoded = panda::encode::decode_base64(ws_key);
         if (decoded.length() == 16) ok = true;
     }
-    if (!ok) {error = ProtocolError::SEC_ACCEPT_MISSING; return; }
+    if (!ok) {error = errc::SEC_ACCEPT_MISSING; return; }
 
     _ws_version_supported = false;
     it = headers.find("Sec-WebSocket-Version");
@@ -58,7 +58,7 @@ void ConnectRequest::process_headers () {
             break;
         }
     }
-    if (!_ws_version_supported) { error = ProtocolError::UNSUPPORTED_VERSION; return; }
+    if (!_ws_version_supported) { error = errc::UNSUPPORTED_VERSION; return; }
 
     auto ext_range = headers.equal_range("Sec-WebSocket-Extensions");
     for (auto& hv : ext_range) {

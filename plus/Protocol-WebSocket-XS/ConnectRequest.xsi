@@ -64,7 +64,6 @@ string ConnectRequest::ws_protocol (SV* newval = NULL) {
 
 bool ConnectRequest::ws_version_supported ()
 
-string ConnectRequest::error () {
-    if (THIS->error) RETVAL = THIS->error.message();
-    else XSRETURN_UNDEF;
+ErrorCode ConnectRequest::error () {
+    RETVAL = THIS->error;
 }

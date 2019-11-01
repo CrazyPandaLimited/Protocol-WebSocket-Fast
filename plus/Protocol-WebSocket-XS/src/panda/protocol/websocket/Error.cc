@@ -8,25 +8,35 @@ namespace panda { namespace protocol { namespace websocket {
 
 const std::error_category& protocol_error_categoty = ProtocolErrorCategoty();
 
-static const std::map<ProtocolError, std::string> error_map = {
-    {ProtocolError::GARBAGE_AFTER_CONNECT,      "Websocket: garbage found after http request"},
-    {ProtocolError::DEFLATE_NEGOTIATION_FAILED, "Websocket: deflate paramenters negotiation error"},
+static const std::map<errc, std::string> error_map = {
+    {errc::GARBAGE_AFTER_CONNECT,      "garbage found after http request"},
 
-    {ProtocolError::RESPONSE_CODE_101,          "Websocket: handshake response code must be 101"},
-    {ProtocolError::VERSION_UPGRADE_REQUIRED,   "Websocket: version upgrade required"},
-    {ProtocolError::UNSUPPORTED_VERSION,        "Websocket: client's Sec-WebSocket-Version is not supported"},
-    {ProtocolError::CONNECTION_ISNOT_UPGRADE,   "Websocket: Connection must be 'Upgrade'"},
-    {ProtocolError::UPGRADE_ISNOT_WEBSOCKET,    "Websocket: Upgrade must be 'websocket'"},
-    {ProtocolError::SEC_ACCEPT_MISSING,         "Websocket: Sec-WebSocket-Accept missing or invalid"},
+    {errc::RESPONSE_CODE_101,          "handshake response code must be 101"},
+    {errc::VERSION_UPGRADE_REQUIRED,   "version upgrade required"},
+    {errc::UNSUPPORTED_VERSION,        "client's Sec-WebSocket-Version is not supported"},
+    {errc::CONNECTION_MUSTBE_UPGRADE,   "Connection must be 'Upgrade'"},
+    {errc::UPGRADE_MUSTBE_WEBSOCKET,    "Upgrade must be 'websocket'"},
+    {errc::SEC_ACCEPT_MISSING,         "Sec-WebSocket-Accept missing or invalid"},
 
-    {ProtocolError::METHOD_ISNOT_GET,  "Websocket: method must be GET"},
-    {ProtocolError::HTTP_1_1_REQUIRED, "Websocket: HTTP/1.1 or higher required"},
-    {ProtocolError::BODY_PROHIBITED,   "Websocket: body must not present"},
+    {errc::METHOD_MUSTBE_GET,  "method must be GET"},
+    {errc::HTTP_1_1_REQUIRED, "HTTP/1.1 or higher required"},
+    {errc::BODY_PROHIBITED,   "body must not present"},
+
+    {errc::INVALID_OPCODE,          "invalid opcode received"},
+    {errc::CONTROL_FRAGMENTED,      "control frame can't be fragmented"},
+    {errc::CONTROL_PAYLOAD_TOO_BIG, "control frame payload is too big"},
+    {errc::NOT_MASKED,              "frame is not masked"},
+    {errc::MAX_FRAME_SIZE,          "max frame size exceeded"},
+    {errc::CLOSE_FRAME_INVALID_DATA,"control frame CLOSE contains invalid data"},
+    {errc::INITIAL_CONTINUE,        "initial frame can't have opcode CONTINUE"},
+    {errc::FRAGMENT_NO_CONTINUE,    "fragment frame must have opcode CONTINUE"},
+
+    {errc::MAX_MESSAGE_SIZE,        "max message size exceeded"},
 };
 
 std::string ProtocolErrorCategoty::message(int ev) const {
     panda_debug_v(ev);
-    auto iter = error_map.find(ProtocolError(ev));
+    auto iter = error_map.find(errc(ev));
     if (iter != error_map.end()) {
         return iter->second;
     } else if (ev){

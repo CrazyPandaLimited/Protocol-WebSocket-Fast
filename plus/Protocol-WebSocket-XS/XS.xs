@@ -11,6 +11,7 @@ using xs::exp::create_constants;
 
 using panda::string;
 using panda::string_view;
+using panda::ErrorCode;
 using xs::my_perl;
 
 using namespace xs::protocol::websocket;
@@ -68,3 +69,5 @@ INCLUDE: FrameIterator.xsi
 INCLUDE: Message.xsi
 
 INCLUDE: MessageIterator.xsi
+
+INCLUDE: Error.xsi

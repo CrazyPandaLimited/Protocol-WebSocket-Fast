@@ -7,6 +7,8 @@
 #include <panda/protocol/websocket/inc.h>
 #include <panda/protocol/websocket/utils.h>
 #include <panda/protocol/websocket/FrameHeader.h>
+#include <panda/error.h>
+#include "Error.h"
 
 namespace panda { namespace protocol { namespace websocket {
 
@@ -16,7 +18,7 @@ struct Frame : virtual panda::Refcnt, AllocatedObject<Frame> {
     static constexpr int MAX_CONTROL_PAYLOAD = 125;
     static constexpr int MAX_CLOSE_PAYLOAD   = MAX_CONTROL_PAYLOAD - 2;
 
-    string              error;
+    ErrorCode           error;
     std::vector<string> payload;
 
     Frame (bool mask_required, size_t max_size) : _mask_required(mask_required), _max_size(max_size), _state(State::HEADER) {}
@@ -35,9 +37,9 @@ struct Frame : virtual panda::Refcnt, AllocatedObject<Frame> {
         assert(_state == State::DONE);
         if (is_control() || error) return;
         if (!fragment_in_message) {
-            if (opcode() == Opcode::CONTINUE) error = "initial frame can't have opcode CONTINUE";
+            if (opcode() == Opcode::CONTINUE) error = errc::INITIAL_CONTINUE;
         }
-        else if (opcode() != Opcode::CONTINUE) error = "fragment frame must have opcode CONTINUE";
+        else if (opcode() != Opcode::CONTINUE) error = errc::FRAGMENT_NO_CONTINUE;
     }
 
     void reset () {

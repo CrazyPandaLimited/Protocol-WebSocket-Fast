@@ -47,7 +47,6 @@ string ConnectResponse::ws_protocol (SV* newval = NULL) {
     RETVAL = THIS->ws_protocol;
 }
 
-string ConnectResponse::error () {
-    if (THIS->error) RETVAL = THIS->error.message();
-    else XSRETURN_UNDEF;
+ErrorCode ConnectResponse::error () {
+    RETVAL = THIS->error;
 }

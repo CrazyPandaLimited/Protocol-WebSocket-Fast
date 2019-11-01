@@ -192,4 +192,28 @@ private:
     bool reset_after_rx;
 };
 
+enum class DeflateError {
+    NEGOTIATION_FAILED = 1,
+    CONTROL_FRAME_COMPRESSION,
+    MAX_MESSAGE_SIZE,
+    INFALTE_ERROR,
+};
+
+class DeflateErrorCategoty : public std::error_category
+{
+public:
+    const char* name() const noexcept override {return "websocket::DeflateError";}
+    std::string message(int ev) const override;
+};
+
+extern const std::error_category& deflate_error_categoty;
+
+inline std::error_code make_error_code(const DeflateError& err) noexcept {
+    return std::error_code(int(err), deflate_error_categoty);
+}
+
 }}}
+
+namespace std {
+template <> struct is_error_code_enum<panda::protocol::websocket::DeflateError> : std::true_type {};
+}

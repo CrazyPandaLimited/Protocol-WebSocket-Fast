@@ -21,7 +21,6 @@ my $test_connect = sub {
         my $str = $p->connect_request($req);
         my $sp = new Protocol::WebSocket::XS::ServerParser;
         my $creq = $sp->accept($str) or die "should not happen";
-        #warn $creq->error;
         my $res_str = $creq->error ? $sp->accept_error : $sp->accept_response;
         my $cres;
         while (length($res_str) && !$cres) { $cres = $p->connect(substr($res_str, 0, 5, '')) }
@@ -50,6 +49,7 @@ subtest 'simple connect' => sub {
             'sec-websocket-protocol'   => 'killme',
             'server'                   => ignore(),
             'sec-websocket-extensions' => 'permessage-deflate; client_max_window_bits=15',
+            'content-length'           => 0,
         },
     });
 };
@@ -62,7 +62,7 @@ subtest 'wrong accept key' => sub {
     my $res_str = $sp->accept_response;
     $res_str =~ s/^(Sec-WebSocket-Accept: )/$1 a/im;
     my $cres = $p->connect($res_str);
-    is ($cres->error, "Websocket: Sec-WebSocket-Accept missing or invalid", "error ok");
+    ok ($cres->error, "error ok");
 };
 
 subtest 'version upgrade required' => sub {
@@ -72,7 +72,7 @@ subtest 'version upgrade required' => sub {
     }, {
         code    => 426,
         message => "Upgrade Required",
-        error   => "Websocket: version upgrade required",
+        error   => Protocol::WebSocket::XS::errc::version_update_required,
     });
 };
 
@@ -84,7 +84,7 @@ subtest 'wrong code' => sub {
     my $res_str = $sp->accept_response;
     $res_str =~ s/^(HTTP\/1.1) (\d+)/$1 102/i; # code must be "bodyless", otherwise http parser waits for body
     my $cres = $p->connect($res_str);
-    is ($cres->error, "Websocket: handshake response code must be 101", "error ok");
+    is ($cres->error, Protocol::WebSocket::XS::errc::response_code_101(), "error ok");
 };
 
 subtest 'wrong connection header' => sub {
@@ -95,7 +95,7 @@ subtest 'wrong connection header' => sub {
     my $res_str = $sp->accept_response;
     $res_str =~ s/^(Connection:) (\S+)/$1 migrate/im;
     my $cres = $p->connect($res_str);
-    is ($cres->error, "Websocket: Connection must be 'Upgrade'", "error ok");
+    is ($cres->error, Protocol::WebSocket::XS::errc::connection_mustbe_upgrade(), "error ok");
 };
 
 subtest 'wrong upgrade header' => sub {
@@ -106,7 +106,7 @@ subtest 'wrong upgrade header' => sub {
     my $res_str = $sp->accept_response;
     $res_str =~ s/^(Upgrade:) (\S+)/$1 huysocket/im;
     my $cres = $p->connect($res_str);
-    is ($cres->error, "Websocket: Upgrade must be 'websocket'", "error ok");
+    is ($cres->error, Protocol::WebSocket::XS::errc::upgrade_mustbe_websocket(), "error ok");
 };
 
 subtest 'frame just after handshake is reachable' => sub {

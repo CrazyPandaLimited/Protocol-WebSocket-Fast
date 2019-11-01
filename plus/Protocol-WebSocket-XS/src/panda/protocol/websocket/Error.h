@@ -4,22 +4,30 @@
 
 namespace panda { namespace protocol { namespace websocket {
 
-enum class ProtocolError {
+enum class errc {
     GARBAGE_AFTER_CONNECT = 1,
-    DEFLATE_NEGOTIATION_FAILED,
 
     VERSION_UPGRADE_REQUIRED,
     UNSUPPORTED_VERSION,
     RESPONSE_CODE_101,
-    CONNECTION_ISNOT_UPGRADE,
-    UPGRADE_ISNOT_WEBSOCKET,
+    CONNECTION_MUSTBE_UPGRADE,
+    UPGRADE_MUSTBE_WEBSOCKET,
     SEC_ACCEPT_MISSING,
 
-    METHOD_ISNOT_GET,
+    METHOD_MUSTBE_GET,
     HTTP_1_1_REQUIRED,
     BODY_PROHIBITED,
 
+    INVALID_OPCODE,
+    CONTROL_FRAGMENTED,
+    CONTROL_PAYLOAD_TOO_BIG,
+    NOT_MASKED,
+    MAX_FRAME_SIZE,
+    CLOSE_FRAME_INVALID_DATA,
+    INITIAL_CONTINUE,
+    FRAGMENT_NO_CONTINUE,
 
+    MAX_MESSAGE_SIZE
 };
 
 class ProtocolErrorCategoty : public std::error_category
@@ -32,12 +40,12 @@ public:
 extern const std::error_category& protocol_error_categoty;
 
 
-inline std::error_code make_error_code(ProtocolError err) noexcept {
+inline std::error_code make_error_code(errc err) noexcept {
     return std::error_code(int(err), protocol_error_categoty);
 }
 
 }}}
 
 namespace std {
-template <> struct is_error_code_enum<panda::protocol::websocket::ProtocolError> : std::true_type {};
+template <> struct is_error_code_enum<panda::protocol::websocket::errc> : std::true_type {};
 }

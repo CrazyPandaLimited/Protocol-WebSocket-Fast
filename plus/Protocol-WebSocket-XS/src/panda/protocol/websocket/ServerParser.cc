@@ -44,7 +44,7 @@ ConnectRequestSP ServerParser::accept (string& buf) {
 
     if (!_connect_request->error) {
         if (res.position != buf.size()) {
-            _connect_request->error = ProtocolError::GARBAGE_AFTER_CONNECT;
+            _connect_request->error = errc::GARBAGE_AFTER_CONNECT;
         } else {
             _state.set(STATE_ACCEPTED);
         }
@@ -78,7 +78,7 @@ string ServerParser::accept_error () {
         res->code    = 400;
         res->message = "Bad Request";
         res->body.parts.push_back("400 Bad Request\n");
-        res->body.parts.push_back(_connect_request->error.message());
+        res->body.parts.push_back(_connect_request->error.what());
     }
     res->headers.set_field("Content-Length", panda::to_string(res->body.length()));
 

@@ -14,32 +14,32 @@ bool Frame::parse (string& buf) {
         if (!_header.parse(buf)) return false;
 
         if (opcode() > Opcode::PONG || (opcode() > Opcode::BINARY && opcode() < Opcode::CLOSE)) {
-            error = "invalid opcode received";
+            error = errc::INVALID_OPCODE;
             _state = State::DONE;
             return true;
         }
 
         if (is_control()) {
             if (!final()) {
-                error = "control frame can't be fragmented";
+                error = errc::CONTROL_FRAGMENTED;
                 _state = State::DONE;
                 return true;
             }
             if (_header.length > MAX_CONTROL_PAYLOAD) {
-                error = "control frame payload is too big";
+                error = errc::CONTROL_PAYLOAD_TOO_BIG;
                 _state = State::DONE;
                 return true;
             }
         }
 
         if (!_header.has_mask && _mask_required && _header.length) {
-            error = "frame is not masked";
+            error = errc::NOT_MASKED;
             _state = State::DONE;
             return true;
         }
 
         if (_max_size && _header.length > _max_size) {
-            error = "max frame size exceeded";
+            error = errc::MAX_FRAME_SIZE;
             _state = State::DONE;
             return true;
         }
@@ -88,7 +88,7 @@ bool Frame::parse (string& buf) {
                 payload.push_back(_close_message);
                 _header.length = _close_message.length();
             }
-            else error = "control frame CLOSE contains invalid data";
+            else error = errc::CLOSE_FRAME_INVALID_DATA;
         }
         //cout << "Frame[parse]: CLOSE CODE=" << _close_code << " MSG=" << _close_message << endl;
     }

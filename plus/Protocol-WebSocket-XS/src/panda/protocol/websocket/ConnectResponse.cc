@@ -8,30 +8,30 @@ namespace panda { namespace protocol { namespace websocket {
 void ConnectResponse::process_headers () {
     if (code == 426) {
         _ws_versions = headers.get_field("Sec-WebSocket-Version");
-        error = ProtocolError::VERSION_UPGRADE_REQUIRED;
+        error = errc::VERSION_UPGRADE_REQUIRED;
         return;
     }
 
     if (code != 101) {
-        error = ProtocolError::RESPONSE_CODE_101;
+        error = errc::RESPONSE_CODE_101;
         return;
     }
 
     auto it = headers.find("Connection");
     if (it == headers.end() || !string_contains_ci(it->value, "upgrade")) {
-        error = ProtocolError::CONNECTION_ISNOT_UPGRADE;
+        error = errc::CONNECTION_MUSTBE_UPGRADE;
         return;
     }
 
     it = headers.find("Upgrade");
     if (it == headers.end() || !string_contains_ci(it->value, "websocket")) {
-        error = ProtocolError::UPGRADE_ISNOT_WEBSOCKET;
+        error = errc::UPGRADE_MUSTBE_WEBSOCKET;
         return;
     }
 
     it = headers.find("Sec-WebSocket-Accept");
     if (it == headers.end() || it->value != _calc_accept_key(_ws_key)) {
-        error = ProtocolError::SEC_ACCEPT_MISSING;
+        error = errc::SEC_ACCEPT_MISSING;
         return;
     }
     else _ws_accept_key = it->value;

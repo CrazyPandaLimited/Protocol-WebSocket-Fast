@@ -329,7 +329,7 @@ TEST_CASE("FrameBuilder & Message builder", "[deflate-extension]") {
         FrameHeader fh(Opcode::PING, true, true, false, false, true, (uint32_t)std::rand());
         auto data_string = Frame::compile(fh, payload);
         auto frames_it = client.get_frames(data_string);
-        REQUIRE(frames_it.begin()->error == "compression of control frames is not allowed (rfc7692)");
+        REQUIRE(frames_it.begin()->error == DeflateError::CONTROL_FRAME_COMPRESSION);
     }
 
     SECTION("send compressed frame bigger then original") {
@@ -342,7 +342,7 @@ TEST_CASE("FrameBuilder & Message builder", "[deflate-extension]") {
         auto data_string = to_string(data);
         auto messages_it = client.get_messages(data_string);
         REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
-        REQUIRE(messages_it.begin()->error == "");
+        REQUIRE_FALSE(messages_it.begin()->error);
         REQUIRE(messages_it.begin()->payload[0] == payload_copy);
     }
 
@@ -477,7 +477,7 @@ TEST_CASE("SRV-1236",  "[deflate-extension]") {
             auto data_string = Frame::compile(fh, payload).append(payload);
             auto messages_it = server.get_messages(data_string);
             REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
-            REQUIRE(messages_it.begin()->error == "");
+            REQUIRE_FALSE(messages_it.begin()->error);
         }
     }
 
@@ -494,7 +494,7 @@ TEST_CASE("SRV-1236",  "[deflate-extension]") {
 
         auto messages_it = server.get_messages(data_string);
         REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
-        REQUIRE(messages_it.begin()->error == "");
+        REQUIRE_FALSE(messages_it.begin()->error);
         REQUIRE(messages_it.begin()->payload.size() == 2);
         REQUIRE(messages_it.begin()->payload[0] == "00000000000000000000000000000000000000000000000000");
         REQUIRE(messages_it.begin()->payload[1] == "00000000000000000000000000000000000000000000000000");

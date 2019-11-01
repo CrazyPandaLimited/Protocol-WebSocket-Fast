@@ -69,7 +69,7 @@ ConnectResponseSP ClientParser::connect (string& buf) {
             /* NOOP */
             break;
         case result_t::ERROR:
-            _connect_response->error = ProtocolError::DEFLATE_NEGOTIATION_FAILED;
+            _connect_response->error = DeflateError::NEGOTIATION_FAILED;
         }
     }
 

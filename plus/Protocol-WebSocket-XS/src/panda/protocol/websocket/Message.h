@@ -3,13 +3,14 @@
 #include <panda/refcnt.h>
 #include <panda/string.h>
 #include <panda/protocol/websocket/Frame.h>
+#include <panda/error.h>
 
 namespace panda { namespace protocol { namespace websocket {
 
 using panda::string;
 
 struct Message : virtual panda::Refcnt {
-    string              error;
+    ErrorCode           error;
     std::vector<string> payload;
     uint32_t            frame_count;
 

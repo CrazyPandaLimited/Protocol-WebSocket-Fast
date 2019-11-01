@@ -7,6 +7,7 @@ use Test::Deep;
 use Test::Exception;
 use Test::Fatal;
 use Protocol::WebSocket::XS;
+use Protocol::WebSocket::XS::errc;
 use Data::Dumper 'Dumper';
 use Panda::Lib qw/crypt_xor/;
 use Encode::Base2N 'decode_base64';

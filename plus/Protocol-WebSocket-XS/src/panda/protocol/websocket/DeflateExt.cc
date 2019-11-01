@@ -1,6 +1,7 @@
 #include "DeflateExt.h"
 #include <panda/from_chars.h>
 #include <panda/encode/base64.h>
+#include <panda/log.h>
 
 namespace panda { namespace protocol { namespace websocket {
 
@@ -226,7 +227,7 @@ bool DeflateExt::uncompress(Frame& frame) {
     bool r;
     if (frame.error) r = false;
     else if (frame.is_control()) {
-        frame.error = "compression of control frames is not allowed (rfc7692)";
+        frame.error = DeflateError::CONTROL_FRAME_COMPRESSION;
         r = false;
     }
     else if (frame.payload_length() == 0) r = true;
@@ -244,7 +245,7 @@ bool DeflateExt::uncompress_check_overflow(Frame& frame, const string& acc) {
     auto unpacked_frame_size = acc.capacity() - rx_stream.avail_out;
     auto unpacked_message_size = message_size + unpacked_frame_size;
     if (unpacked_message_size > max_message_size) {
-        frame.error = "zlib::inflate error: max message size has been reached";
+        frame.error = DeflateError::MAX_MESSAGE_SIZE;
         return false;
     }
     return true;
@@ -312,7 +313,8 @@ bool DeflateExt::uncompress_impl(Frame& frame) {
                 string err = "zlib::inflate error ";
                 if (rx_stream.msg) err += rx_stream.msg;
                 else err += to_string(r);
-                frame.error = err;
+                panda_log_info(err);
+                frame.error = DeflateError::INFALTE_ERROR;
                 return false;
             }
         } while(has_more_output);
@@ -328,6 +330,16 @@ bool DeflateExt::uncompress_impl(Frame& frame) {
     return true;
 }
 
+std::string DeflateErrorCategoty::message(int ev) const {
+    switch (DeflateError(ev)) {
+    case DeflateError::NEGOTIATION_FAILED:        return "Websocket: deflate paramenters negotiation error";
+    case DeflateError::CONTROL_FRAME_COMPRESSION: return "Websocket: compression of control frames is not allowed (rfc7692)";
+    case DeflateError::MAX_MESSAGE_SIZE:          return "Websocket: zlib::inflate error: max message size has been reached";
+    case DeflateError::INFALTE_ERROR:             return "Websocket: custom zlib::inflate error, look info log for details";
+    default: return "Unknown websocket deflate error";
+    }
+}
 
+const std::error_category& deflate_error_categoty = DeflateErrorCategoty();
 
 }}}
