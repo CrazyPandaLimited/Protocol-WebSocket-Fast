@@ -158,8 +158,10 @@ private:
     inline void deflate_iteration(int flush, F&& drain) {
         do {
             if (!tx_stream.avail_in && flush == Z_NO_FLUSH) return;
-            if (!tx_stream.avail_out) drain();
-            assert(tx_stream.avail_out >= TRAILER_RESERVED);
+            size_t min_out_sz = flush == Z_SYNC_FLUSH ? TRAILER_RESERVED : 1;
+            if (tx_stream.avail_out < min_out_sz) drain();
+            assert(tx_stream.avail_out > 0);
+            assert(!(flush == Z_SYNC_FLUSH && tx_stream.avail_out < TRAILER_RESERVED));
             auto r = deflate(&tx_stream, flush);
             // no known cases, when user input data might lead to the error
             assert(r >= 0);
