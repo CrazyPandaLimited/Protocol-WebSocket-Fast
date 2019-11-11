@@ -7,7 +7,7 @@ namespace panda { namespace protocol { namespace websocket {
 
 void ConnectResponse::process_headers () {
     if (code == 426) {
-        _ws_versions = headers.get_field("Sec-WebSocket-Version");
+        _ws_versions = headers.get("Sec-WebSocket-Version");
         error = errc::VERSION_UPGRADE_REQUIRED;
         return;
     }
@@ -42,20 +42,20 @@ void ConnectResponse::process_headers () {
         http::parse_header_value(hv.value, _ws_extensions);
     }
 
-    ws_protocol = headers.get_field("Sec-WebSocket-Protocol");
+    ws_protocol = headers.get("Sec-WebSocket-Protocol");
 }
 
 //void ConnectResponse::_to_string (string& str) {
 //    code    = 101;
 //    message = "Switching Protocols";
-//    headers.add_field("Upgrade", "websocket");
-//    headers.add_field("Connection", "Upgrade");
+//    headers.add("Upgrade", "websocket");
+//    headers.add("Connection", "Upgrade");
 
-//    if (ws_protocol) headers.add_field("Sec-WebSocket-Protocol", ws_protocol);
+//    if (ws_protocol) headers.add("Sec-WebSocket-Protocol", ws_protocol);
 
-//    headers.add_field("Sec-WebSocket-Accept", _calc_accept_key(_ws_key));
+//    headers.add("Sec-WebSocket-Accept", _calc_accept_key(_ws_key));
 
-//    if (_ws_extensions.size()) headers.add_field("Sec-WebSocket-Extensions", compile_header_value(_ws_extensions));
+//    if (_ws_extensions.size()) headers.add("Sec-WebSocket-Extensions", compile_header_value(_ws_extensions));
 
 //    body->parts.clear(); // body not supported in WS responses
 
@@ -74,15 +74,15 @@ string ConnectResponse::to_string() {
 //    http_version = http::HttpVersion::v1_1;
     code    = 101;
     message = "Switching Protocols";
-    headers.add_field("Upgrade", "websocket");
-    headers.add_field("Connection", "Upgrade");
+    headers.add("Upgrade", "websocket");
+    headers.add("Connection", "Upgrade");
 
-    if (ws_protocol) headers.add_field("Sec-WebSocket-Protocol", ws_protocol);
+    if (ws_protocol) headers.add("Sec-WebSocket-Protocol", ws_protocol);
 
-    headers.add_field("Sec-WebSocket-Accept", _calc_accept_key(_ws_key));
-    if (!headers.has_field("Server")) headers.add_field("Server", "Panda-WebSocket");
+    headers.add("Sec-WebSocket-Accept", _calc_accept_key(_ws_key));
+    if (!headers.has("Server")) headers.add("Server", "Panda-WebSocket");
 
-    if (_ws_extensions.size()) headers.add_field("Sec-WebSocket-Extensions", compile_header_value(_ws_extensions));
+    if (_ws_extensions.size()) headers.add("Sec-WebSocket-Extensions", compile_header_value(_ws_extensions));
 
     body.parts.clear(); // body not supported in WS responses
 

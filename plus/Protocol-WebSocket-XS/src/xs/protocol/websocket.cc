@@ -45,7 +45,7 @@ void av_to_vstring (const Array& av, std::vector<string>& v) {
 
 ConnectRequestSP make_request(const Hash& params, const ConnectRequestSP& dest) {
     auto ret = dest ? dest : ConnectRequestSP(new ConnectRequest());
-    http::make_request(params, ret);
+    http::fill_request(params, ret);
 
     Scalar val;
 
@@ -64,7 +64,7 @@ ConnectRequestSP make_request(const Hash& params, const ConnectRequestSP& dest) 
 
 ConnectResponseSP make_response(const Hash& params, const ConnectResponseSP& dest) {
     auto ret = dest ? dest : ConnectResponseSP(new ConnectResponse());
-    http::make_response(params, ret);
+    http::fill_response(params, ret);
 
     Scalar val;
 

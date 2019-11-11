@@ -66,8 +66,8 @@ static const int MAX_URI = 16*1024;
 //    str += "HTTP/1.1\r\n";
 
 
-//    if (!headers.has_field("User-Agent")) headers.add_field("User-Agent", "Panda-WebSocket");
-//    if (!headers.has_field("Host"))       headers.add_field("Host", uri->host());
+//    if (!headers.has_field("User-Agent")) headers.add("User-Agent", "Panda-WebSocket");
+//    if (!headers.has_field("Host"))       headers.add("Host", uri->host());
 
 //    HTTPPacket::_to_string(str);
 //}

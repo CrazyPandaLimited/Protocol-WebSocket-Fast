@@ -114,7 +114,7 @@ static const int MAX_HEADER_VALUE = 8*1024;
 //            if (curacc != valptr && *(curacc-1) == '\r') curacc--;
 //            if (curacc != valptr) value.assign(valptr, curacc - valptr);
 
-//            headers.add_field(key, value);
+//            headers.add(key, value);
 //            //std::cout << "found key='" << key << "' value='" << value << "'\n";
 
 //            mode = PARSE_MODE_KEY;

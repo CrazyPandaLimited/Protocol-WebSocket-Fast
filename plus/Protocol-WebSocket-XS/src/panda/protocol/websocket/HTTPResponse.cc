@@ -59,7 +59,7 @@ static const int MAX_MESSAGE = 512;
 //    str += message;
 //    str += "\r\n";
 
-//    if (!headers.has_field("Server")) headers.add_field("Server", "Panda-WebSocket");
+//    if (!headers.has_field("Server")) headers.add("Server", "Panda-WebSocket");
 
 //    HTTPPacket::_to_string(str);
 //}

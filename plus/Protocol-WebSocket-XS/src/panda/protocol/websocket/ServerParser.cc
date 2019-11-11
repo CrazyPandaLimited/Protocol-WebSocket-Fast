@@ -16,7 +16,7 @@ ServerParser::ServerParser()
     : Parser(true)
     , _connect_parser(new RequestFactory)
 {
-    _connect_parser.max_body_size = http::RequestParser::SIZE_PROHIBITED;
+    _connect_parser.max_body_size = 0;
 }
 
 ConnectRequestSP ServerParser::accept (string& buf) {
@@ -28,7 +28,7 @@ ConnectRequestSP ServerParser::accept (string& buf) {
 //    }
 
 //    if (!_connect_request->parse(buf)) return NULL;
-    _connect_parser.max_message_size = _max_handshake_size;
+    _connect_parser.max_headers_size = _max_handshake_size;
     http::RequestParser::Result res = _connect_parser.parse(buf);
     _connect_request = dynamic_pointer_cast<ConnectRequest>(res.request);
     if (res.error) {
@@ -59,7 +59,7 @@ string ServerParser::accept_error () {
     if (!_connect_request->error) throw ParserError("no errors found");
 
     HTTPResponseSP res = new HTTPResponse();
-    res->headers.add_field("Content-Type", "text/plain");
+    res->headers.add("Content-Type", "text/plain");
 
     if (!_connect_request->ws_version_supported()) {
         res->code    = 426;
@@ -72,7 +72,7 @@ string ServerParser::accept_error () {
             svers += ", ";
         }
         if (svers) svers.length(svers.length()-2);
-        res->headers.add_field("Sec-WebSocket-Version", svers);
+        res->headers.add("Sec-WebSocket-Version", svers);
     }
     else {
         res->code    = 400;
@@ -80,7 +80,7 @@ string ServerParser::accept_error () {
         res->body.parts.push_back("400 Bad Request\n");
         res->body.parts.push_back(_connect_request->error.what());
     }
-    res->headers.set_field("Content-Length", panda::to_string(res->body.length()));
+    res->headers.set("Content-Length", panda::to_string(res->body.length()));
 
     return res->to_string(_connect_request);
 }
@@ -100,8 +100,8 @@ string ServerParser::accept_error (HTTPResponse* res) {
         res->body.parts.push_back(string::from_number(res->code) + ' ' + res->message);
     }
 
-    if (!res->headers.has_field("Content-Type")) res->headers.add_field("Content-Type", "text/plain");
-    if (!res->headers.has_field("Content-Length")) res->headers.add_field("Content-Length", panda::to_string(res->body.length()));
+    if (!res->headers.has("Content-Type")) res->headers.add("Content-Type", "text/plain");
+    if (!res->headers.has("Content-Length")) res->headers.add("Content-Length", panda::to_string(res->body.length()));
 
     return res->to_string(_connect_request);
 }

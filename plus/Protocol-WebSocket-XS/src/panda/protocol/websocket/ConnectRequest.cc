@@ -17,7 +17,7 @@ void ConnectRequest::process_headers () {
         return;
     }
 
-    if (http_version != http::HttpVersion::v1_1) {
+    if (http_version != 11) {
         error = errc::HTTP_1_1_REQUIRED;
         return;
     }
@@ -65,7 +65,7 @@ void ConnectRequest::process_headers () {
         parse_header_value(hv.value, _ws_extensions);
     }
 
-    ws_protocol = headers.get_field("Sec-WebSocket-Protocol");
+    ws_protocol = headers.get("Sec-WebSocket-Protocol");
 }
 
 //void ConnectRequest::_to_string (string& str) {
@@ -115,20 +115,20 @@ string ConnectRequest::to_string() {
         int32_t keybuf[] = {std::rand(), std::rand(), std::rand(), std::rand()};
         ws_key = panda::encode::encode_base64(string_view((const char*)keybuf, sizeof(keybuf)), false, true);
     }
-    headers.set_field("Sec-WebSocket-Key", ws_key);
+    headers.set("Sec-WebSocket-Key", ws_key);
 
-    if (ws_protocol) headers.set_field("Sec-WebSocket-Protocol", ws_protocol);
+    if (ws_protocol) headers.set("Sec-WebSocket-Protocol", ws_protocol);
 
     if (!ws_version) ws_version = 13;
-    headers.set_field("Sec-WebSocket-Version", string::from_number(ws_version));
+    headers.set("Sec-WebSocket-Version", string::from_number(ws_version));
 
-    if (_ws_extensions.size()) headers.set_field("Sec-WebSocket-Extensions", compile_header_value(_ws_extensions));
+    if (_ws_extensions.size()) headers.set("Sec-WebSocket-Extensions", compile_header_value(_ws_extensions));
 
-    headers.set_field("Connection", "Upgrade");
-    headers.set_field("Upgrade", "websocket");
+    headers.set("Connection", "Upgrade");
+    headers.set("Upgrade", "websocket");
 
-    if (!headers.has_field("User-Agent")) headers.add_field("User-Agent", "Panda-WebSocket");
-    if (!headers.has_field("Host"))       headers.add_field("Host", uri->host());
+    if (!headers.has("User-Agent")) headers.add("User-Agent", "Panda-WebSocket");
+    if (!headers.has("Host"))       headers.add("Host", uri->host());
 
     return http::Request::to_string();
 }
