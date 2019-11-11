@@ -12,6 +12,8 @@ use Data::Dumper 'Dumper';
 use Panda::Lib qw/crypt_xor/;
 use Encode::Base2N 'decode_base64';
 use Panda::Lib;
+use Protocol::HTTP;
+use Protocol::HTTP::errc;
 
 XS::Loader::load();
 

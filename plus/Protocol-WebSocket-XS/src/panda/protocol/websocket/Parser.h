@@ -12,6 +12,7 @@
 #include <panda/protocol/websocket/DeflateExt.h>
 #include <panda/protocol/websocket/FrameBuilder.h>
 #include <panda/protocol/websocket/ParserError.h>
+#include <panda/protocol/http/MessageParser.h>
 
 #include "Error.h"
 
@@ -73,7 +74,7 @@ public:
     typedef panda::optional<DeflateExt::Config>  DeflateConfigOption;
 
     struct Config {
-        Config():max_frame_size{0}, max_message_size{0}, max_handshake_size{0}, deflate{ DeflateExt::Config() } {}
+        Config():max_frame_size{0}, max_message_size{0}, max_handshake_size{http::SIZE_UNLIMITED}, deflate{ DeflateExt::Config() } {}
         size_t max_frame_size;
         size_t max_message_size;
         size_t max_handshake_size;
