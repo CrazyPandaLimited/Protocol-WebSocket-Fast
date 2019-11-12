@@ -52,9 +52,12 @@ $p->reset();
 subtest 'accept with body' => sub {
     my @data = accept_packet();
     splice(@data, 1, 0, "Content-Length: 1\r\n");
-    push @data, '1'; #TODO: rewrite to make this test to pass, ot just remove this line
+    push @data, '1';
     my $creq;
-    $creq = $p->accept($_) for @data;
+    for my $chunk (@data) {
+        $creq = $p->accept($chunk);
+        last if ($creq && $creq->error);
+    }
     ok($creq && $creq->error, "body disallowed");
     ok(!$p->accepted, "not accepted");
 };
