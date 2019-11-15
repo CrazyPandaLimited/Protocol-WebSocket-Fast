@@ -33,7 +33,7 @@ struct ConnectRequest : HTTPRequest {
 
     string to_string();
 
-    http::ResponseSP create_response() const override;
+    http::ResponseSP new_response() const override;
 
 protected:
 //    virtual void _to_string    (string& str);

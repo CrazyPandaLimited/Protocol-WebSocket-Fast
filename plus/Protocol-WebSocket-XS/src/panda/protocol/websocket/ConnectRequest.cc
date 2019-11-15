@@ -133,7 +133,7 @@ string ConnectRequest::to_string() {
     return http::Request::to_string();
 }
 
-http::ResponseSP ConnectRequest::create_response() const{
+http::ResponseSP ConnectRequest::new_response() const{
     return new ConnectResponse();
 }
 

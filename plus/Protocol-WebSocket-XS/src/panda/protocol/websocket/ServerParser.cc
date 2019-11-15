@@ -6,8 +6,8 @@
 
 namespace panda { namespace protocol { namespace websocket {
 
-struct RequestFactory : http::IRequestFactory {
-    http::RequestSP create_request() override {
+struct RequestFactory : http::RequestParser::IFactory {
+    http::RequestSP new_request() override {
         return make_iptr<ConnectRequest>();
     }
 };
