@@ -37,9 +37,9 @@ void ConnectResponse::process_headers () {
     else _ws_accept_key = it->value;
 
 
-    auto ext_range = headers.equal_range("Sec-WebSocket-Extensions");
-    for (auto& hv : ext_range) {
-        http::parse_header_value(hv.value, _ws_extensions);
+    auto ext_range = headers.get_multi("Sec-WebSocket-Extensions");
+    for (auto& val : ext_range) {
+        http::parse_header_value(val, _ws_extensions);
     }
 
     ws_protocol = headers.get("Sec-WebSocket-Protocol");

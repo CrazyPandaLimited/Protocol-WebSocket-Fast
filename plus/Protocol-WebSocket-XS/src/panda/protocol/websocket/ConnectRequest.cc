@@ -60,9 +60,9 @@ void ConnectRequest::process_headers () {
     }
     if (!_ws_version_supported) { error = errc::UNSUPPORTED_VERSION; return; }
 
-    auto ext_range = headers.equal_range("Sec-WebSocket-Extensions");
-    for (auto& hv : ext_range) {
-        parse_header_value(hv.value, _ws_extensions);
+    auto ext_range = headers.get_multi("Sec-WebSocket-Extensions");
+    for (auto& val : ext_range) {
+        parse_header_value(val, _ws_extensions);
     }
 
     ws_protocol = headers.get("Sec-WebSocket-Protocol");
