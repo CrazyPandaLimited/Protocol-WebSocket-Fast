@@ -1,4 +1,10 @@
 #pragma once
+#include "Frame.h"
+#include "Message.h"
+#include "iterator.h"
+#include "DeflateExt.h"
+#include "ParserError.h"
+#include "FrameBuilder.h"
 #include <deque>
 #include <bitset>
 #include <iterator>
@@ -6,15 +12,7 @@
 #include <panda/refcnt.h>
 #include <panda/string.h>
 #include <panda/optional.h>
-#include <panda/protocol/websocket/Frame.h>
-#include <panda/protocol/websocket/Message.h>
-#include <panda/protocol/websocket/iterator.h>
-#include <panda/protocol/websocket/DeflateExt.h>
-#include <panda/protocol/websocket/FrameBuilder.h>
-#include <panda/protocol/websocket/ParserError.h>
-#include <panda/protocol/http/MessageParser.h>
-
-#include "Error.h"
+#include <panda/protocol/http/Parser.h>
 
 namespace panda { namespace protocol { namespace websocket {
 

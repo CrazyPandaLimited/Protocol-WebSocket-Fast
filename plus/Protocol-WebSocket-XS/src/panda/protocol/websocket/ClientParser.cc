@@ -19,7 +19,7 @@ string ClientParser::connect_request (const ConnectRequestSP& req) {
     }
     _state.set(STATE_CONNECTION_REQUESTED);
     _connect_request = req;
-    _connect_response_parser.set_request(req);
+    _connect_response_parser.set_context_request(req);
     if (_deflate_cfg) req->add_deflate(*_deflate_cfg);
     return req->to_string();
 }
