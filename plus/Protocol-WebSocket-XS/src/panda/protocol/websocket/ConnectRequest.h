@@ -1,15 +1,19 @@
 #pragma once
+#include "DeflateExt.h"
+#include "HeaderValueParamsParser.h"
 #include <panda/uri.h>
 #include <panda/refcnt.h>
-#include <panda/protocol/websocket/HTTPRequest.h>
-#include <panda/protocol/websocket/DeflateExt.h>
 #include <panda/error.h>
+#include <panda/protocol/http/Request.h>
 
 namespace panda { namespace protocol { namespace websocket {
 
+using panda::uri::URI;
+using panda::uri::URISP;
+
 static const int supported_ws_versions[] = {13};
 
-struct ConnectRequest : HTTPRequest {
+struct ConnectRequest : http::Request {
     string       ws_key;
     int          ws_version;
     string       ws_protocol;

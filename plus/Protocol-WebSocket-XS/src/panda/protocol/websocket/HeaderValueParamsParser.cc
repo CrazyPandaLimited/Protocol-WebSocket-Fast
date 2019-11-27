@@ -1,6 +1,6 @@
 #include "HeaderValueParamsParser.h"
 
-namespace panda { namespace protocol { namespace http {
+namespace panda { namespace protocol { namespace websocket {
 
 static const int MAX_HEADER_VALUE = 8*1024;
 using uchar = unsigned char;

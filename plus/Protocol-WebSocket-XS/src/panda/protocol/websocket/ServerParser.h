@@ -2,7 +2,6 @@
 #include <panda/string.h>
 #include <panda/optional.h>
 #include <panda/protocol/websocket/Parser.h>
-#include <panda/protocol/websocket/HTTPResponse.h>
 #include <panda/protocol/websocket/ConnectRequest.h>
 #include <panda/protocol/websocket/ConnectResponse.h>
 #include <panda/protocol/http/RequestParser.h>
@@ -20,7 +19,7 @@ struct ServerParser : Parser {
     ConnectRequestSP accept (string& buf);
 
     string accept_error    ();
-    string accept_error    (HTTPResponse* res);
+    string accept_error    (http::Response* res);
     string accept_response (ConnectResponse* res);
 
     string accept_response () {

@@ -23,15 +23,15 @@ panda::optional<panda::string> DeflateExt::bootstrap() {
     return  result_t{}; // all OK
 }
 
-void DeflateExt::request(http::HeaderValues& ws_extensions, const Config& cfg) {
-    http::HeaderValueParams params;
+void DeflateExt::request(HeaderValues& ws_extensions, const Config& cfg) {
+    HeaderValueParams params;
     params.emplace(PARAM_SERVER_MAX_WINDOW_BITS, panda::to_string(cfg.server_max_window_bits));
     params.emplace(PARAM_CLIENT_MAX_WINDOW_BITS, panda::to_string(cfg.client_max_window_bits));
     if(cfg.server_no_context_takeover) params.emplace(PARAM_SERVER_NO_CONTEXT_TAKEOVER, "");
     if(cfg.client_no_context_takeover) params.emplace(PARAM_CLIENT_NO_CONTEXT_TAKEOVER, "");
 
     string name{extension_name};
-    http::HeaderValue hv {name, std::move(params)};
+    HeaderValue hv {name, std::move(params)};
     ws_extensions.emplace_back(std::move(hv));
 }
 
@@ -41,7 +41,7 @@ static bool get_window_bits(const string& value, std::uint8_t& bits) {
     return !res.ec && (bits >= 9) && (bits <= 15);
 }
 
-DeflateExt::EffectiveConfig DeflateExt::select(const http::HeaderValues& values, const Config& cfg, Role role) {
+DeflateExt::EffectiveConfig DeflateExt::select(const HeaderValues& values, const Config& cfg, Role role) {
     for(auto& header: values) {
         if (header.name == extension_name) {
             EffectiveConfig ecfg(cfg, EffectiveConfig::NegotiationsResult::ERROR);
@@ -103,8 +103,8 @@ DeflateExt::EffectiveConfig DeflateExt::select(const http::HeaderValues& values,
     return EffectiveConfig(EffectiveConfig::NegotiationsResult::NOT_FOUND);
 }
 
-DeflateExt* DeflateExt::uplift(const EffectiveConfig& ecfg, http::HeaderValues& extensions, Role role) {
-    http::HeaderValueParams params;
+DeflateExt* DeflateExt::uplift(const EffectiveConfig& ecfg, HeaderValues& extensions, Role role) {
+    HeaderValueParams params;
     if (ecfg.flags & EffectiveConfig::HAS_SERVER_NO_CONTEXT_TAKEOVER) {
         params.emplace(PARAM_SERVER_NO_CONTEXT_TAKEOVER, "");
     }
@@ -117,7 +117,7 @@ DeflateExt* DeflateExt::uplift(const EffectiveConfig& ecfg, http::HeaderValues& 
     if (ecfg.flags & EffectiveConfig::HAS_CLIENT_MAX_WINDOW_BITS) {
         params.emplace(PARAM_CLIENT_MAX_WINDOW_BITS, to_string(ecfg.cfg.client_max_window_bits));
     }
-    extensions.emplace_back(http::HeaderValue{string(extension_name), params});
+    extensions.emplace_back(HeaderValue{string(extension_name), params});
     return new DeflateExt(ecfg.cfg, role);
 }
 

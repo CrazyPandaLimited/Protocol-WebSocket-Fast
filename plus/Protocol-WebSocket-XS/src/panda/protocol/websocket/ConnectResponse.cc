@@ -1,7 +1,8 @@
-#include <panda/protocol/websocket/ConnectResponse.h>
+#include "ConnectResponse.h"
+#include "Error.h"
+#include "utils.h"
 #include <openssl/sha.h>
 #include <panda/encode/base64.h>
-#include "Error.h"
 
 namespace panda { namespace protocol { namespace websocket {
 
@@ -39,7 +40,7 @@ void ConnectResponse::process_headers () {
 
     auto ext_range = headers.get_multi("Sec-WebSocket-Extensions");
     for (auto& val : ext_range) {
-        http::parse_header_value(val, _ws_extensions);
+        parse_header_value(val, _ws_extensions);
     }
 
     ws_protocol = headers.get("Sec-WebSocket-Protocol");

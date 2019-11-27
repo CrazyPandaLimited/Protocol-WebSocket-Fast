@@ -1,9 +1,9 @@
 #pragma once
+#include "Frame.h"
+#include "HeaderValueParamsParser.h"
 #include <cassert>
 #include <panda/refcnt.h>
 #include <panda/optional.h>
-#include <panda/protocol/websocket/HTTPRequest.h>
-#include <panda/protocol/websocket/Frame.h>
 #include <zlib.h>
 
 namespace panda { namespace protocol { namespace websocket {
@@ -67,9 +67,9 @@ public:
 
     static panda::optional<panda::string> bootstrap();
 
-    static EffectiveConfig select(const http::HeaderValues& values, const Config& cfg, Role role);
-    static void request(http::HeaderValues& ws_extensions, const Config& cfg);
-    static DeflateExt* uplift(const EffectiveConfig& cfg, http::HeaderValues& extensions, Role role);
+    static EffectiveConfig select(const HeaderValues& values, const Config& cfg, Role role);
+    static void request(HeaderValues& ws_extensions, const Config& cfg);
+    static DeflateExt* uplift(const EffectiveConfig& cfg, HeaderValues& extensions, Role role);
 
     ~DeflateExt();
 

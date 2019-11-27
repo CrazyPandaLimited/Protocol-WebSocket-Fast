@@ -58,7 +58,7 @@ string ServerParser::accept_error () {
     if (established()) throw ParserError("already established");
     if (!_connect_request->error) throw ParserError("no errors found");
 
-    HTTPResponseSP res = new HTTPResponse();
+    http::ResponseSP res = new http::Response();
     res->headers.add("Content-Type", "text/plain");
 
     if (!_connect_request->ws_version_supported()) {
@@ -85,7 +85,7 @@ string ServerParser::accept_error () {
     return res->to_string(_connect_request);
 }
 
-string ServerParser::accept_error (HTTPResponse* res) {
+string ServerParser::accept_error (http::Response* res) {
     if (!_state[STATE_ACCEPT_PARSED]) throw ParserError("accept not parsed yet");
     if (established()) throw ParserError("already established");
     if (_connect_request->error) return accept_error();
