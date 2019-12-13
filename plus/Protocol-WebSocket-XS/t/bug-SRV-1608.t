@@ -4,6 +4,8 @@ use lib 't'; use MyTest;
 use Test::Fatal;
 use Encode::Base2N qw/encode_base64pad decode_base64/;
 
+plan skip_all => 'set TEST_FULL=1 to enable the test' unless $ENV{TEST_FULL};
+
 my $create_pair = sub {
     my $configure = shift;
     my $req = {
