@@ -12,7 +12,7 @@
 #include <panda/refcnt.h>
 #include <panda/string.h>
 #include <panda/optional.h>
-#include <panda/protocol/http/Parser.h>
+#include <panda/protocol/http/MessageParser.h>
 
 namespace panda { namespace protocol { namespace websocket {
 
