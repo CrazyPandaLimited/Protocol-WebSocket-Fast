@@ -1,6 +1,7 @@
 #include "DeflateExt.h"
 #include <panda/from_chars.h>
 #include <panda/encode/base64.h>
+#include <panda/log.h>
 
 namespace panda { namespace protocol { namespace websocket {
 
@@ -22,15 +23,15 @@ panda::optional<panda::string> DeflateExt::bootstrap() {
     return  result_t{}; // all OK
 }
 
-void DeflateExt::request(http::HeaderValues& ws_extensions, const Config& cfg) {
-    http::HeaderValueParams params;
+void DeflateExt::request(HeaderValues& ws_extensions, const Config& cfg) {
+    HeaderValueParams params;
     params.emplace(PARAM_SERVER_MAX_WINDOW_BITS, panda::to_string(cfg.server_max_window_bits));
     params.emplace(PARAM_CLIENT_MAX_WINDOW_BITS, panda::to_string(cfg.client_max_window_bits));
     if(cfg.server_no_context_takeover) params.emplace(PARAM_SERVER_NO_CONTEXT_TAKEOVER, "");
     if(cfg.client_no_context_takeover) params.emplace(PARAM_CLIENT_NO_CONTEXT_TAKEOVER, "");
 
     string name{extension_name};
-    http::HeaderValue hv {name, std::move(params)};
+    HeaderValue hv {name, std::move(params)};
     ws_extensions.emplace_back(std::move(hv));
 }
 
@@ -40,7 +41,7 @@ static bool get_window_bits(const string& value, std::uint8_t& bits) {
     return !res.ec && (bits >= 9) && (bits <= 15);
 }
 
-DeflateExt::EffectiveConfig DeflateExt::select(const http::HeaderValues& values, const Config& cfg, Role role) {
+DeflateExt::EffectiveConfig DeflateExt::select(const HeaderValues& values, const Config& cfg, Role role) {
     for(auto& header: values) {
         if (header.name == extension_name) {
             EffectiveConfig ecfg(cfg, EffectiveConfig::NegotiationsResult::ERROR);
@@ -102,8 +103,8 @@ DeflateExt::EffectiveConfig DeflateExt::select(const http::HeaderValues& values,
     return EffectiveConfig(EffectiveConfig::NegotiationsResult::NOT_FOUND);
 }
 
-DeflateExt* DeflateExt::uplift(const EffectiveConfig& ecfg, http::HeaderValues& extensions, Role role) {
-    http::HeaderValueParams params;
+DeflateExt* DeflateExt::uplift(const EffectiveConfig& ecfg, HeaderValues& extensions, Role role) {
+    HeaderValueParams params;
     if (ecfg.flags & EffectiveConfig::HAS_SERVER_NO_CONTEXT_TAKEOVER) {
         params.emplace(PARAM_SERVER_NO_CONTEXT_TAKEOVER, "");
     }
@@ -116,7 +117,7 @@ DeflateExt* DeflateExt::uplift(const EffectiveConfig& ecfg, http::HeaderValues& 
     if (ecfg.flags & EffectiveConfig::HAS_CLIENT_MAX_WINDOW_BITS) {
         params.emplace(PARAM_CLIENT_MAX_WINDOW_BITS, to_string(ecfg.cfg.client_max_window_bits));
     }
-    extensions.emplace_back(http::HeaderValue{string(extension_name), params});
+    extensions.emplace_back(HeaderValue{string(extension_name), params});
     return new DeflateExt(ecfg.cfg, role);
 }
 
@@ -226,7 +227,7 @@ bool DeflateExt::uncompress(Frame& frame) {
     bool r;
     if (frame.error) r = false;
     else if (frame.is_control()) {
-        frame.error = "compression of control frames is not allowed (rfc7692)";
+        frame.error = DeflateError::CONTROL_FRAME_COMPRESSION;
         r = false;
     }
     else if (frame.payload_length() == 0) r = true;
@@ -244,7 +245,7 @@ bool DeflateExt::uncompress_check_overflow(Frame& frame, const string& acc) {
     auto unpacked_frame_size = acc.capacity() - rx_stream.avail_out;
     auto unpacked_message_size = message_size + unpacked_frame_size;
     if (unpacked_message_size > max_message_size) {
-        frame.error = "zlib::inflate error: max message size has been reached";
+        frame.error = DeflateError::MAX_MESSAGE_SIZE;
         return false;
     }
     return true;
@@ -312,7 +313,8 @@ bool DeflateExt::uncompress_impl(Frame& frame) {
                 string err = "zlib::inflate error ";
                 if (rx_stream.msg) err += rx_stream.msg;
                 else err += to_string(r);
-                frame.error = err;
+                panda_log_info(err);
+                frame.error = DeflateError::INFALTE_ERROR;
                 return false;
             }
         } while(has_more_output);
@@ -328,6 +330,16 @@ bool DeflateExt::uncompress_impl(Frame& frame) {
     return true;
 }
 
+std::string DeflateErrorCategoty::message(int ev) const {
+    switch (DeflateError(ev)) {
+    case DeflateError::NEGOTIATION_FAILED:        return "Websocket: deflate paramenters negotiation error";
+    case DeflateError::CONTROL_FRAME_COMPRESSION: return "Websocket: compression of control frames is not allowed (rfc7692)";
+    case DeflateError::MAX_MESSAGE_SIZE:          return "Websocket: zlib::inflate error: max message size has been reached";
+    case DeflateError::INFALTE_ERROR:             return "Websocket: custom zlib::inflate error, look info log for details";
+    default: return "Unknown websocket deflate error";
+    }
+}
 
+const std::error_category& deflate_error_categoty = DeflateErrorCategoty();
 
 }}}

@@ -18,7 +18,7 @@ ConnectRequestSP ServerParser::accept (string buf) {
     RETVAL = THIS->accept(buf);
 }
 
-string ServerParser::accept_error (HTTPResponseSP res = nullptr) {
+string ServerParser::accept_error (panda::protocol::http::ResponseSP res = nullptr) {
     if (!res) RETVAL = THIS->accept_error();
     else RETVAL = THIS->accept_error(res);
 }

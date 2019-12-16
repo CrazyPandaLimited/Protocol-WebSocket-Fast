@@ -1,8 +1,7 @@
 MODULE = Protocol::WebSocket::XS                PACKAGE = Protocol::WebSocket::XS::Frame
 PROTOTYPES: DISABLE
 
-string Frame::error () {
-    if (!THIS->error) XSRETURN_UNDEF;
+ErrorCode Frame::error () {
     RETVAL = THIS->error;
 }
 

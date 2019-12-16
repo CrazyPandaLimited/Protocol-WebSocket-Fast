@@ -1,4 +1,6 @@
-#include <panda/protocol/websocket/ConnectResponse.h>
+#include "ConnectResponse.h"
+#include "Error.h"
+#include "utils.h"
 #include <openssl/sha.h>
 #include <panda/encode/base64.h>
 
@@ -6,55 +8,55 @@ namespace panda { namespace protocol { namespace websocket {
 
 void ConnectResponse::process_headers () {
     if (code == 426) {
-        _ws_versions = headers.get_field("Sec-WebSocket-Version");
-        error = "websocket version upgrade required";
+        _ws_versions = headers.get("Sec-WebSocket-Version");
+        error = errc::VERSION_UPGRADE_REQUIRED;
         return;
     }
 
     if (code != 101) {
-        error = "websocket handshake response code must be 101";
+        error = errc::RESPONSE_CODE_101;
         return;
     }
 
     auto it = headers.find("Connection");
-    if (it == headers.fields.rend() || !string_contains_ci(it->value, "upgrade")) {
-        error = "Connection must be 'Upgrade'";
+    if (it == headers.end() || !string_contains_ci(it->value, "upgrade")) {
+        error = errc::CONNECTION_MUSTBE_UPGRADE;
         return;
     }
 
     it = headers.find("Upgrade");
     if (it == headers.end() || !string_contains_ci(it->value, "websocket")) {
-        error = "Upgrade must be 'websocket'";
+        error = errc::UPGRADE_MUSTBE_WEBSOCKET;
         return;
     }
 
     it = headers.find("Sec-WebSocket-Accept");
     if (it == headers.end() || it->value != _calc_accept_key(_ws_key)) {
-        error = "Sec-WebSocket-Accept missing or invalid";
+        error = errc::SEC_ACCEPT_MISSING;
         return;
     }
     else _ws_accept_key = it->value;
 
 
-    auto ext_range = headers.equal_range("Sec-WebSocket-Extensions");
-    for (auto& hv : ext_range) {
-        http::parse_header_value(hv.value, _ws_extensions);
+    auto ext_range = headers.get_multi("Sec-WebSocket-Extensions");
+    for (auto& val : ext_range) {
+        parse_header_value(val, _ws_extensions);
     }
 
-    ws_protocol = headers.get_field("Sec-WebSocket-Protocol");
+    ws_protocol = headers.get("Sec-WebSocket-Protocol");
 }
 
 //void ConnectResponse::_to_string (string& str) {
 //    code    = 101;
 //    message = "Switching Protocols";
-//    headers.add_field("Upgrade", "websocket");
-//    headers.add_field("Connection", "Upgrade");
+//    headers.add("Upgrade", "websocket");
+//    headers.add("Connection", "Upgrade");
 
-//    if (ws_protocol) headers.add_field("Sec-WebSocket-Protocol", ws_protocol);
+//    if (ws_protocol) headers.add("Sec-WebSocket-Protocol", ws_protocol);
 
-//    headers.add_field("Sec-WebSocket-Accept", _calc_accept_key(_ws_key));
+//    headers.add("Sec-WebSocket-Accept", _calc_accept_key(_ws_key));
 
-//    if (_ws_extensions.size()) headers.add_field("Sec-WebSocket-Extensions", compile_header_value(_ws_extensions));
+//    if (_ws_extensions.size()) headers.add("Sec-WebSocket-Extensions", compile_header_value(_ws_extensions));
 
 //    body->parts.clear(); // body not supported in WS responses
 
@@ -70,25 +72,22 @@ string ConnectResponse::_calc_accept_key (string ws_key) {
 }
 
 string ConnectResponse::to_string() {
+//    http_version = http::HttpVersion::v1_1;
     code    = 101;
     message = "Switching Protocols";
-    headers.add_field("Upgrade", "websocket");
-    headers.add_field("Connection", "Upgrade");
+    headers.add("Upgrade", "websocket");
+    headers.add("Connection", "Upgrade");
 
-    if (ws_protocol) headers.add_field("Sec-WebSocket-Protocol", ws_protocol);
+    if (ws_protocol) headers.add("Sec-WebSocket-Protocol", ws_protocol);
 
-    headers.add_field("Sec-WebSocket-Accept", _calc_accept_key(_ws_key));
-    if (!headers.has_field("Server")) headers.add_field("Server", "Panda-WebSocket");
+    headers.add("Sec-WebSocket-Accept", _calc_accept_key(_ws_key));
+    if (!headers.has("Server")) headers.add("Server", "Panda-WebSocket");
 
-    if (_ws_extensions.size()) headers.add_field("Sec-WebSocket-Extensions", compile_header_value(_ws_extensions));
+    if (_ws_extensions.size()) headers.add("Sec-WebSocket-Extensions", compile_header_value(_ws_extensions));
 
-    body->parts.clear(); // body not supported in WS responses
+    body.parts.clear(); // body not supported in WS responses
 
-    string res;
-    for (const auto& s : to_vector(this)) {
-        res += s;
-    }
-    return res;
+    return http::Response::to_string();
 }
 
 }}}

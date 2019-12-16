@@ -5,9 +5,9 @@ BOOT {
     Stash(__PACKAGE__).inherit("Protocol::HTTP::Request");
 }
 
-Object new (SV* CLASS, Hash params = Hash()) {
-    RETVAL = xs::out(new ConnectRequest(), CLASS);
-    if (params) RETVAL.call<void>("init", ST(1));
+ConnectRequestSP ConnectRequest::new (Hash params = Hash()) {
+    RETVAL = new ConnectRequest();
+    make_request(params, RETVAL);
 }
 
 void ConnectRequest::init (Hash params) {
@@ -64,7 +64,6 @@ string ConnectRequest::ws_protocol (SV* newval = NULL) {
 
 bool ConnectRequest::ws_version_supported ()
 
-string ConnectRequest::error () {
+ErrorCode ConnectRequest::error () {
     RETVAL = THIS->error;
-    if (!RETVAL) XSRETURN_UNDEF;
 }

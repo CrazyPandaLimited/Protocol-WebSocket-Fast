@@ -2,6 +2,7 @@
 #include <panda/encode/base64.h>
 #include <panda/log.h>
 #include "ConnectResponse.h"
+#include "Error.h"
 
 namespace panda { namespace protocol { namespace websocket {
 
@@ -12,39 +13,44 @@ void ConnectRequest::process_headers () {
     bool ok;
 
     if (method != Method::GET) {
-        error = "method must be GET";
+        error = errc::METHOD_MUSTBE_GET;
         return;
     }
 
-    if (!body->empty()) {
-        error = "body must not present";
+    if (http_version != 11) {
+        error = errc::HTTP_1_1_REQUIRED;
+        return;
+    }
+
+    if (!body.empty()) {
+        error = errc::BODY_PROHIBITED;
         return;
     }
 
     auto it = headers.find("Connection");
-    if (it == headers.fields.rend() || !string_contains_ci(it->value, "upgrade")) {
-        error = "Connection must be 'Upgrade'";
+    if (it == headers.end() || !string_contains_ci(it->value, "upgrade")) {
+        error = errc::CONNECTION_MUSTBE_UPGRADE;
         return;
     }
 
     it = headers.find("Upgrade");
-    if (it == headers.fields.rend() || !string_contains_ci(it->value, "websocket")) {
-        error = "Upgrade must be 'websocket'";
+    if (it == headers.end() || !string_contains_ci(it->value, "websocket")) {
+        error = errc::UPGRADE_MUSTBE_WEBSOCKET;
         return;
     }
 
     ok = false;
     it = headers.find("Sec-WebSocket-Key");
-    if (it != headers.fields.rend()) {
+    if (it != headers.end()) {
         ws_key = it->value;
         auto decoded = panda::encode::decode_base64(ws_key);
         if (decoded.length() == 16) ok = true;
     }
-    if (!ok) {error = "Sec-WebSocket-Key missing or invalid"; return; }
+    if (!ok) {error = errc::SEC_ACCEPT_MISSING; return; }
 
     _ws_version_supported = false;
     it = headers.find("Sec-WebSocket-Version");
-    if (it != headers.fields.rend()) {
+    if (it != headers.end()) {
         it->value.to_number(ws_version);
         for (int v : supported_ws_versions) {
             if (ws_version != v) continue;
@@ -52,20 +58,20 @@ void ConnectRequest::process_headers () {
             break;
         }
     }
-    if (!_ws_version_supported) { error = "client's Sec-WebSocket-Version is not supported"; return; }
+    if (!_ws_version_supported) { error = errc::UNSUPPORTED_VERSION; return; }
 
-    auto ext_range = headers.equal_range("Sec-WebSocket-Extensions");
-    for (auto& hv : ext_range) {
-        parse_header_value(hv.value, _ws_extensions);
+    auto ext_range = headers.get_multi("Sec-WebSocket-Extensions");
+    for (auto& val : ext_range) {
+        parse_header_value(val, _ws_extensions);
     }
 
-    ws_protocol = headers.get_field("Sec-WebSocket-Protocol");
+    ws_protocol = headers.get("Sec-WebSocket-Protocol");
 }
 
 //void ConnectRequest::_to_string (string& str) {
 //    if (uri && uri->scheme() && uri->scheme() != "ws" && uri->scheme() != "wss")
 //        throw std::logic_error("ConnectRequest[to_string] uri scheme must be 'ws' or 'wss'");
-//    if (body->length()) throw std::logic_error("ConnectRequest[to_string] http body is not allowed for websocket handshake request");
+//    if (body.length()) throw std::logic_error("ConnectRequest[to_string] http body is not allowed for websocket handshake request");
 
 //    method = "GET";
 
@@ -99,7 +105,7 @@ string ConnectRequest::to_string() {
     if (uri && uri->scheme() && uri->scheme() != "ws" && uri->scheme() != "wss") {
         throw std::logic_error("ConnectRequest[to_string] uri scheme must be 'ws' or 'wss'");
     }
-    if (body->length()) {
+    if (body.length()) {
         throw std::logic_error("ConnectRequest[to_string] http body is not allowed for websocket handshake request");
     }
 
@@ -109,29 +115,25 @@ string ConnectRequest::to_string() {
         int32_t keybuf[] = {std::rand(), std::rand(), std::rand(), std::rand()};
         ws_key = panda::encode::encode_base64(string_view((const char*)keybuf, sizeof(keybuf)), false, true);
     }
-    headers.set_field("Sec-WebSocket-Key", ws_key);
+    headers.set("Sec-WebSocket-Key", ws_key);
 
-    if (ws_protocol) headers.set_field("Sec-WebSocket-Protocol", ws_protocol);
+    if (ws_protocol) headers.set("Sec-WebSocket-Protocol", ws_protocol);
 
     if (!ws_version) ws_version = 13;
-    headers.set_field("Sec-WebSocket-Version", string::from_number(ws_version));
+    headers.set("Sec-WebSocket-Version", string::from_number(ws_version));
 
-    if (_ws_extensions.size()) headers.set_field("Sec-WebSocket-Extensions", compile_header_value(_ws_extensions));
+    if (_ws_extensions.size()) headers.set("Sec-WebSocket-Extensions", compile_header_value(_ws_extensions));
 
-    headers.set_field("Connection", "Upgrade");
-    headers.set_field("Upgrade", "websocket");
+    headers.set("Connection", "Upgrade");
+    headers.set("Upgrade", "websocket");
 
-    if (!headers.has_field("User-Agent")) headers.add_field("User-Agent", "Panda-WebSocket");
-    if (!headers.has_field("Host"))       headers.add_field("Host", uri->host());
+    if (!headers.has("User-Agent")) headers.add("User-Agent", "Panda-WebSocket");
+    if (!headers.has("Host"))       headers.add("Host", uri->host());
 
-    string res;
-    for (const auto& s : to_vector(this)) {
-        res += s;
-    }
-    return res;
+    return http::Request::to_string();
 }
 
-http::ResponseSP ConnectRequest::create_response() const{
+http::ResponseSP ConnectRequest::new_response() const{
     return new ConnectResponse();
 }
 

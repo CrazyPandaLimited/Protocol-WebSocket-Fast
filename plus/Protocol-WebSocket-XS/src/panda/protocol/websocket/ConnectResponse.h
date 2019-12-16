@@ -1,12 +1,14 @@
 #pragma once
+#include "HeaderValueParamsParser.h"
 #include <panda/refcnt.h>
-#include <panda/protocol/websocket/HTTPResponse.h>
+#include <panda/error.h>
+#include <panda/protocol/http/Response.h>
 
 namespace panda { namespace protocol { namespace websocket {
 
-struct ConnectResponse : HTTPResponse {
+struct ConnectResponse : http::Response {
     string ws_protocol;
-    string error;
+    ErrorCode error;
 
     ConnectResponse () : _ws_extensions_set(false) {}
 

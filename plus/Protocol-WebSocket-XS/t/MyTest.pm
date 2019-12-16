@@ -7,15 +7,27 @@ use Test::Deep;
 use Test::Exception;
 use Test::Fatal;
 use Protocol::WebSocket::XS;
+use Protocol::WebSocket::XS::errc;
 use Data::Dumper 'Dumper';
 use Panda::Lib qw/crypt_xor/;
 use Encode::Base2N 'decode_base64';
+use Panda::Lib;
+use Protocol::HTTP;
+use Protocol::HTTP::errc;
 
 XS::Loader::load();
 
 init();
 
-sub init {}
+sub init {
+    if ($ENV{LOGGER}) {
+        Panda::Lib::Logger::set_native_logger(sub {
+            my ($level, $code, $msg) = @_;
+            say "$level $code $msg";
+        });
+        Panda::Lib::Logger::set_log_level(Panda::Lib::Logger::LOG_VERBOSE_DEBUG);
+    }
+}
 
 sub import {
     my $class = shift;

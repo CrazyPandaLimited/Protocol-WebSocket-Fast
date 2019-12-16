@@ -1,9 +1,9 @@
 #pragma once
+#include "Frame.h"
+#include "HeaderValueParamsParser.h"
 #include <cassert>
 #include <panda/refcnt.h>
 #include <panda/optional.h>
-#include <panda/protocol/websocket/HTTPRequest.h>
-#include <panda/protocol/websocket/Frame.h>
 #include <zlib.h>
 
 namespace panda { namespace protocol { namespace websocket {
@@ -67,9 +67,9 @@ public:
 
     static panda::optional<panda::string> bootstrap();
 
-    static EffectiveConfig select(const http::HeaderValues& values, const Config& cfg, Role role);
-    static void request(http::HeaderValues& ws_extensions, const Config& cfg);
-    static DeflateExt* uplift(const EffectiveConfig& cfg, http::HeaderValues& extensions, Role role);
+    static EffectiveConfig select(const HeaderValues& values, const Config& cfg, Role role);
+    static void request(HeaderValues& ws_extensions, const Config& cfg);
+    static DeflateExt* uplift(const EffectiveConfig& cfg, HeaderValues& extensions, Role role);
 
     ~DeflateExt();
 
@@ -194,4 +194,28 @@ private:
     bool reset_after_rx;
 };
 
+enum class DeflateError {
+    NEGOTIATION_FAILED = 1,
+    CONTROL_FRAME_COMPRESSION,
+    MAX_MESSAGE_SIZE,
+    INFALTE_ERROR,
+};
+
+class DeflateErrorCategoty : public std::error_category
+{
+public:
+    const char* name() const noexcept override {return "websocket::DeflateError";}
+    std::string message(int ev) const override;
+};
+
+extern const std::error_category& deflate_error_categoty;
+
+inline std::error_code make_error_code(const DeflateError& err) noexcept {
+    return std::error_code(int(err), deflate_error_categoty);
+}
+
 }}}
+
+namespace std {
+template <> struct is_error_code_enum<panda::protocol::websocket::DeflateError> : std::true_type {};
+}

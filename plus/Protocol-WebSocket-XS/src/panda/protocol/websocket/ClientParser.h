@@ -11,7 +11,7 @@ using panda::string;
 
 struct ClientParser : Parser {
 
-    ClientParser () : Parser(false), _connect_response_parser(new http::ResponseParser) {}
+    ClientParser () : Parser(false), _connect_response_parser() {}
 
     string connect_request (const ConnectRequestSP& req);
 
@@ -27,7 +27,7 @@ private:
 
     ConnectRequestSP  _connect_request;
     ConnectResponseSP _connect_response;
-    http::ResponseParserSP _connect_response_parser;
+    http::ResponseParser _connect_response_parser;
 };
 
 }}}

@@ -19,7 +19,7 @@ string ClientParser::connect_request (const ConnectRequestSP& req) {
     }
     _state.set(STATE_CONNECTION_REQUESTED);
     _connect_request = req;
-    _connect_response_parser->append_request(req);
+    _connect_response_parser.set_context_request(req);
     if (_deflate_cfg) req->add_deflate(*_deflate_cfg);
     return req->to_string();
 }
@@ -33,12 +33,12 @@ ConnectResponseSP ClientParser::connect (string& buf) {
         //_connect_response->max_headers_size = _max_handshake_size; // TODO: add support of max
 //    }
 
-    _connect_response_parser->max_message_size = _max_handshake_size;
-    http::ResponseParser::Result res = _connect_response_parser->parse_first(buf);
+    _connect_response_parser.max_headers_size = _max_handshake_size;
+    http::ResponseParser::Result res = _connect_response_parser.parse(buf);
     _connect_response = dynamic_pointer_cast<ConnectResponse>(res.response);
 
-    if (!res.state) {
-        _connect_response->error = res.state.error().what();
+    if (res.error) {
+        _connect_response->error = res.error;
         _state.set(STATE_CONNECTION_RESPONSE_PARSED);
 
         ConnectResponseSP ret(_connect_response);
@@ -46,7 +46,7 @@ ConnectResponseSP ClientParser::connect (string& buf) {
         _connect_response = NULL;
         return ret;
     }
-    else if (res.state != http::ResponseParser::State::done) {
+    else if (res.state != http::State::done) {
         return nullptr;
     }
     _connect_response->_ws_key = _connect_request->ws_key;
@@ -69,7 +69,7 @@ ConnectResponseSP ClientParser::connect (string& buf) {
             /* NOOP */
             break;
         case result_t::ERROR:
-            _connect_response->error = "deflate paramenters negotiation error";
+            _connect_response->error = DeflateError::NEGOTIATION_FAILED;
         }
     }
 
@@ -86,6 +86,7 @@ ConnectResponseSP ClientParser::connect (string& buf) {
 
 void ClientParser::reset () {
     _connect_request = NULL;
+    _connect_response_parser.reset();
     Parser::reset();
 }
 

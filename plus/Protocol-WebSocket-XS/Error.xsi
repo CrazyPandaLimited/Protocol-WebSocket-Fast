@@ -1,0 +1,39 @@
+MODULE = Protocol::WebSocket::XS                PACKAGE = Protocol::WebSocket::XS
+PROTOTYPES: DISABLE
+
+BOOT {
+    Stash s(__PACKAGE__);
+
+    Stash ecstash("Protocol::WebSocket::XS::errc", GV_ADD);
+    xs::exp::create_constants(ecstash, {
+        {"garbage_after_connect", xs::out(ErrorCode(errc::GARBAGE_AFTER_CONNECT))},
+
+        {"version_update_required",   xs::out(ErrorCode(errc::VERSION_UPGRADE_REQUIRED))},
+        {"unsupported_version",       xs::out(ErrorCode(errc::UNSUPPORTED_VERSION))},
+        {"response_code_101",         xs::out(ErrorCode(errc::RESPONSE_CODE_101))},
+        {"connection_mustbe_upgrade", xs::out(ErrorCode(errc::CONNECTION_MUSTBE_UPGRADE))},
+        {"upgrade_mustbe_websocket",  xs::out(ErrorCode(errc::UPGRADE_MUSTBE_WEBSOCKET))},
+        {"sec_accept_missing",        xs::out(ErrorCode(errc::SEC_ACCEPT_MISSING))},
+
+        {"method_mustbe_get", xs::out(ErrorCode(errc::METHOD_MUSTBE_GET))},
+        {"http_1_1_required", xs::out(ErrorCode(errc::HTTP_1_1_REQUIRED))},
+        {"body_prohobited",   xs::out(ErrorCode(errc::BODY_PROHIBITED))},
+
+        {"invalid_opcode",          xs::out(ErrorCode(errc::INVALID_OPCODE))},
+        {"control_fragmented",      xs::out(ErrorCode(errc::CONTROL_FRAGMENTED))},
+        {"control_payload_too_big", xs::out(ErrorCode(errc::CONTROL_PAYLOAD_TOO_BIG))},
+        {"not_masked",              xs::out(ErrorCode(errc::NOT_MASKED))},
+        {"max_frame_size",          xs::out(ErrorCode(errc::MAX_FRAME_SIZE))},
+        {"close_frame_invalid_data",xs::out(ErrorCode(errc::CLOSE_FRAME_INVALID_DATA))},
+        {"initial_continue",        xs::out(ErrorCode(errc::INITIAL_CONTINUE))},
+        {"fragment_no_continue",    xs::out(ErrorCode(errc::FRAGMENT_NO_CONTINUE))},
+
+        {"max_message_size", xs::out(ErrorCode(errc::MAX_MESSAGE_SIZE))},
+
+        {"deflate_negotiation_failed", xs::out(ErrorCode(DeflateError::NEGOTIATION_FAILED))},
+        {"control_frame_compression", xs::out(ErrorCode(DeflateError::CONTROL_FRAME_COMPRESSION))},
+        {"deflate_max_message_size", xs::out(ErrorCode(DeflateError::MAX_MESSAGE_SIZE))},
+        {"inflate_error", xs::out(ErrorCode(DeflateError::INFALTE_ERROR))},
+    });
+    xs::exp::autoexport(ecstash);
+}

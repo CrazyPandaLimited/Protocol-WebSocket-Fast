@@ -57,27 +57,27 @@ subtest "server parser" => sub {
     subtest 'big frame'    => $test_frame,  $p, {opcode => OPCODE_TEXT,   mask => 1, fin => 1, data => ("1" x 70000)};
     subtest 'empty frame'  => $test_frame,  $p, {opcode => OPCODE_TEXT,   mask => 1, fin => 1};
 
-    subtest "bad opcode $_"   => $test_frame,  $p, {opcode => $_, mask => 1, fin => 1, data => "hello world"}, "invalid opcode received" for (3..7);
+    subtest "bad opcode $_"   => $test_frame,  $p, {opcode => $_, mask => 1, fin => 1, data => "hello world"}, Protocol::WebSocket::XS::errc::invalid_opcode for (3..7);
 
     subtest 'max frame size' => sub {
         $p->configure({max_frame_size => 1000});
         subtest 'allowed' => $test_frame,  $p, {opcode => OPCODE_TEXT, mask => 1, fin => 1, data => ("1" x 1000)};
-        subtest 'exceeds' => $test_frame,  $p, {opcode => OPCODE_TEXT, mask => 1, fin => 1, data => ("1" x 1001)}, "max frame size exceeded";
+        subtest 'exceeds' => $test_frame,  $p, {opcode => OPCODE_TEXT, mask => 1, fin => 1, data => ("1" x 1001)}, Protocol::WebSocket::XS::errc::max_frame_size;
         $p->configure({max_frame_size => 0});
     };
 
     subtest 'ping' => sub {
         subtest 'empty'      => $test_frame,  $p, {opcode => OPCODE_PING, mask => 1, fin => 1};
         subtest 'payload'    => $test_frame,  $p, {opcode => OPCODE_PING, mask => 1, fin => 1, data => "pingdata"};
-        subtest 'fragmented' => $test_frame,  $p, {opcode => OPCODE_PING, mask => 1, fin => 0}, "control frame can't be fragmented";
-        subtest 'long'       => $test_frame,  $p, {opcode => OPCODE_PING, mask => 1, fin => 1, data => ("1" x 1000)}, "control frame payload is too big";
+        subtest 'fragmented' => $test_frame,  $p, {opcode => OPCODE_PING, mask => 1, fin => 0}, Protocol::WebSocket::XS::errc::control_fragmented;
+        subtest 'long'       => $test_frame,  $p, {opcode => OPCODE_PING, mask => 1, fin => 1, data => ("1" x 1000)}, Protocol::WebSocket::XS::errc::control_payload_too_big;
     };
 
     subtest 'pong' => sub {
         subtest 'empty'      => $test_frame,  $p, {opcode => OPCODE_PONG, mask => 1, fin => 1};
         subtest 'payload'    => $test_frame,  $p, {opcode => OPCODE_PONG, mask => 1, fin => 1, data => "pongdata"};
-        subtest 'fragmented' => $test_frame,  $p, {opcode => OPCODE_PONG, mask => 1, fin => 0}, "control frame can't be fragmented";
-        subtest 'long'       => $test_frame,  $p, {opcode => OPCODE_PONG, mask => 1, fin => 1, data => ("1" x 1000)}, "control frame payload is too big";
+        subtest 'fragmented' => $test_frame,  $p, {opcode => OPCODE_PONG, mask => 1, fin => 0}, Protocol::WebSocket::XS::errc::control_fragmented;
+        subtest 'long'       => $test_frame,  $p, {opcode => OPCODE_PONG, mask => 1, fin => 1, data => ("1" x 1000)}, Protocol::WebSocket::XS::errc::control_payload_too_big;
     };
 
     subtest 'close' => sub {
@@ -91,11 +91,11 @@ subtest "server parser" => sub {
         MyTest::reset($p);
         subtest 'message' => $test_frame,  $p, {opcode => OPCODE_CLOSE, mask => 1, fin => 1, close_code => CLOSE_AWAY, data => "walk"};
         MyTest::reset($p);
-        subtest 'invalid payload' => $test_frame,  $p, {opcode => OPCODE_CLOSE, mask => 1, fin => 1, data => "a"}, "control frame CLOSE contains invalid data";
+        subtest 'invalid payload' => $test_frame,  $p, {opcode => OPCODE_CLOSE, mask => 1, fin => 1, data => "a"}, Protocol::WebSocket::XS::errc::close_frame_invalid_data;
         MyTest::reset($p);
-        subtest 'fragmented' => $test_frame,  $p, {opcode => OPCODE_CLOSE, mask => 1, fin => 0}, "control frame can't be fragmented";
+        subtest 'fragmented' => $test_frame,  $p, {opcode => OPCODE_CLOSE, mask => 1, fin => 0}, Protocol::WebSocket::XS::errc::control_fragmented;
         MyTest::reset($p);
-        subtest 'long' => $test_frame,  $p, {opcode => OPCODE_CLOSE, mask => 1, fin => 1, close_code => CLOSE_AWAY, data => ("1" x 1000)}, "control frame payload is too big";
+        subtest 'long' => $test_frame,  $p, {opcode => OPCODE_CLOSE, mask => 1, fin => 1, close_code => CLOSE_AWAY, data => ("1" x 1000)}, Protocol::WebSocket::XS::errc::control_payload_too_big;
         MyTest::reset($p);
     };
 
@@ -133,7 +133,7 @@ subtest "server parser" => sub {
         cmp_deeply(\@frames, [methods(payload => "jopa3"), methods(payload => "jopa4")], "2 more data ok");
     };
 
-    subtest 'initial frame in message with CONTINUE' => $test_frame,  $p, {opcode => OPCODE_CONTINUE, mask => 1, fin => 1, data => 'jopa'}, "initial frame can't have opcode CONTINUE";
+    subtest 'initial frame in message with CONTINUE' => $test_frame,  $p, {opcode => OPCODE_CONTINUE, mask => 1, fin => 1, data => 'jopa'}, Protocol::WebSocket::XS::errc::initial_continue;
 
     subtest 'fragment frame in message without CONTINUE' => sub {
         my $bin = gen_frame({opcode => OPCODE_TEXT, mask => 1, fin => 0, data => 'p1'}).
@@ -141,14 +141,14 @@ subtest "server parser" => sub {
         my ($first, $second) = $p->get_frames($bin);
         is($first->error, undef, "initial frame ok");
         is($first->payload, 'p1', "initial data ok");
-        is($second->error, "fragment frame must have opcode CONTINUE", "fragment frame error ok");
+        is($second->error, Protocol::WebSocket::XS::errc::fragment_no_continue, "fragment frame error ok");
         $bin = gen_frame({opcode => OPCODE_BINARY, mask => 1, fin => 0, data => 'p1'}).
                gen_frame({opcode => OPCODE_BINARY, mask => 1, fin => 1, data => 'p2'});
         ($first, $second) = $p->get_frames($bin);
-        is($second->error, "fragment frame must have opcode CONTINUE", "fin does not matter");
+        is($second->error, Protocol::WebSocket::XS::errc::fragment_no_continue, "fin does not matter");
     };
 
-    subtest 'unmasked frame in server parser'       => $test_frame,  $p, {opcode => OPCODE_TEXT, mask => 0, fin => 1, data => "jopa"}, "frame is not masked";
+    subtest 'unmasked frame in server parser'       => $test_frame,  $p, {opcode => OPCODE_TEXT, mask => 0, fin => 1, data => "jopa"}, Protocol::WebSocket::XS::errc::not_masked;
     subtest 'unmasked empty frame in server parser' => $test_frame,  $p, {opcode => OPCODE_TEXT, mask => 0, fin => 1};
 };
 
