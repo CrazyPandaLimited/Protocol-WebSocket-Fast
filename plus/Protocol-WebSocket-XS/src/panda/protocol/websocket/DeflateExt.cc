@@ -201,10 +201,11 @@ DeflateExt::~DeflateExt(){
 
 
 string& DeflateExt::compress(string& str, bool final) {
-    string in_copy = str;
-    tx_stream.next_in = reinterpret_cast<Bytef*>(in_copy.buf());
-    tx_stream.avail_in = static_cast<uInt>(in_copy.length());
-    tx_stream.next_out = reinterpret_cast<Bytef*>(str.shared_buf());
+    string in = str;
+    tx_stream.next_in = (Bytef*)(in.data());
+    tx_stream.avail_in = static_cast<uInt>(in.length());
+    str = string(in.length()); // detach and realloc for result here
+    tx_stream.next_out = reinterpret_cast<Bytef*>(str.buf()); // buf would not detach, we just created new string and refcnt == 1
     auto sz = str.capacity();
     str.length(sz);
     tx_stream.avail_out = static_cast<uInt>(sz);

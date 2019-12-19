@@ -55,7 +55,7 @@ struct Frame : virtual panda::Refcnt, AllocatedObject<Frame> {
 
     static string compile (const FrameHeader& header, string& payload) {
         size_t plen = payload.length();
-        if (header.has_mask && plen) crypt_mask(payload.shared_buf(), plen, header.mask, 0);
+        if (header.has_mask && plen) crypt_mask(payload.buf(), plen, header.mask, 0);
         return header.compile(plen);
     }
 
@@ -65,7 +65,7 @@ struct Frame : virtual panda::Refcnt, AllocatedObject<Frame> {
         auto payload = IteratorPair<It>(payload_begin, payload_end);
         if (header.has_mask) for (string& str : payload) {
             auto slen = str.length();
-            crypt_mask(str.shared_buf(), slen, header.mask, plen);
+            crypt_mask(str.buf(), slen, header.mask, plen);
             plen += slen;
         }
         else for (string& str : payload) plen += str.length();

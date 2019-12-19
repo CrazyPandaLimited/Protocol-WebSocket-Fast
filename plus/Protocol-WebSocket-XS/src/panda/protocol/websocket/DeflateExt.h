@@ -93,7 +93,7 @@ public:
         while(it_in != payload_end) {
             auto it_next = it_in + 1;
             string chunk_in = *it_in;
-            tx_stream.next_in = reinterpret_cast<Bytef*>(chunk_in.buf());
+            tx_stream.next_in = (Bytef*)(chunk_in.data());
             tx_stream.avail_in = static_cast<uInt>(chunk_in.length());
             // for last fragment we either complete frame(Z_SYNC_FLUSH) or message(flush_policy())
             // otherwise no flush it perfromed
@@ -109,9 +109,9 @@ public:
                             chunk_out->length(chunk_out->length() + tx_out);
                         }
                         chunk_out = &(*it_out++);
-                        chunk_out->length(0);
-                        tx_stream.next_out = reinterpret_cast<Bytef*>(chunk_out->shared_buf());
-                        avail_out = tx_stream.avail_out = static_cast<uInt>(chunk_out->shared_capacity());
+                        *chunk_out = string(chunk_out->length());
+                        tx_stream.next_out = reinterpret_cast<Bytef*>(chunk_out->buf());
+                        avail_out = tx_stream.avail_out = static_cast<uInt>(chunk_out->capacity());
                         reserve_something = avail_out < TRAILER_RESERVED;
                     }
                     else {
@@ -173,7 +173,7 @@ private:
         auto length = buff.capacity();
         buff.reserve(length + TRAILER_RESERVED);
         buff.length(length);
-        tx_stream.next_out = reinterpret_cast<Bytef*>(buff.shared_buf() + length);
+        tx_stream.next_out = reinterpret_cast<Bytef*>(buff.buf() + length);
         tx_stream.avail_out += TRAILER_RESERVED;
         return TRAILER_RESERVED;
     }
