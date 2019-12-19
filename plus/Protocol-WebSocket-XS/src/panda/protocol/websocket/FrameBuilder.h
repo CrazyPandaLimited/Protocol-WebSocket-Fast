@@ -25,8 +25,8 @@ struct FrameBuilder {
 
     StringPair send(string& payload);
 
-    template<typename It>
-    StringChain<It> send(It payload_begin, It payload_end);
+    template<class Begin, class End>
+    StringChain<Begin, End> send(Begin payload_begin, End payload_end);
 
 protected:
     FrameBuilder(Parser& parser);

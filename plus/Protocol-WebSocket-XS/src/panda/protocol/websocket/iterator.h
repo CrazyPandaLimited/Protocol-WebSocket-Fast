@@ -92,8 +92,10 @@ struct StringChainIterator : std::iterator<std::random_access_iterator_tag, stri
         return *this;
     }
 
-    bool operator== (const StringChainIterator& rhs) const { return i == rhs.i; }
-    bool operator!= (const StringChainIterator& rhs) const { return i != rhs.i; }
+    template <typename OIt>
+    bool operator== (const StringChainIterator<OIt>& rhs) const { return i == rhs.i; }
+    template <typename OIt>
+    bool operator!= (const StringChainIterator<OIt>& rhs) const { return i != rhs.i; }
 
     string& operator*  () { return i == 0 ? s : it[i-1]; }
     string* operator-> () { return i == 0 ? &s : &it[i-1]; }
@@ -129,18 +131,18 @@ private:
 template <class It>
 inline StringChainIterator<It> operator+ (ptrdiff_t n, const StringChainIterator<It>& rhs) { auto ret = rhs; ret += n; return ret; }
 
-template <class It>
-using StringChainIteratorPair = IteratorPair<StringChainIterator<It>>;
+template <class Begin, class End = Begin>
+using StringChainIteratorPair = IteratorPair<StringChainIterator<Begin>, StringChainIterator<End>>;
 
-template <class It>
-inline StringChainIteratorPair<It> make_iterator_pair (string& str, It first, It last) {
-    return StringChainIteratorPair<It>(StringChainIterator<It>(str, first), StringChainIterator<It>(last, last - first));
+template <class Begin, class End>
+inline StringChainIteratorPair<Begin, End> make_iterator_pair (string& str, Begin first, End last) {
+    return StringChainIteratorPair<Begin, End>(StringChainIterator<Begin>(str, first), StringChainIterator<End>(last, last - first));
 }
 
-template<typename It>
-struct StringChain : StringChainIteratorPair<It> {
-    StringChain(const string& s, It begin, It end)
-        : StringChainIteratorPair<It>(StringChainIterator<It>(str, begin), StringChainIterator<It>(end, end - begin))
+template<class Begin, class End = Begin>
+struct StringChain : StringChainIteratorPair<Begin, End> {
+    StringChain(const string& s, Begin begin, End end)
+        : StringChainIteratorPair<Begin, End>(StringChainIterator<Begin>(str, begin), StringChainIterator<End>(end, end - begin))
         , str(s)
     {}
 
@@ -148,9 +150,9 @@ private:
     string str;
 };
 
-template <class It>
-inline StringChain<It> make_string_pair (const string& str, It begin, It end) {
-    return StringChain<It>(str, begin, end);
+template <class Begin, class End = Begin>
+inline StringChain<Begin, End> make_string_pair (const string& str, Begin begin, End end) {
+    return StringChain<Begin, End>(str, begin, end);
 }
 
 }}}

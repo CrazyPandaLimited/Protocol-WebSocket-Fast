@@ -222,7 +222,7 @@ private:
     StringChain<It> send_frame(It payload_begin, It payload_end, const FrameBuilder& fb) {
         size_t payload_length = 0;
         for(auto it = payload_begin; it != payload_end; ++it) {
-            payload_length += it->length();
+            payload_length += (*it).length();
         }
         bool non_empty = payload_length > 0;
         bool use_deflate = fb.deflate() && _deflate_ext && non_empty;
@@ -254,8 +254,8 @@ private:
 
 };
 
-template<typename It>
-StringChain<It> FrameBuilder::send(It payload_begin, It payload_end) {
+template<class Begin, class End>
+StringChain<Begin, End> FrameBuilder::send(Begin payload_begin, End payload_end) {
     if (_finished) throw std::runtime_error("messsage is already finished");
     _finished = _final;
     return _parser.send_frame(payload_begin, payload_end, *this);
@@ -277,22 +277,22 @@ struct MessageBuilder {
         return _parser.start_message().final(true).opcode(_opcode).deflate(apply_deflate).send(payload);
     }
 
-    template <class It, typename = typename std::enable_if<std::is_same<typename It::value_type, string>::value>::type>
-    StringChain<It> send(It payload_begin, It payload_end) {
+    template <class Begin, class End, typename = typename std::enable_if<std::is_same<typename std::decay<decltype(*std::declval<Begin>())>::type, string>::value>::type>
+    StringChain<Begin, End> send(Begin payload_begin, End payload_end) {
         size_t payload_length = 0;
         for(auto it = payload_begin; it != payload_end; ++it) {
-            payload_length += it->length();
+            payload_length += (*it).length();
         }
         bool apply_deflate = maybe_deflate(payload_length);
         return _parser.start_message().final(true).opcode(_opcode).deflate(apply_deflate).send(payload_begin, payload_end);
     }
 
-    template <class ContIt, typename = typename std::enable_if<std::is_same<decltype(*((*ContIt()).begin())), string&>::value>::type>
-    std::vector<string> send(ContIt cont_begin, ContIt cont_end) {
+    template <class Begin, class End, typename = typename std::enable_if<std::is_same<decltype(*((*Begin()).begin())), string&>::value>::type>
+    std::vector<string> send(Begin cont_begin, End cont_end) {
         std::vector<string> ret;
 
         size_t sz = 0, idx = 0, payload_sz = 0, last_nonempty = 0;
-        auto cont_range = IteratorPair<ContIt>(cont_begin, cont_end);
+        auto cont_range = make_iterator_pair(cont_begin, cont_end);
         for (const auto& range : cont_range) {
             size_t piece_sz = 0;
             for(const auto& it: range) {
