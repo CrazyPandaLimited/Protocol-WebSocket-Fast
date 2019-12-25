@@ -1,6 +1,6 @@
 =head1 NAME
 
-Protocol::WebSocket::XS - WebSocket extremely fast websocket parser
+Protocol::WebSocket::XS - WebSocket extremely fast websocket protocol
 
 =cut
 
@@ -91,7 +91,7 @@ Protocol::WebSocket::XS - WebSocket extremely fast websocket parser
 
 C<Protocol::WebSocket::XS> is extremely fast server/client zero-copy
 incremental WebSocket (L<rfc6455|https://tools.ietf.org/html/rfc6455>) parser
-library with Perl and C++ interface.
+and serialization library with Perl and C++ interface.
 
 The library supports compression (a.k.a. per-message deflate extension, see
 L<rfc7692|https://tools.ietf.org/html/rfc7692>) via C<zlib> C library, which

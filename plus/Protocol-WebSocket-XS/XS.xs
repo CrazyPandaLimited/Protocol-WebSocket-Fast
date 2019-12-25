@@ -50,24 +50,24 @@ BOOT {
     if (err) throw *err;
 }
 
-INCLUDE: Parser.xsi
+INCLUDE: xsi/Parser.xsi
 
-INCLUDE: ServerParser.xsi
+INCLUDE: xsi/ServerParser.xsi
 
-INCLUDE: ClientParser.xsi
+INCLUDE: xsi/ClientParser.xsi
 
-INCLUDE: ConnectRequest.xsi
+INCLUDE: xsi/ConnectRequest.xsi
 
-INCLUDE: ConnectResponse.xsi
+INCLUDE: xsi/ConnectResponse.xsi
 
-INCLUDE: Frame.xsi
+INCLUDE: xsi/Frame.xsi
 
-INCLUDE: FrameBuilder.xsi
+INCLUDE: xsi/FrameBuilder.xsi
 
-INCLUDE: FrameIterator.xsi
+INCLUDE: xsi/FrameIterator.xsi
 
-INCLUDE: Message.xsi
+INCLUDE: xsi/Message.xsi
 
-INCLUDE: MessageIterator.xsi
+INCLUDE: xsi/MessageIterator.xsi
 
-INCLUDE: Error.xsi
+INCLUDE: xsi/Error.xsi

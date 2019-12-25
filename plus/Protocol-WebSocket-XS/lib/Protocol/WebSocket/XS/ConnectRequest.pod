@@ -7,10 +7,12 @@ Protocol::WebSocket::XS::ConnectRequest - Client-initiated HTTP request for esta
 =head1 SYNOPSIS
 
     use Protocol::WebSocket::XS::ConnectRequest;
+    use Protocol::HTTP::Request;
+
     use URI::XS;
 
     my $request = Protocol::WebSocket::XS::ConnectRequest->new({
-        method        => 'GET',
+        method        => METHOD_GET,
         uri           => URI::XS->new("ws://example.com/"),
         headers       => { 'Origin' => 'http://www.crazypanda.ru'},
         ws_key        => 'dGhlIHNhbXBsZSBub25jZQ==',
