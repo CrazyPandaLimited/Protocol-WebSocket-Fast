@@ -302,7 +302,7 @@ subtest "8-bit windows are not allowed" => sub {
             ok !$client->is_deflate_active;
         };
 
-        subtest "8-bit responce is rejected" => sub {
+        subtest "8-bit response is rejected" => sub {
             my $server = Protocol::WebSocket::XS::ServerParser->new;
             my $client = Protocol::WebSocket::XS::ClientParser->new;
             $client->configure({deflate => { client_max_window_bits => 9 }});

@@ -102,6 +102,22 @@ The C++ interfaces of the library can be used to maximize performance, due to
 no overhead occurs in Perl-C++ data marshalling; in other words it is friendly
 to XS servers and frameworks, written in C++.
 
+The <Protocol::WebSocket::XS> is B<not> drop-in replacement of <Protocol::WebSocket>,
+as it uses sligthly different API.
+
+=head1 BENCHMARKS (Protocol::WebSocket vs Protocol::WebSocket::XS)
+
+(see misc/bench.plx for full code)
+
+    timethese(-1, {
+        "Protocol::WebSocket::XS" => sub { $client->get_messages($data) },
+        "Protocol::WebSocket "    => sub { Protocol::WebSocket::Frame->new($data)->next },
+    });
+
+    Protocol::WebSocket :  1 wallclock secs ( 1.08 usr +  0.00 sys =  1.08 CPU) @ 113777.78/s (n=122880)
+    Protocol::WebSocket::XS:  2 wallclock secs ( 1.08 usr +  0.00 sys =  1.08 CPU) @ 2316928.70/s (n=2502283)
+
+
 =head1 EXPORTED CONSTANTS
 
 =head2 OPCODE_CONTINUE
@@ -147,6 +163,8 @@ L<rfc6455|https://tools.ietf.org/html/rfc6455>
 
 L<rfc7692|https://tools.ietf.org/html/rfc7692>
 
+L<Protocol::WebSocket>
+
 L<Protocol::WebSocket::XS::ClientParser>
 
 L<Protocol::WebSocket::XS::ConnectRequest>
@@ -159,12 +177,6 @@ L<Protocol::WebSocket::XS::FrameBuilder>
 
 L<Protocol::WebSocket::XS::FrameIterator>
 
-L<Protocol::WebSocket::XS::HTTPPacket>
-
-L<Protocol::WebSocket::XS::HTTPRequest>
-
-L<Protocol::WebSocket::XS::HTTPResponse>
-
 L<Protocol::WebSocket::XS::Message>
 
 L<Protocol::WebSocket::XS::MessageIterator>
@@ -173,11 +185,13 @@ L<Protocol::WebSocket::XS::Parser>
 
 L<Protocol::WebSocket::XS::ServerParser>
 
+L<Protocol::HTTP>
+
 =head1 AUTHOR
 
 Pronin Oleg <syber@cpan.org>, Crazy Panda LTD
 
-Ivan Baidakou <i.baydakov@dev.crazypanda.ru>, Crazy Panda LTD
+Ivan Baidakou <dmol@cpan.org>, Crazy Panda LTD
 
 =head1 LICENSE
 

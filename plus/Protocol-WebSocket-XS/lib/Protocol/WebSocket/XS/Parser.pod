@@ -33,9 +33,13 @@ Protocol::WebSocket::XS::Parser - Base class of websocket parser
 =head1 DESCRIPTION
 
 C<Protocol::WebSocket::XS::Parser> contains shared implementation
-for concrete child classes L<Protocol::WebSocket::XS::ClientParser> and
+for final child classes L<Protocol::WebSocket::XS::ClientParser> and
 L<Protocol::WebSocket::XS::ServerParser>. No direct class instantiation
 is possible.
+
+The instance of L<Protocol::WebSocket::XS::Parser> keeps track of 
+state (established connection, closed etc.) and might contain some not 
+parsed (incomplede) data.
 
 =head1 METHODS
 
@@ -128,8 +132,8 @@ See L<rfc7692|https://tools.ietf.org/html/rfc7692>.
 
 The C<mem_level> parameter specifies how much memory should be allocated
 for the internal compression state. C<mem_level=1> uses minimum memory
-butis slow and reduces compression ratio; C<mem_level=9> uses maximum
-memory for optimal speed.
+leading to slow compression speed and reduces compression ratio; 
+C<mem_level=9> uses maximummemory for optimal speed.
 
 Default value is 8 (zlib default).
 
@@ -207,7 +211,7 @@ Returns hash-ref of deflate config. See L<configure>
 =head2 established()
 
 Returns C<true> if connection has been established, i.e. B<client_parser>
-successfully parsed server responce and on B<server_parser> side the
+successfully parsed server response and on B<server_parser> side the
 C<accept_response> has been invoked.
 
 =head2 recv_closed()
@@ -288,7 +292,7 @@ OPCODE_BINARY (default)
 Returns serialized single frame control message with the specified opcode (see
 L<Protocol::WebSocket::XS>) and optional payload.
 
-Max payload length is 125, everythin bigger will be cut.
+Max payload length is 125, everything bigger will be trimmed.
 
 The constructed frame is always final and is never compressed.
 
@@ -309,7 +313,7 @@ The constructed frame is always final and is never compressed.
 Returns serializes close frame with the specified code (see
 L<Protocol::WebSocket::XS>) and optional payload.
 
-Max payload length is 123, everythin bigger will be cut.
+Max payload length is 123, everythin bigger will be trimmed.
 
 The constructed frame is always final and is never compressed.
 
@@ -369,7 +373,7 @@ need to merge it into single buffer and then drop.
 
 See L<send_message> for parameters.
 
-This method sends one mesassage as multiple frames. It iss useful if it is
+This method sends one message as multiple frames. It is useful if it is
 desirable to preserve payload decomposition into multiple pieces, which
 will be serialized as multiple frames.
 
@@ -412,7 +416,7 @@ L<Protocol::WebSocket::XS::ServerParser>
 
 Pronin Oleg <syber@cpan.org>, Crazy Panda LTD
 
-Ivan Baidakou <i.baydakov@dev.crazypanda.ru>, Crazy Panda LTD
+Ivan Baidakou <dmol@cpan.org>, Crazy Panda LTD
 
 =head1 LICENSE
 

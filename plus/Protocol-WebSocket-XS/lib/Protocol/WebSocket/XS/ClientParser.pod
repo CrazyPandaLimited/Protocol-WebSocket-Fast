@@ -10,7 +10,7 @@ Protocol::WebSocket::XS::ClientParser - Client-side specialization of websocket 
     use URI::XS;
 
 
-    my $client = Protocol::WebSocket::XS::ClientParser->new;
+    my $client = Protocol::WebSocket::XS::ClientParser->new; # => isa 'Protocol::WebSocket::XS::Parser'
 
     # create request to be sent via network to server
     my $req_str = $client->connect_request({
@@ -49,7 +49,7 @@ See L<Protocol::WebSocket::XS::ConnectRequest> for details.
 
 =head2 connect($server_reply)
 
-Parses the server HTTP-responce to the initial HTTP-requests. All supported extensions
+Parses the server HTTP-response to the initial HTTP-requests. All supported extensions
 will be enabled in the parser for furher usage, is server agrees to use them.
 
 Returns L<Protocol::WebSocket::XS::ConnectResponse>, which can be ignored if you don't care.
@@ -73,7 +73,7 @@ L<Protocol::WebSocket::XS::ServerParser>
 
 Pronin Oleg <syber@cpan.org>, Crazy Panda LTD
 
-Ivan Baidakou <i.baydakov@dev.crazypanda.ru>, Crazy Panda LTD
+Ivan Baidakou <dmol@cpan.org>, Crazy Panda LTD
 
 =head1 LICENSE
 

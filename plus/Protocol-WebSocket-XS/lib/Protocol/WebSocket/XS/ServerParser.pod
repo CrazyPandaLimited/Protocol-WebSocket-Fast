@@ -57,7 +57,7 @@ Developer might inspect the request object and add application-specific checks.
 
 =head2 accept_response(Protocol::WebSocket::XS::ConnectResponse $object)
 
-Returns serialized B<positive> responce from server to client.
+Returns serialized B<positive> response from server to client.
 
 Extensions-related headers are automatically added for the build-in extensions,
 which where enabled by configuration (L<Protocol::WebSocket::XS::Parser::configure>)
@@ -70,7 +70,7 @@ C<$object> with predefined headers and/or custom extensions.
 
 =head2 accept_error(Protocol::WebSocket::XS::ConnectResponse $object)
 
-Returns serialized B<negative> responce from server to client. Further
+Returns serialized B<negative> response from server to client. Further
 communication with server is not possible, as websocket connection was not
 established.
 
@@ -95,7 +95,7 @@ L<Protocol::WebSocket::XS::Parser>
 
 Pronin Oleg <syber@cpan.org>, Crazy Panda LTD
 
-Ivan Baidakou <i.baydakov@dev.crazypanda.ru>, Crazy Panda LTD
+Ivan Baidakou <dmol@cpan.org>, Crazy Panda LTD
 
 =head1 LICENSE
 

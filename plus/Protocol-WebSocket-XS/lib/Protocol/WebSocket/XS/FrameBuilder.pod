@@ -8,7 +8,7 @@ Protocol::WebSocket::XS::FrameBuilder - low-level frame generator helper
 
 The class helps in creation of low-level frames of a single message. It
 might be useful if message data is partly available and should be
-delivered to peer.
+serialized and delivered to peer ASAP.
 
 The output frames are serialized as binary string, it is useless to access
 to them via L<Protocol::WebSocket::XS::Frame> interface.
@@ -41,7 +41,7 @@ Returns serialized frame with the supplied payload (in form of string or
 array of string).
 
 Beware, if the C<deflate> is enabled and C<final> is not set, the compressed
-payload might be availale with I<output latency> (i.e. some input provided
+payload might be availale due to I<output latency> (i.e. some input provided
 no output). C<final> frame flushes all accumulated compressed payload.
 
 
@@ -61,7 +61,7 @@ L<Protocol::WebSocket::XS::Parser>
 
 Pronin Oleg <syber@cpan.org>, Crazy Panda LTD
 
-Ivan Baidakou <i.baydakov@dev.crazypanda.ru>, Crazy Panda LTD
+Ivan Baidakou <dmol@cpan.org>, Crazy Panda LTD
 
 =head1 LICENSE
 

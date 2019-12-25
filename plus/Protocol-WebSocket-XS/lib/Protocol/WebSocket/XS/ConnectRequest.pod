@@ -19,7 +19,7 @@ Protocol::WebSocket::XS::ConnectRequest - Client-initiated HTTP request for esta
         ws_version    => 13,
         ws_protocol   => "chat",
         ws_extensions => [["ext1"], ["ext2", {arg1 => 1}]],
-    });
+    }); # => isa 'Protocol::HTTP::Request'
 
     $request->ws_key;                               # => 'dGhlIHNhbXBsZSBub25jZQ==';
     $request->ws_key('xxxxxxxxxxxxxxxxxxxxxx==');
@@ -40,7 +40,7 @@ Protocol::WebSocket::XS::ConnectRequest - Client-initiated HTTP request for esta
 
 =head1 DESCRIPTION
 
-Extends base class L<Protocol::WebSocket::XS::HTTPRequest> with websocket-related
+Extends base class L<Protocol::HTTP::Request> with websocket-related
 details (headers), namely:
 
 1. Hard-coded headers, required by L<Protocol::WebSocket::XS>, e.g.
@@ -126,7 +126,7 @@ L<URI::XS>
 
 Pronin Oleg <syber@cpan.org>, Crazy Panda LTD
 
-Ivan Baidakou <i.baydakov@dev.crazypanda.ru>, Crazy Panda LTD
+Ivan Baidakou <dmol@cpan.org>, Crazy Panda LTD
 
 =head1 LICENSE
 

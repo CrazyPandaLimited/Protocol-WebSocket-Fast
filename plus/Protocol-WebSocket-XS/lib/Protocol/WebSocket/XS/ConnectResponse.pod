@@ -15,7 +15,7 @@ Protocol::WebSocket::XS::ConnectResponse - Server HTTP response for websocket co
         headers       => { 'Cache-Control' => 'no-cache'},
         ws_protocol   => "chat",
         ws_extensions => [["ext1"], ["ext2", {arg1 => 1}]],
-    });
+    }); # => isa 'Protocol::HTTP::Response'
 
     $response->ws_protocol;                          # => 'chat'
     $response->ws_protocol('bla-bla');
@@ -28,7 +28,7 @@ Protocol::WebSocket::XS::ConnectResponse - Server HTTP response for websocket co
 
 =head1 DESCRIPTION
 
-Extends base class L<Protocol::WebSocket::XS::HTTPResponse> with websocket-related
+Extends base class L<Protocol::HTTP::Response> with websocket-related
 details, namely (in case of successfully established connection):
 
 1. Hard-coded headers, code and message, required by L<Protocol::WebSocket::XS>, e.g.
@@ -60,7 +60,7 @@ See L<rfc6455|https://tools.ietf.org/html/rfc6455> (look for C<Sec-WebSocket-Pro
 
 =item ws_extensions(array)
 
-Additional extensions and their options, which client has been offered by client-side
+Additional extensions and their options, which has been offered by client-side
 and server-side aggrees to use. The extensions, which are provided
 by the module and enabled by user (default), will be added automatically by
 L<Protocol::WebSocket::XS::ServerParser>.
@@ -96,7 +96,7 @@ L<Protocol::WebSocket::XS::ServerParser>
 
 Pronin Oleg <syber@cpan.org>, Crazy Panda LTD
 
-Ivan Baidakou <i.baydakov@dev.crazypanda.ru>, Crazy Panda LTD
+Ivan Baidakou <dmol@cpan.org>, Crazy Panda LTD
 
 =head1 LICENSE
 

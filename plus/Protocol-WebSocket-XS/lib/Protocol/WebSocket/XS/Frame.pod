@@ -8,11 +8,11 @@ Protocol::WebSocket::XS::Frame - WebSocket Frame class
 
 The class represents a frame received via WebSocket protocol.
 
-You cannot instantiate an object of the class direcly, it can be accessed
+The Frame object cannot be instantiated direcly, it can be accessed
 via L<Protocol::WebSocket::XS::FrameIterator> or
 L<Protocol::WebSocket::XS::Parser>.
 
-You cannot modify Frame object, all provided methods are read only.
+The Frame object is read-only, i.e. all provided methods are just getterss.
 
 =head1 METHODS
 
@@ -61,7 +61,7 @@ L<Protocol::WebSocket::XS::Parser>
 
 Pronin Oleg <syber@cpan.org>, Crazy Panda LTD
 
-Ivan Baidakou <i.baydakov@dev.crazypanda.ru>, Crazy Panda LTD
+Ivan Baidakou <dmol@cpan.org>, Crazy Panda LTD
 
 =head1 LICENSE
 
