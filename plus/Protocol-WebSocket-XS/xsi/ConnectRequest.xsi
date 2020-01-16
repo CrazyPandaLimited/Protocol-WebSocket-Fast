@@ -10,23 +10,6 @@ ConnectRequestSP ConnectRequest::new (Hash params = Hash()) {
     make_request(params, RETVAL);
 }
 
-void ConnectRequest::init (Hash params) {
-    Scalar val;
-    
-    if ((val = params.fetch("ws_key")))      THIS->ws_key      = xs::in<string>(val);
-    if ((val = params.fetch("ws_version")))  THIS->ws_version  = SvIV(val);
-    if ((val = params.fetch("ws_protocol"))) THIS->ws_protocol = xs::in<string>(val);
-    
-    if ((val = params.fetch("ws_extensions"))) {
-        auto exts_av = xs::in<Array>(val);
-        HeaderValues exts;
-        if (exts_av) av_to_header_values(exts_av, &exts);
-        THIS->ws_extensions(exts);
-    }
-    
-    Object(ST(0)).call_super(cv, &ST(1), items-1);
-}
-
 string ConnectRequest::ws_key (SV* newval = NULL) {
     if (newval) {
         THIS->ws_key = xs::in<string>(newval);
