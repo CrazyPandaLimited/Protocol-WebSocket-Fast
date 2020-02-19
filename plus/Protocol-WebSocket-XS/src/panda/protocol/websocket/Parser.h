@@ -112,7 +112,7 @@ public:
     string     send_control (Opcode opcode)                  { return send_control_frame(opcode); }
     StringPair send_control (Opcode opcode, string& payload) {
         if (payload.length() > Frame::MAX_CONTROL_PAYLOAD) {
-            panda_log_critical("control frame payload is too long");
+            panda_mlog_critical(pwslog, "control frame payload is too long");
             payload.offset(0, Frame::MAX_CONTROL_PAYLOAD);
         }
         return send_control_frame(payload, opcode);

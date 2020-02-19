@@ -6,6 +6,8 @@
 
 namespace panda { namespace protocol { namespace websocket {
 
+log::Module pwslog("Protocol""WebSocket", log::Warning);
+
 const std::error_category& protocol_error_categoty = ProtocolErrorCategoty();
 
 static const std::map<errc, std::string> error_map = {

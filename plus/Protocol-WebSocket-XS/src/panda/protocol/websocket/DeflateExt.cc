@@ -314,7 +314,7 @@ bool DeflateExt::uncompress_impl(Frame& frame) {
                 string err = "zlib::inflate error ";
                 if (rx_stream.msg) err += rx_stream.msg;
                 else err += to_string(r);
-                panda_log_info(err);
+                panda_mlog_info(pwslog, err);
                 frame.error = DeflateError::INFALTE_ERROR;
                 return false;
             }

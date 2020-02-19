@@ -1,6 +1,7 @@
 #pragma once
 
 #include <system_error>
+#include <panda/log.h>
 
 namespace panda { namespace protocol { namespace websocket {
 
@@ -43,6 +44,8 @@ extern const std::error_category& protocol_error_categoty;
 inline std::error_code make_error_code(errc err) noexcept {
     return std::error_code(int(err), protocol_error_categoty);
 }
+
+extern log::Module pwslog;
 
 }}}
 
