@@ -1,5 +1,7 @@
 #include <panda/protocol/websocket/utils.h>
 #include <panda/protocol/websocket/iterator.h>
+#include <map>
+#include "inc.h"
 
 namespace panda { namespace protocol { namespace websocket {
 
@@ -47,6 +49,39 @@ void crypt_mask (char* str, size_t len, uint32_t mask, uint64_t bytes_received) 
         case 2: *cstr++ ^= *cmask++; // fallthrough
         case 1: *cstr++ ^= *cmask++;
     };
+}
+
+static std::map<uint16_t, string> close_messages = {
+    {CloseCode::NO_ERROR         , "no error"},
+    {CloseCode::DONE             , "Done"},
+    {CloseCode::AWAY             , "Away"},
+    {CloseCode::PROTOCOL_ERROR   , "WS Protocol Error"},
+    {CloseCode::INVALID_DATA     , "WS Invalid Data"},
+    {CloseCode::UNKNOWN          , "WS Unknown"},
+    {CloseCode::ABNORMALLY       , "Abnormally"},
+    {CloseCode::INVALID_TEXT     , "Invalid Text"},
+    {CloseCode::BAD_REQUEST      , "Bad Request"},
+    {CloseCode::MAX_SIZE         , "Max Size"},
+    {CloseCode::EXTENSION_NEEDED , "Extension Needed"},
+    {CloseCode::INTERNAL_ERROR   , "Internal Error"},
+    {CloseCode::TLS              , "TLS error"}
+};
+
+string close_message(uint16_t code) {
+    auto iter = close_messages.find(code);
+    if (iter == close_messages.end()) {
+        return to_string(code);
+    } else {
+        return iter->second;
+    }
+
+}
+
+bool register_close_codes(std::initializer_list<std::pair<uint16_t, string> > pairs) {
+    for (const auto& p : pairs) {
+        close_messages.insert({p.first, p.second});
+    }
+    return true;
 }
 
 }}}

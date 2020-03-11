@@ -57,4 +57,22 @@ inline bool parse_binary_number (T& num, const char*& src, size_t len) {
 
 void crypt_mask (char* str, size_t len, uint32_t mask, uint64_t bytes_received);
 
+string close_message(uint16_t code);
+
+/// @return true to use in static variable initializators
+bool register_close_codes(std::initializer_list<std::pair<uint16_t, string>>);
+
+/// close clode formatter
+struct ccfmt {
+    uint16_t code;
+    const string& msg;
+
+    ccfmt(uint16_t code, const string& msg) : code(code), msg(msg) {}
+
+};
+inline std::ostream& operator<<(std::ostream& s, const ccfmt& cc) {
+    s << cc.code << ": " << cc.msg ? cc.msg : close_message(cc.code);
+    return s;
+}
+
 }}}
