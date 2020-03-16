@@ -6,8 +6,8 @@ Protocol::WebSocket::XS::ConnectRequest - Client-initiated HTTP request for esta
 
 =head1 SYNOPSIS
 
-    use Protocol::WebSocket::XS::ConnectRequest;
-    use Protocol::HTTP::Request;
+    use Protocol::WebSocket::XS;
+    use Protocol::HTTP;
 
     use URI::XS;
 
@@ -57,29 +57,27 @@ C<Sec-WebSocket-Extensions>
 
 =head2 new($params)
 
-=head2 init($params)
-
-Additional params on top of C<Protocol::WebSocket::XS::HTTPRequest::init>
+Additional params on top of L<Protocol::HTTP::Request>'s C<new> method.
 
 =over 2
 
-=item ws_key (string)
+=item ws_key ($string)
 
 See L<rfc6455|https://tools.ietf.org/html/rfc6455> (look for C<Sec-WebSocket-Key>)
 
-=item ws_version (int)
+=item ws_version ($int)
 
 See L<rfc6455|https://tools.ietf.org/html/rfc6455> (look for C<Sec-WebSocket-Version>).
 
 At the moment only version C<13> is supported by the module.
 
-=item ws_protocol (string)
+=item ws_protocol ($string)
 
 Identifies application specific communication protocol.
 
 See L<rfc6455|https://tools.ietf.org/html/rfc6455> (look for C<Sec-WebSocket-Protocol>).
 
-=item ws_extensions(array)
+=item ws_extensions(\@extensions)
 
 Additional extensions, which client would like to use. The extensions, which are provided
 by the module and enabled by user (default), will be added automatically by
@@ -90,25 +88,24 @@ at L<Protocol::WebSocket::XS::Frame> or L<Protocol::WebSocket::XS::Message> leve
 
 =back
 
-=head2 ws_key()
+=head2 ws_key([$string])
 
-=head2 ws_key($string)
+Get/set websocket key.
 
-=head2 ws_version()
+=head2 ws_version([$int])
 
-=head2 ws_version($int)
+Get/set websocket version.
 
-=head2 ws_protocol()
+=head2 ws_protocol([$string])
 
-=head2 ws_protocol($string)
+Get/set application specific communication protocol
 
-=head2 ws_extensions()
+=head2 ws_extensions([\@extensions])
 
-=head2 ws_extensions($array)
+Get/set websocket additional extensions
 
-=head1 SEE ALSO
 
-L<rfc6455|https://tools.ietf.org/html/rfc6455>
+=head1 REFERENCE
 
 L<Protocol::WebSocket::XS>
 
@@ -120,16 +117,12 @@ L<Protocol::WebSocket::XS::HTTPRequest>
 
 L<Protocol::WebSocket::XS::ServerParser>
 
+=head1 SEE ALSO
+
+L<rfc6455|https://tools.ietf.org/html/rfc6455>
+
 L<URI::XS>
 
-=head1 AUTHOR
-
-Pronin Oleg <syber@cpan.org>, Crazy Panda LTD
-
-Ivan Baidakou <dmol@cpan.org>, Crazy Panda LTD
-
-=head1 LICENSE
-
-You may distribute this code under the same terms as Perl itself.
+L<Protocol::HTTP::Request>
 
 =cut

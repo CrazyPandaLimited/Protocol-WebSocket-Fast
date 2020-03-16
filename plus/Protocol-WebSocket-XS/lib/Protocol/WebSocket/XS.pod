@@ -98,9 +98,8 @@ L<rfc7692|https://tools.ietf.org/html/rfc7692>) via C<zlib> C library, which
 is enabled by default for all text messages exceeding TCP max segment
 size (1410 bytes).
 
-The C++ interfaces of the library can be used to maximize performance, due to
-no overhead occurs in Perl-C++ data marshalling; in other words it is friendly
-to XS servers and frameworks, written in C++.
+The module has dual Perl/C++ interface (see L<XS::Manifesto>) so futher
+XS-bindings can be written on the top of C<Protocol::WebSocket::XS>.
 
 The <Protocol::WebSocket::XS> is B<not> drop-in replacement of <Protocol::WebSocket>,
 as it uses sligthly different API.
@@ -156,12 +155,7 @@ as it uses sligthly different API.
 
 =head2 CLOSE_TLS
 
-
-=head1 SEE ALSO
-
-L<rfc6455|https://tools.ietf.org/html/rfc6455>
-
-L<rfc7692|https://tools.ietf.org/html/rfc7692>
+=head1 REFERENCE
 
 L<Protocol::WebSocket>
 
@@ -186,6 +180,12 @@ L<Protocol::WebSocket::XS::Parser>
 L<Protocol::WebSocket::XS::ServerParser>
 
 L<Protocol::HTTP>
+
+=head1 SEE ALSO
+
+L<rfc6455|https://tools.ietf.org/html/rfc6455>
+
+L<rfc7692|https://tools.ietf.org/html/rfc7692>
 
 =head1 AUTHOR
 

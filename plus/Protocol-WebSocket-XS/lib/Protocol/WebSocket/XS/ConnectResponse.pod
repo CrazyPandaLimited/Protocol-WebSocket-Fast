@@ -46,19 +46,18 @@ C<Sec-WebSocket-Extensions>
 
 =head2 new($params)
 
-=head2 init($params)
 
-Additional params on top of C<Protocol::WebSocket::XS::HTTPResponse::init>
+Additional params on top of C<Protocol::HTTP::Response>'s C<new> method.
 
 =over 2
 
-=item ws_protocol (string)
+=item ws_protocol ($string)
 
 Identifies application specific communication protocol.
 
 See L<rfc6455|https://tools.ietf.org/html/rfc6455> (look for C<Sec-WebSocket-Protocol>).
 
-=item ws_extensions(array)
+=item ws_extensions([\@extensions])
 
 Additional extensions and their options, which has been offered by client-side
 and server-side aggrees to use. The extensions, which are provided
@@ -70,17 +69,8 @@ at L<Protocol::WebSocket::XS::Frame> or L<Protocol::WebSocket::XS::Message> leve
 
 =back
 
-=head2 ws_protocol()
 
-=head2 ws_protocol($string)
-
-=head2 ws_extensions()
-
-=head2 ws_extensions($array)
-
-=head1 SEE ALSO
-
-L<rfc6455|https://tools.ietf.org/html/rfc6455>
+=head1 REFERENCE
 
 L<Protocol::WebSocket::XS>
 
@@ -92,14 +82,9 @@ L<Protocol::WebSocket::XS::HTTPRequest>
 
 L<Protocol::WebSocket::XS::ServerParser>
 
-=head1 AUTHOR
+=head1 SEE ALSO
 
-Pronin Oleg <syber@cpan.org>, Crazy Panda LTD
+L<rfc6455|https://tools.ietf.org/html/rfc6455>
 
-Ivan Baidakou <dmol@cpan.org>, Crazy Panda LTD
-
-=head1 LICENSE
-
-You may distribute this code under the same terms as Perl itself.
 
 =cut

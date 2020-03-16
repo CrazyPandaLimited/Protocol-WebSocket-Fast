@@ -6,11 +6,11 @@ Protocol::WebSocket::XS::ClientParser - Client-side specialization of websocket 
 
 =head1 SYNOPSIS
 
-    use Protocol::WebSocket::XS::ClientParser;
+    use Protocol::WebSocket::XS;
     use URI::XS;
 
 
-    my $client = Protocol::WebSocket::XS::ClientParser->new; # => isa 'Protocol::WebSocket::XS::Parser'
+    my $client = Protocol::WebSocket::XS::ClientParser->new;
 
     # create request to be sent via network to server
     my $req_str = $client->connect_request({
@@ -54,9 +54,7 @@ will be enabled in the parser for furher usage, is server agrees to use them.
 
 Returns L<Protocol::WebSocket::XS::ConnectResponse>, which can be ignored if you don't care.
 
-=head1 SEE ALSO
-
-L<rfc6455|https://tools.ietf.org/html/rfc6455>
+=head1 REFERENCE
 
 L<Protocol::WebSocket::XS>
 
@@ -69,14 +67,8 @@ L<Protocol::WebSocket::XS::Parser>
 L<Protocol::WebSocket::XS::ServerParser>
 
 
-=head1 AUTHOR
+=head1 SEE ALSO
 
-Pronin Oleg <syber@cpan.org>, Crazy Panda LTD
-
-Ivan Baidakou <dmol@cpan.org>, Crazy Panda LTD
-
-=head1 LICENSE
-
-You may distribute this code under the same terms as Perl itself.
+L<rfc6455|https://tools.ietf.org/html/rfc6455>
 
 =cut

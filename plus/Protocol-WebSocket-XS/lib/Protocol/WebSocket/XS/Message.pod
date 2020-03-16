@@ -46,9 +46,7 @@ Returns close message as string
 
 =head2 frame_count()
 
-=head1 SEE ALSO
-
-L<rfc6455|https://tools.ietf.org/html/rfc6455>
+=head1 REFERENCE
 
 L<Protocol::WebSocket::XS>
 
@@ -58,14 +56,8 @@ L<Protocol::WebSocket::XS::MessageIterator>
 
 L<Protocol::WebSocket::XS::Parser>
 
-=head1 AUTHOR
+=head1 SEE ALSO
 
-Pronin Oleg <syber@cpan.org>, Crazy Panda LTD
-
-Ivan Baidakou <dmol@cpan.org>, Crazy Panda LTD
-
-=head1 LICENSE
-
-You may distribute this code under the same terms as Perl itself.
+L<rfc6455|https://tools.ietf.org/html/rfc6455>
 
 =cut

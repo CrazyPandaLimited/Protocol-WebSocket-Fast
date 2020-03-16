@@ -26,28 +26,23 @@ See L<Protocol::WebSocket::XS>.
 
 Returns flag, wheather C<deflate> option is set for the current I<message>.
 
-=head2 final()
-
-=head2 final(bool value)
+=head2 final([$bool])
 
 Gets and sets the C<final> flag on the I<next> frame serialization (i.e.
 C<send> or C<send_av> methods).
 
-=head2 send(string)
+=head2 send($string)
 
-=head2 send_av(array of strings)
+=head2 send_av([\@strings])
 
 Returns serialized frame with the supplied payload (in form of string or
-array of string).
+array of strings).
 
 Beware, if the C<deflate> is enabled and C<final> is not set, the compressed
-payload might be availale due to I<output latency> (i.e. some input provided
+payload might be not availale due to I<output latency> (i.e. some input provided
 no output). C<final> frame flushes all accumulated compressed payload.
 
-
-=head1 SEE ALSO
-
-L<rfc6455|https://tools.ietf.org/html/rfc6455>
+=head1 REFERENCE
 
 L<Protocol::WebSocket::XS>
 
@@ -57,14 +52,8 @@ L<Protocol::WebSocket::XS::Message>
 
 L<Protocol::WebSocket::XS::Parser>
 
-=head1 AUTHOR
+=head1 SEE ALSO
 
-Pronin Oleg <syber@cpan.org>, Crazy Panda LTD
-
-Ivan Baidakou <dmol@cpan.org>, Crazy Panda LTD
-
-=head1 LICENSE
-
-You may distribute this code under the same terms as Perl itself.
+L<rfc6455|https://tools.ietf.org/html/rfc6455>
 
 =cut
