@@ -7,8 +7,7 @@ Protocol::WebSocket::XS::ConnectRequest - Client-initiated HTTP request for esta
 =head1 SYNOPSIS
 
     use Protocol::WebSocket::XS;
-    use Protocol::HTTP;
-
+    use Protocol::HTTP::Request;
     use URI::XS;
 
     my $request = Protocol::WebSocket::XS::ConnectRequest->new({
@@ -36,7 +35,6 @@ Protocol::WebSocket::XS::ConnectRequest - Client-initiated HTTP request for esta
     $request->ws_extensions;                        # => is_deeply ([["ext1"], ["ext2", {arg1 => 1}]])
     $request->ws_extensions([]);
     $request->ws_extensions;                        # => is_deeply([])
-
 
 =head1 DESCRIPTION
 
