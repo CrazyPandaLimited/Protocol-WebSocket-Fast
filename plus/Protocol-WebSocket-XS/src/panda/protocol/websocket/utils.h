@@ -1,4 +1,5 @@
 #pragma once
+#include <iosfwd>
 #include <cstdint>
 #include <strings.h> // strncasecmp
 #include <panda/string.h>
@@ -68,11 +69,8 @@ struct ccfmt {
     const string& msg;
 
     ccfmt(uint16_t code, const string& msg) : code(code), msg(msg) {}
-
 };
-inline std::ostream& operator<<(std::ostream& s, const ccfmt& cc) {
-    s << cc.code << ": " << cc.msg ? cc.msg : close_message(cc.code);
-    return s;
-}
+
+std::ostream& operator<< (std::ostream&, const ccfmt&); 
 
 }}}

@@ -1,7 +1,8 @@
-#include <panda/protocol/websocket/utils.h>
-#include <panda/protocol/websocket/iterator.h>
-#include <map>
 #include "inc.h"
+#include "utils.h"
+#include "iterator.h"
+#include <map>
+#include <iostream>
 
 namespace panda { namespace protocol { namespace websocket {
 
@@ -82,6 +83,11 @@ bool register_close_codes(std::initializer_list<std::pair<uint16_t, string> > pa
         close_messages.insert({p.first, p.second});
     }
     return true;
+}
+
+std::ostream& operator<< (std::ostream& s, const ccfmt& cc) {
+    s << cc.code << ": " << cc.msg ? cc.msg : close_message(cc.code);
+    return s;
 }
 
 }}}
