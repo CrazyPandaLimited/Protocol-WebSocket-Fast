@@ -39,6 +39,10 @@ Client-side specialization of L<Protocol::WebSocket::XS::Parser>.
 
 =head1 METHODS
 
+=head2 new
+
+Creates new instance of L<Protocol::WebSocket::XS::ClientParser>
+
 =head2 connect_request($request)
 
 Returns serialized HTTP-request for server, with all supported extensions preconfigured
@@ -47,7 +51,7 @@ C<per-message deflate>) are automatically added.
 
 See L<Protocol::WebSocket::XS::ConnectRequest> for details.
 
-=head2 connect($server_reply)
+=head2 connect($string)
 
 Parses the server HTTP-response to the initial HTTP-requests. All supported extensions
 will be enabled in the parser for furher usage, is server agrees to use them.

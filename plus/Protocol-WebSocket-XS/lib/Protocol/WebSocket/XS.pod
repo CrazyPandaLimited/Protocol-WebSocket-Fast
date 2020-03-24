@@ -187,6 +187,8 @@ L<rfc6455|https://tools.ietf.org/html/rfc6455>
 
 L<rfc7692|https://tools.ietf.org/html/rfc7692>
 
+L<Protocol::HTTP>
+
 =head1 AUTHOR
 
 Pronin Oleg <syber@cpan.org>, Crazy Panda LTD

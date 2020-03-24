@@ -36,4 +36,6 @@ BOOT {
         {"inflate_error", xs::out(ErrorCode(DeflateError::INFALTE_ERROR))},
     });
     xs::exp::autoexport(ecstash);
+
+    s.add_const_sub("error_category", xs::out<const std::error_category*>(&protocol_error_categoty));
 }

@@ -12,21 +12,33 @@ The Frame object cannot be instantiated direcly, it can be accessed
 via L<Protocol::WebSocket::XS::FrameIterator> or
 L<Protocol::WebSocket::XS::Parser>.
 
-The Frame object is read-only, i.e. all provided methods are just getterss.
+The Frame object is read-only, i.e. all provided methods are just getters.
 
 =head1 METHODS
 
 =head2 error()
 
-Returns error occured during frame parsing(string); returns C<undef> otherwise.
+L<XS::STL::ErrorCode> object which represents Perl API for convenient
+C++ C<std::error_code> subsystem. Possible errors are described in
+L<Protocol::HTTP::errc>, L<Protocol::WebSocket::XS::errc>.
+
+    if ($response->error) {
+        # handle it
+    }
 
 =head2 opcode()
+
+The opcode value for the current frame
 
 See L<Protocol::WebSocket::XS>.
 
 =head2 is_control()
 
+Checks whether the current frame control
+
 =head2 final()
+
+Checks whether the current frame is final
 
 =head2 payload_length()
 
@@ -35,7 +47,12 @@ Might not match the size of actual payload, e.g. if it was compressed.
 
 =head2 payload()
 
-Returns payload as string
+Returns payload as string.
+
+Performance note: as the underhood the payload can be transferred over network
+in different fragments, it might be uneffective to concantenate all pieces
+every time on payload access; in other words it is recommended to cache
+the method.
 
 =head2 close_code()
 

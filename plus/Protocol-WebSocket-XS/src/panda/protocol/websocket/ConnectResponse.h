@@ -15,7 +15,7 @@ struct ConnectResponse : http::Response {
     virtual void process_headers ();
 
     const string& ws_accept_key () const { return _ws_accept_key; }
-    const string& ws_versions   () const { return _ws_versions; }
+    const string& ws_version    () const { return _ws_version; }
 
     const HeaderValues& ws_extensions     () const { return _ws_extensions; }
     bool                ws_extensions_set () const { return _ws_extensions_set; }
@@ -38,7 +38,7 @@ private:
     HeaderValues _ws_extensions;
     bool         _ws_extensions_set;
     string       _ws_accept_key;
-    string       _ws_versions;
+    string       _ws_version;
 
     string _calc_accept_key (string ws_key);
 };

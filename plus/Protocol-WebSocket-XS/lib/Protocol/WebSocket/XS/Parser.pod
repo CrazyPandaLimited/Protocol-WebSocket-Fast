@@ -208,6 +208,12 @@ negotiation phase.
 
 Returns hash-ref of deflate config. See L<configure>
 
+=head2 effective_deflate_config()
+
+Returns hash-ref of deflate config of the currently established connection.
+It might be different than the default L<deflate_config>.
+
+
 =head2 established()
 
 Returns C<true> if connection has been established, i.e. B<client_parser>
@@ -263,7 +269,7 @@ a developer will manually compose message from frames.
 
     my $builder = $parser->start_message({ deflate => 0, opcode => OPCODE_BINARY, final => 0});
 
-Options in $config
+Options can be:
 
 =over 2
 

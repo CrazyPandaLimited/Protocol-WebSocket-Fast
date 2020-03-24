@@ -18,12 +18,12 @@ L<Protocol::WebSocket::XS::MessageIterator>.
 =head2 next()
 
 Returns next unvisited L<Protocol::WebSocket::XS::Frame> parsed from receive buffer;
-otherwise (i.e. when end of buffer is reached) returns C<undef>.
+otherwise (i.e. when end of buffer is reached) C<undef> is returned.
 
 =head2 get_messages()
 
 Returns L<Protocol::WebSocket::XS::MessageIterator>, if there is any unread frame left.
-Otherwise returns C<undef>.
+Otherwise it returns C<undef>.
 
 =head1 REFERENCE
 

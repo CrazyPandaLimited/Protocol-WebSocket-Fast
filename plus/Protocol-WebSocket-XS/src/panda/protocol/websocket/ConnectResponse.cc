@@ -8,7 +8,7 @@ namespace panda { namespace protocol { namespace websocket {
 
 void ConnectResponse::process_headers () {
     if (code == 426) {
-        _ws_versions = headers.get("Sec-WebSocket-Version");
+        _ws_version = headers.get("Sec-WebSocket-Version");
         error = errc::VERSION_UPGRADE_REQUIRED;
         return;
     }

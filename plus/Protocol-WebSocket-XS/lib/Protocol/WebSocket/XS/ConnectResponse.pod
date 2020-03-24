@@ -44,8 +44,7 @@ C<Sec-WebSocket-Extensions>
 
 =head1 METHODS
 
-=head2 new($params)
-
+=head2 new(\%params)
 
 Additional params on top of C<Protocol::HTTP::Response>'s C<new> method.
 
@@ -68,6 +67,38 @@ User-supplied extensions wasn't tested yet, but it should be possible to let the
 at L<Protocol::WebSocket::XS::Frame> or L<Protocol::WebSocket::XS::Message> level.
 
 =back
+
+=head2 ws_accept_key([$string])
+
+Getter and setter for the key hash, i.e. C<Sec-WebSocket-Accept> header.
+
+=head2 ws_version()
+
+Returns value of C<Sec-WebSocket-Version> header in response.
+
+=head2 ws_extensions([@extensions])
+
+Getter and setter for the available websocket extensions in the response.
+Currently only C<permessage-deflate> is supported.
+
+    $response->(['permessage-deflate', { 'client_max_window_bits' => '15' }]);
+
+See L<Protocol::WebSocket::XS::Parser> for all available deflate options.
+
+=head2 ws_protocol([$string])
+
+Getter and setter for the websocket protocol identity (i.e.
+C<Sec-WebSocket-Protocol> header).
+
+=head2 error()
+
+L<XS::STL::ErrorCode> object which represents Perl API for convenient
+C++ C<std::error_code> subsystem. Possible errors are described in
+L<Protocol::HTTP::errc>, L<Protocol::WebSocket::XS::errc>.
+
+    if ($response->error) {
+        # handle it
+    }
 
 
 =head1 REFERENCE

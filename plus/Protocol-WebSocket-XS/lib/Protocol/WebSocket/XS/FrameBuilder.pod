@@ -8,7 +8,7 @@ Protocol::WebSocket::XS::FrameBuilder - low-level frame generator helper
 
 The class helps in creation of low-level frames of a single message. It
 might be useful if message data is partly available and should be
-serialized and delivered to peer ASAP.
+serialized and delivered to peer ASAP as a frame.
 
 The output frames are serialized as binary string, it is useless to access
 to them via L<Protocol::WebSocket::XS::Frame> interface.
