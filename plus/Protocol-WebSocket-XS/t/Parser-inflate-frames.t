@@ -79,7 +79,7 @@ subtest 'large payload' => sub {
 subtest '1-frame-message (tiny payload)' => sub {
     my $payload = "hello-world";
     my ($c, $s) = $create_pair->();
-    my $bin = $s->start_message({final => 1, deflate => 1})->send($payload);
+    my $bin = $s->start_message(final => 1, deflate => 1)->send($payload);
     my ($m) = $c->get_messages($bin);
     ok $m;
     is $m->payload, $payload;
@@ -90,7 +90,7 @@ subtest 'message, 2 frames, context_takeover = true, tiny payload' => sub {
     my @payload = ('a', 'b');
     my $payload = join('', @payload, @payload);
     my ($c, $s) = $create_pair->();
-    my $builder = $s->start_message({deflate => 1});
+    my $builder = $s->start_message(deflate => 1);
     my $bin1 = $builder->send_av(\@payload);
     my $bin2 = $builder->final(1)->send_av(\@payload);
     my ($m) = $c->get_messages($bin1 . $bin2);
@@ -102,7 +102,7 @@ subtest 'message, 2 frames, context_takeover = true, medium payload' => sub {
     my @payload = ('0') x (1024);
     my $payload = join('', @payload, @payload);
     my ($c, $s) = $create_pair->();
-    my $builder = $s->start_message({deflate => 1});
+    my $builder = $s->start_message(deflate => 1);
     my $bin1 = $builder->send_av(\@payload);
     my $bin2 = $builder->final(1)->send_av(\@payload);
     note "l1 = ", length($bin1), ", l2 = ", length($bin2);
@@ -119,8 +119,8 @@ subtest '2 messages, 2 frames, server_context_takeover = false, medium payload' 
         my ($c, $s) = @_;
         $c->configure({deflate => {server_no_context_takeover => 1}});
     });
-    my $bin1 = $s->start_message({deflate => 1})->final(1)->send_av(\@payload);
-    my $bin2 = $s->start_message({deflate => 1})->final(1)->send_av(\@payload);
+    my $bin1 = $s->start_message(deflate => 1)->final(1)->send_av(\@payload);
+    my $bin2 = $s->start_message(deflate => 1)->final(1)->send_av(\@payload);
     note "l1 = ", length($bin1), ", l2 = ", length($bin2);
     is length($bin1), length($bin2), "make sure there is no context takeover";
     my @m = $c->get_messages($bin1 . $bin2);
@@ -137,8 +137,8 @@ subtest '2 messages, 2 frames, client_context_takeover = false, medium payload' 
         my ($c, $s) = @_;
         $c->configure({deflate => {client_no_context_takeover => 1}});
     });
-    my $bin1 = $c->start_message({deflate => 1})->final(1)->send_av(\@payload);
-    my $bin2 = $c->start_message({deflate => 1})->final(1)->send_av(\@payload);
+    my $bin1 = $c->start_message(deflate => 1)->final(1)->send_av(\@payload);
+    my $bin2 = $c->start_message(deflate => 1)->final(1)->send_av(\@payload);
     note "l1 = ", length($bin1), ", l2 = ", length($bin2);
     is length($bin1), length($bin2), "make sure there is no context takeover";
     my @m = $s->get_messages($bin1 . $bin2);
@@ -161,8 +161,8 @@ subtest '2 messages, 2 frames, server_context_takeover = false = client_context_
             compression_level          => 1,
         }});
     });
-    my $bin1 = $c->start_message({deflate => 1})->final(1)->send_av(\@payload);
-    my $bin2 = $c->start_message({deflate => 1})->final(1)->send_av(\@payload);
+    my $bin1 = $c->start_message(deflate => 1)->final(1)->send_av(\@payload);
+    my $bin2 = $c->start_message(deflate => 1)->final(1)->send_av(\@payload);
     note "l1 = ", length($bin1), ", l2 = ", length($bin2);
     is length($bin1), length($bin2), "make sure there is no context takeover";
     my @m = $s->get_messages($bin1 . $bin2);
@@ -175,7 +175,7 @@ subtest '2 messages, 2 frames, server_context_takeover = false = client_context_
 subtest "multiframe message" => sub {
     my $payloads = [qw/first second third/];
     my ($c, $s) = $create_pair->();
-    my $bin = $c->send_message_multiframe({deflate => 1, payload => $payloads});
+    my $bin = $c->send_message_multiframe(deflate => 1, payload => $payloads);
     my ($m) = $s->get_messages($bin);
     is $m->payload, join('', @$payloads);
 };
@@ -184,7 +184,7 @@ subtest "multiframe message" => sub {
 subtest "multiframe message (with empty pieces)" => sub {
     my $payloads = ['', 'hello', ''];
     my ($c, $s) = $create_pair->();
-    my $bin = $c->send_message_multiframe({deflate => 1, payload => $payloads});
+    my $bin = $c->send_message_multiframe(deflate => 1, payload => $payloads);
     my ($m) = $s->get_messages($bin);
     is $m->payload, join('', @$payloads);
 };
@@ -192,7 +192,7 @@ subtest "multiframe message (with empty pieces)" => sub {
 subtest "multiframe message (empty)" => sub {
     my $payloads = ['', '', ''];
     my ($c, $s) = $create_pair->();
-    my $bin = $c->send_message_multiframe({deflate => 1, payload => $payloads});
+    my $bin = $c->send_message_multiframe(deflate => 1, payload => $payloads);
     my ($m) = $s->get_messages($bin);
     ok $m;
     ok !$m->payload;
@@ -202,7 +202,7 @@ subtest 'corrupted frame' => sub {
     my @payload = ('0') x (1923);
     my $payload = join('', @payload);
     my ($c, $s) = $create_pair->();
-    my $bin             = $s->start_message({final => 1, deflate => 1})->send($payload);
+    my $bin             = $s->start_message(final => 1, deflate => 1)->send($payload);
     my $deflate_payload = substr($bin, 2);
     my $forged_bin      = substr($bin, 0, 2) . "xx" . substr($deflate_payload, 2);
     my ($f) = $c->get_frames($forged_bin);
@@ -213,7 +213,7 @@ subtest 'corrupted 2nd frame from 3' => sub {
     my @payload = ('0') x (1923);
     my $payload = join('', @payload, @payload, @payload);
     my ($c, $s) = $create_pair->();
-    my $builder = $s->start_message({deflate => 1});
+    my $builder = $s->start_message(deflate => 1);
     my $bin_1   = $builder->send_av(\@payload);
     my $bin_2   = $builder->send_av(\@payload);
     my $bin_3   = $builder->final(1)->send_av(\@payload);
@@ -231,16 +231,16 @@ subtest "compression threshold" => sub {
         $s->configure({deflate => { compression_threshold => 5 }});
     });
     my $payload_1 = "1234";
-    my $bin_1 = $s->send_message({payload => $payload_1});
+    my $bin_1 = $s->send_message(payload => $payload_1);
     note $bin_1;
     is( substr($bin_1, 2), $payload_1);
 
     my $payload_2 = "12345";
-    my $bin_2 = $s->send_message({payload => $payload_2, opcode => OPCODE_BINARY});
+    my $bin_2 = $s->send_message(payload => $payload_2, opcode => OPCODE_BINARY);
     note $bin_2;
     is( substr($bin_2, 2), $payload_2, "binary payload isn't compressed by default");
 
-    my $bin_3 = $s->send_message({payload => $payload_2, opcode => OPCODE_TEXT});
+    my $bin_3 = $s->send_message(payload => $payload_2, opcode => OPCODE_TEXT);
     note $bin_3;
     isnt( substr($bin_3, 2), $payload_2, "text payload is compressed by default");
 };
@@ -252,7 +252,7 @@ subtest "no_deflate" => sub {
     });
     my $payload = "1234";
 
-    my $bin = $s->send_message({payload => $payload});
+    my $bin = $s->send_message(payload => $payload);
     note $bin;
     is( substr($bin, 2), $payload);
 };
@@ -265,7 +265,7 @@ subtest "SRV-1236/12.3 inflate error" => sub {
     });
     for(my $i = 1;  $i < 100; ++$i) {
         my $sample = substr($data, 1, 256);
-        my $bin = $c->send_message({payload => $sample});
+        my $bin = $c->send_message(payload => $sample);
         my ($m) = $c->get_messages($bin);
         is $m->payload, $sample;
     }
@@ -279,7 +279,7 @@ subtest "zip-bomb prevention (check max_message_size)" => sub {
         });
 
         my $payload = join("", ('0') x (101));
-        my $bin = $s->send_message({payload => $payload, opcode => OPCODE_TEXT});
+        my $bin = $s->send_message(payload => $payload, opcode => OPCODE_TEXT);
         note "payload length: ", length($bin);
         my ($m) = $c->get_messages($bin);
         ok $m;
@@ -311,7 +311,7 @@ subtest "zip-bomb prevention (check max_message_size)" => sub {
         });
 
         my $payload = join("", ('0') x (100));
-        my $bin = $s->send_message({payload => $payload, opcode => OPCODE_TEXT});
+        my $bin = $s->send_message(payload => $payload, opcode => OPCODE_TEXT);
         note "payload length: ", length($bin);
         my ($m) = $c->get_messages($bin);
         ok $m;

@@ -1,81 +1,96 @@
 =head1 NAME
 
-Protocol::WebSocket::XS::ServerParser - Server-side specialization of websocket parser
+Protocol::WebSocket::XS::ServerParser - Server-side websocket parser
 
-=cut
+
 
 =head1 SYNOPSIS
 
-    use Protocol::WebSocket::XS::ClientParser;
-    use Protocol::WebSocket::XS::ServerParser;
+    use Protocol::WebSocket::XS;
 
-    my $client = Protocol::WebSocket::XS::ClientParser->new;
-    my $req_str = $client->connect_request({
-        uri           => "ws://example.com/",
-        ws_key        => "dGhlIHNhbXBsZSBub25jZQ==",
-        ws_protocol   => "chat",
-        ws_extensions => [ [ 'permessage-deflate'] ],
-        headers       => {
-            'Origin'          => 'http://www.crazypanda.ru',
-            'User-Agent'      => 'My-UA',
-        },
-    });
+    my $server  = Protocol::WebSocket::XS::ServerParser->new;
+    my $request = $server->accept($data);
 
-    my $server = Protocol::WebSocket::XS::ServerParser->new;
-    my $req    = $server->accept($req_str);     # => isa 'Protocol::WebSocket::XS::ConnectRequest'
+    my $response_data = $request->error ? $server->accept_error : $server->accept_response;
+    # send $response_data to client
 
-    my $accept = $req->error ? $server->accept_error : $server->accept_response;
-    my $res    = $client->connect($accept);     # => isa 'Protocol::WebSocket::XS::ConnectResponse'
-
-    my $v1 = $server->accept_parsed;            # => success
-    my $v2 = $server->accepted;                 # => success
+    $server->accept_parsed;
+    $server->accepted;
 
 
 =head1 DESCRIPTION
 
 Server-side specialization of L<Protocol::WebSocket::XS::Parser>.
 
+Methods of this class are used for accepting a logical websocket connection from client.
+
+See L<Protocol::WebSocket::XS::Parser> for API after accepting a connection.
+
+
 =head1 METHODS
 
 =head2 accept_parsed()
 
-Indicates whether a server received connection request.
+Returns true if server finished parsing client's connect request.
+
 
 =head2 accepted()
 
-Indicates whether a server received connection request and no error has been met.
+Returns true if C<accept_parsed()> and no errors have been met.
 
-=head2 accept($string)
 
-Parses request HTTP-request string and returns
-L<Protocol::WebSocket::XS::ConnectRequest>. In internal state sets flags whether
-the requests has been parsed and accepted.
+=head2 accept($data)
+
+Parses client's connect request (HTTP-request).
+
+Returns undef if more data is needed, otherwise returns L<Protocol::WebSocket::XS::ConnectRequest> object.
+In internal state sets flags whether the requests has been parsed and accepted.
 
 Developer might inspect the request object and add application-specific checks.
 
-=head2 accept_response([$connect_response])
+In case of any errors, $request->error() will be set.
 
-Returns serialized B<positive> response from server to client.
+    my $request = $server_parser->accept($data);
+
+
+=head2 accept_response([$response])
+
+Returns serialized B<successful> response from server to client.
 
 Extensions-related headers are automatically added for the build-in extensions,
 which where enabled by configuration (L<Protocol::WebSocket::XS::Parser::configure>)
 if request contained acceptable extension configurations.
 
-Developer might supply customized L<Protocol::WebSocket::XS::ConnectResponse>
-C<$connect_response> with predefined headers and/or custom extensions.
+Developer might supply customized L<Protocol::WebSocket::XS::ConnectResponse> C<$response> with predefined headers, custom extensions, etc...
 
-=head2 accept_error()
+C<$response> may be an L<Protocol::WebSocket::XS::ConnectResponse> object or a params hashref that its constructor supports.
+
+    my $data = $server->accept_response({
+        body    => 'hello',
+        headers => {hello => 'world'},
+    });
+
+
+
+=head2 accept_error([$response])
 
 =head2 accept_error(Protocol::WebSocket::XS::ConnectResponse $object)
 
-Returns serialized B<negative> response from server to client. Further
-communication with server is not possible, as websocket connection was not
-established.
+Returns serialized B<failure> response from server to client.
+Further communication with server is not possible, as websocket connection was not established.
 
-Developer might supply customized L<Protocol::WebSocket::XS::ConnectResponse>
-C<$object> with predefined headers.
+Developer might supply customized L<Protocol::WebSocket::XS::ConnectResponse> C<$object> with predefined headers, etc...
 
-=head1 REFERENCE
+C<$response> may be an L<Protocol::WebSocket::XS::ConnectResponse> object or a params hashref that its constructor supports.
+
+    my $data = $server->accept_error({
+        code => 401,
+        body => 'we are unable to process your request because ...',
+    });
+
+
+
+=head1 SEE ALSO
 
 L<Protocol::WebSocket::XS>
 
@@ -86,19 +101,5 @@ L<Protocol::WebSocket::XS::ConnectRequest>
 L<Protocol::WebSocket::XS::ConnectResponse>
 
 L<Protocol::WebSocket::XS::Parser>
-
-=head1 SEE ALSO
-
-L<rfc6455|https://tools.ietf.org/html/rfc6455>
-
-=head1 AUTHOR
-
-Pronin Oleg <syber@cpan.org>, Crazy Panda LTD
-
-Ivan Baidakou <dmol@cpan.org>, Crazy Panda LTD
-
-=head1 LICENSE
-
-You may distribute this code under the same terms as Perl itself.
 
 =cut

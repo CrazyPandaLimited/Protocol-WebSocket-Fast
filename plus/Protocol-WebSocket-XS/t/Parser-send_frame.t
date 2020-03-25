@@ -31,7 +31,7 @@ my $create_parser = sub {
 
 my $create_builder = sub {
     my ($server_or_client, $settings) = @_;
-    return $create_parser->($server_or_client)->start_message($settings);
+    return $create_parser->($server_or_client)->start_message(%$settings);
 };
 
 subtest 'small server2client frame' => sub {

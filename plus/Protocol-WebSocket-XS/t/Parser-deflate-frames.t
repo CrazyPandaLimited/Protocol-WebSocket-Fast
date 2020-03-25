@@ -37,7 +37,7 @@ my $create_server = sub {
 
 subtest 'empty payload frame' => sub {
     my $payload = "";
-    my $bin = $create_server->($default_compression)->start_message({final => 1})->send($payload);
+    my $bin = $create_server->($default_compression)->start_message(final => 1)->send($payload);
     ok $bin;
     is(length($bin), 3, "frame length ok"); # 2 header + 1 bytes empty zlib frame
     my $deflate_payload = substr($bin, 2);
@@ -46,7 +46,7 @@ subtest 'empty payload frame' => sub {
 
 subtest 'small server2client frame (rfc7692 "Hello" sample)' => sub {
     my $payload = "Hello"; # must be <= 125
-    my $bin = $create_server->($default_compression)->start_message({final => 1, opcode => OPCODE_TEXT})->send($payload);
+    my $bin = $create_server->($default_compression)->start_message(final => 1, opcode => OPCODE_TEXT)->send($payload);
     is(length($bin), 9, "frame length ok"); # 2 header + 10 payload
     my $deflate_payload = substr($bin, 2);
     note "frame = ", encode_base64pad($bin);
@@ -56,7 +56,7 @@ subtest 'small server2client frame (rfc7692 "Hello" sample)' => sub {
     is($bin, gen_frame({mask => 0, fin => 1, rsv1 => 1, opcode => OPCODE_TEXT, data => $deflate_payload}), "frame ok");
 
     subtest "it mode" => sub {
-        my $bin2 = $create_server->($default_compression)->start_message({final => 1, opcode => OPCODE_TEXT})->send_av([qw/Hel lo/]);
+        my $bin2 = $create_server->($default_compression)->start_message(final => 1, opcode => OPCODE_TEXT)->send_av([qw/Hel lo/]);
         is(length($bin2), 9, "frame length ok");
         my $deflate_payload2 = substr($bin2, 2);
         is($deflate_payload2, $deflate_payload, "it mode ok");
@@ -64,7 +64,7 @@ subtest 'small server2client frame (rfc7692 "Hello" sample)' => sub {
     };
 
     subtest "it mode by byte" => sub {
-        my $bin3 = $create_server->($default_compression)->start_message({final => 1, opcode => OPCODE_TEXT})->send_av([split //, $payload]);
+        my $bin3 = $create_server->($default_compression)->start_message(final => 1, opcode => OPCODE_TEXT)->send_av([split //, $payload]);
         is($bin3, $bin, "it mode ok");
     };
 };
@@ -72,7 +72,7 @@ subtest 'small server2client frame (rfc7692 "Hello" sample)' => sub {
 subtest 'big (1923 b) server2client frame' => sub {
     my @payload = ('0') x (1923);
     my $payload = join('', @payload);
-    my $bin = $create_server->($default_compression)->start_message({final => 1})->send($payload);
+    my $bin = $create_server->($default_compression)->start_message(final => 1)->send($payload);
     is(length($bin), 20, "frame length ok");
     my $deflate_payload = substr($bin, 2);
     my $encoded = encode_base64pad($deflate_payload);
@@ -81,7 +81,7 @@ subtest 'big (1923 b) server2client frame' => sub {
     is($bin, gen_frame({mask => 0, fin => 1, rsv1 => 1, opcode => OPCODE_BINARY, data => $deflate_payload}), "frame ok");
 
     subtest "it mode" => sub {
-        my $bin2 = $create_server->($default_compression)->start_message({final => 1})->send_av(\@payload);
+        my $bin2 = $create_server->($default_compression)->start_message(final => 1)->send_av(\@payload);
         is(length($bin2), length($bin), "frame length ok");
         my $deflate_payload2 = substr($bin2, 2);
         my $encoded2 = encode_base64pad($deflate_payload2);
@@ -95,7 +95,7 @@ subtest 'big (1923 b) server2client frame' => sub {
 subtest 'big (108 kb) server2client frame' => sub {
     my @payload = ('0') x (1024 * 108);
     my $payload = join('', @payload);
-    my $bin = $create_server->($default_compression)->start_message({final => 1})->send($payload);
+    my $bin = $create_server->($default_compression)->start_message(final => 1)->send($payload);
     is(length($bin), 130, "frame length ok");
     my $deflate_payload = substr($bin, 4);
     my $encoded = encode_base64pad($deflate_payload);
@@ -103,7 +103,7 @@ subtest 'big (108 kb) server2client frame' => sub {
     is($bin, gen_frame({mask => 0, fin => 1, rsv1 => 1, opcode => OPCODE_BINARY, data => $deflate_payload}), "frame ok");
 
     subtest "it mode" => sub {
-        my $bin2 = $create_server->($default_compression)->start_message({final => 1})->send_av(\@payload);
+        my $bin2 = $create_server->($default_compression)->start_message(final => 1)->send_av(\@payload);
         is(length($bin2), length($bin), "frame length ok");
         my $deflate_payload2 = substr($bin2, 4);
         my $encoded2 = encode_base64pad($deflate_payload2);
@@ -117,7 +117,7 @@ subtest 'big (108 kb) server2client frame' => sub {
 subtest 'big (1 mb) server2client frame' => sub {
     my @payload = ('0') x (1024 * 1024);
     my $payload = join('', @payload);
-    my $bin = $create_server->($default_compression)->start_message({final => 1})->send($payload);
+    my $bin = $create_server->($default_compression)->start_message(final => 1)->send($payload);
     is(length($bin), 1038, "frame length ok");
     my $deflate_payload = substr($bin, 4);
     my $encoded = encode_base64pad($deflate_payload);
@@ -125,7 +125,7 @@ subtest 'big (1 mb) server2client frame' => sub {
     is($bin, gen_frame({mask => 0, fin => 1, rsv1 => 1, opcode => OPCODE_BINARY, data => $deflate_payload}), "frame ok");
 
     subtest "it mode" => sub {
-        my $bin2 = $create_server->($default_compression)->start_message({final => 1})->send_av(\@payload);
+        my $bin2 = $create_server->($default_compression)->start_message(final => 1)->send_av(\@payload);
         #is(length($bin2), length($bin), "frame length ok");
         is length($bin2), 1043;
     };

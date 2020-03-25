@@ -104,82 +104,95 @@ XS-bindings can be written on the top of C<Protocol::WebSocket::XS> (see L<UniEv
 The <Protocol::WebSocket::XS> is B<not> drop-in replacement of <Protocol::WebSocket>,
 as it uses sligthly different API.
 
-=head1 BENCHMARKS (Protocol::WebSocket vs Protocol::WebSocket::XS)
-
-(see misc/bench.plx for full code)
-
-    timethese(-1, {
-        "Protocol::WebSocket::XS" => sub { $client->get_messages($data) },
-        "Protocol::WebSocket "    => sub { Protocol::WebSocket::Frame->new($data)->next },
-    });
-
-    Protocol::WebSocket :  1 wallclock secs ( 1.08 usr +  0.00 sys =  1.08 CPU) @ 113777.78/s (n=122880)
-    Protocol::WebSocket::XS:  2 wallclock secs ( 1.08 usr +  0.00 sys =  1.08 CPU) @ 2316928.70/s (n=2502283)
 
 
-=head1 EXPORTED CONSTANTS
+=head1 PERFORMANCE
 
-=head2 OPCODE_CONTINUE
+Compared to C<Protocol::WebSocket>. Tests were performed on Xeon v3-2687W 2.9Ghz, Debian 10.
 
-=head2 OPCODE_TEXT
+Parsing websocket packet with 200 bytes payload.
+    
+                                 Rate   Protocol::WebSocket  Protocol::WebSocket::XS
+    Protocol::WebSocket       68593/s                     --                    -97%
+    Protocol::WebSocket::XS 2360644/s                  3342%                      --
 
-=head2 OPCODE_BINARY
+    
 
-=head2 OPCODE_CLOSE
+=head1 CONSTANTS
 
-=head2 OPCODE_PING
+=head2 Opcodes
 
-=head2 OPCODE_PONG
+=over
 
-=head2 CLOSE_DONE
+=item OPCODE_CONTINUE
 
-=head2 CLOSE_AWAY
+=item OPCODE_TEXT
 
-=head2 CLOSE_PROTOCOL_ERROR
+=item OPCODE_BINARY
 
-=head2 CLOSE_INVALID_DATA
+=item OPCODE_CLOSE
 
-=head2 CLOSE_UNKNOWN
+=item OPCODE_PING
 
-=head2 CLOSE_ABNORMALLY
+=item OPCODE_PONG
 
-=head2 CLOSE_INVALID_TEXT
+=back
 
-=head2 CLOSE_BAD_REQUEST
+=head2 Close codes
 
-=head2 CLOSE_MAX_SIZE
+=over
 
-=head2 CLOSE_EXTENSION_NEEDED
+=item CLOSE_DONE
 
-=head2 CLOSE_INTERNAL_ERROR
+=item CLOSE_AWAY
 
-=head2 CLOSE_TLS
+=item CLOSE_PROTOCOL_ERROR
+
+=item CLOSE_INVALID_DATA
+
+=item CLOSE_UNKNOWN
+
+=item CLOSE_ABNORMALLY
+
+=item CLOSE_INVALID_TEXT
+
+=item CLOSE_BAD_REQUEST
+
+=item CLOSE_MAX_SIZE
+
+=item CLOSE_EXTENSION_NEEDED
+
+=item CLOSE_INTERNAL_ERROR
+
+=item CLOSE_TLS
+
+=back
+
+
 
 =head1 REFERENCE
 
-L<Protocol::WebSocket>
-
 L<Protocol::WebSocket::XS::ClientParser>
+
+L<Protocol::WebSocket::XS::ServerParser>
+
+L<Protocol::WebSocket::XS::Parser>
 
 L<Protocol::WebSocket::XS::ConnectRequest>
 
 L<Protocol::WebSocket::XS::ConnectResponse>
 
-L<Protocol::WebSocket::XS::Frame>
-
-L<Protocol::WebSocket::XS::FrameBuilder>
-
-L<Protocol::WebSocket::XS::FrameIterator>
-
 L<Protocol::WebSocket::XS::Message>
 
 L<Protocol::WebSocket::XS::MessageIterator>
 
-L<Protocol::WebSocket::XS::Parser>
+L<Protocol::WebSocket::XS::Frame>
 
-L<Protocol::WebSocket::XS::ServerParser>
+L<Protocol::WebSocket::XS::FrameIterator>
 
-L<Protocol::HTTP>
+L<Protocol::WebSocket::XS::FrameBuilder>
+
+
 
 =head1 SEE ALSO
 
@@ -189,11 +202,17 @@ L<rfc7692|https://tools.ietf.org/html/rfc7692>
 
 L<Protocol::HTTP>
 
+L<Protocol::WebSocket>
+
+
+
 =head1 AUTHOR
 
 Pronin Oleg <syber@cpan.org>, Crazy Panda LTD
 
 Ivan Baidakou <dmol@cpan.org>, Crazy Panda LTD
+
+
 
 =head1 LICENSE
 

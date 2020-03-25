@@ -15,7 +15,7 @@ subtest 'settings' => sub {
 
     subtest "user defined constants" => sub {
         my $server = MyTest::get_established_server();
-        my $b = $server->start_message({ final => 1, deflate => 0, opcode => OPCODE_TEXT});
+        my $b = $server->start_message(final => 1, deflate => 0, opcode => OPCODE_TEXT);
         ok $b->final;
         ok !$b->deflate;
         is $b->opcode, OPCODE_TEXT;
@@ -38,7 +38,7 @@ subtest "attempt to start another message, having unfinished one" => sub {
 };
 
 subtest "opcode change for multi-frame messge" => sub {
-    my $b = MyTest::get_established_server()->start_message({opcode => OPCODE_BINARY});
+    my $b = MyTest::get_established_server()->start_message(opcode => OPCODE_BINARY);
     is $b->opcode, OPCODE_BINARY;
     $b->send("hello");
 
