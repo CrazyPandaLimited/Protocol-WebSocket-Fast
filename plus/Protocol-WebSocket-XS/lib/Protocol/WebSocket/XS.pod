@@ -1,18 +1,17 @@
 =head1 NAME
 
-Protocol::WebSocket::XS - WebSocket extremely fast websocket protocol
+Protocol::WebSocket::XS - very fast WebSocket protocol implementation
 
-=cut
+
 
 =head1 SYNOPSIS
 
-    use URI::XS;
     use Protocol::WebSocket::XS::ClientParser;
     use Protocol::WebSocket::XS::ServerParser;
 
     my $client = Protocol::WebSocket::XS::ClientParser->new;
     my $req_str = $client->connect_request({
-        uri           => URI::XS->new("ws://example.com/"),
+        uri           => "ws://example.com/",
         ws_key        => "dGhlIHNhbXBsZSBub25jZQ==",
         ws_protocol   => "chat",
         ws_extensions => [ [ 'permessage-deflate'] ],
@@ -87,19 +86,20 @@ Protocol::WebSocket::XS - WebSocket extremely fast websocket protocol
     # completely disable compression; effective before connection establishment
     $client2->no_deflate;
 
+
+
 =head1 DESCRIPTION
 
-C<Protocol::WebSocket::XS> is extremely fast server/client zero-copy
-incremental WebSocket (L<rfc6455|https://tools.ietf.org/html/rfc6455>) parser
-and serialization library with Perl and C++ interface.
+C<Protocol::WebSocket::XS> is a port of C<panda::protocol::websocket>, extremely fast server/client zero-copy
+incremental WebSocket parser and serialization library (L<rfc6455|https://tools.ietf.org/html/rfc6455>) with Perl and C++ interface.
 
 The library supports compression (a.k.a. per-message deflate extension, see
 L<rfc7692|https://tools.ietf.org/html/rfc7692>) via C<zlib> C library, which
 is enabled by default for all text messages exceeding TCP max segment
 size (1410 bytes).
 
-The module has dual Perl/C++ interface (see L<XS::Manifesto>) so futher
-XS-bindings can be written on the top of C<Protocol::WebSocket::XS>.
+The module has dual Perl/C++ interface (see L<XS::Manifesto>) so further
+XS-bindings can be written on the top of C<Protocol::WebSocket::XS> (see L<UniEvent::WebSocket>).
 
 The <Protocol::WebSocket::XS> is B<not> drop-in replacement of <Protocol::WebSocket>,
 as it uses sligthly different API.

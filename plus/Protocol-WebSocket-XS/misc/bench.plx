@@ -30,7 +30,7 @@ $server->is_deflate_active;
 
 
 my $builder = $server->start_message({opcode => OPCODE_TEXT, final => 1, deflate => 0});
-my $data = $builder->send("Lorem ipsum dolor");
+my $data = $builder->send("Lorem ipsum dolor " x 10);
 
 my ($f1) =  $client->get_frames($data);
 print "Protocol::WebSocket::XS out: ", $f1->payload, "\n";
