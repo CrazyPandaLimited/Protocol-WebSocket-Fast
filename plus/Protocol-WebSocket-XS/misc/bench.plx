@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
+use 5.012;
 use lib 'blib/lib', 'blib/arch', 't/lib';
-use Benchmark qw/timethis timethese/;
+use Benchmark qw/timethis timethese cmpthese/;
 
 use URI::XS;
 use Protocol::WebSocket::XS::ClientParser;
@@ -29,16 +30,9 @@ $client->is_deflate_active;
 $server->is_deflate_active;
 
 
-my $builder = $server->start_message({opcode => OPCODE_TEXT, final => 1, deflate => 0});
-my $data = $builder->send("Lorem ipsum dolor " x 10);
+my $data = $server->send_message({opcode => OPCODE_TEXT, deflate => 0, payload => "Lorem ipsum dolor " x 10});
 
-my ($f1) =  $client->get_frames($data);
-print "Protocol::WebSocket::XS out: ", $f1->payload, "\n";
-
-my $f2 =  Protocol::WebSocket::Frame->new($data);
-print "Protocol::WebSocket out: ", $f2->next, "\n";
-
-timethese(-1, {
+cmpthese(-1, {
     "Protocol::WebSocket::XS" => sub { $client->get_messages($data) },
     "Protocol::WebSocket "    => sub { Protocol::WebSocket::Frame->new($data)->next },
 });
