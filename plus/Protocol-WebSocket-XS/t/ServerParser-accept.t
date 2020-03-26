@@ -81,7 +81,7 @@ subtest 'max_handshake_size' => sub {
     $p->accept($_) for @data;
     $creq = $p->accept($big);
     ok($creq, "buffer limit exceeded");
-    is($creq->error, Protocol::HTTP::errc::headers_too_large(), "buffer limit exceeded");
+    is($creq->error, Protocol::HTTP::Error::headers_too_large(), "buffer limit exceeded");
 };
 
 $p->reset();

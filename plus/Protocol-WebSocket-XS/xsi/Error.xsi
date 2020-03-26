@@ -4,7 +4,7 @@ PROTOTYPES: DISABLE
 BOOT {
     Stash s(__PACKAGE__);
 
-    Stash ecstash("Protocol::WebSocket::XS::errc", GV_ADD);
+    Stash ecstash("Protocol::WebSocket::XS::Error", GV_ADD);
     xs::exp::create_constants(ecstash, {
         {"garbage_after_connect", xs::out(ErrorCode(errc::GARBAGE_AFTER_CONNECT))},
 
