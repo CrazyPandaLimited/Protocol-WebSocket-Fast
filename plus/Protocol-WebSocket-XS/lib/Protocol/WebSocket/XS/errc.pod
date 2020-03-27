@@ -1,0 +1,133 @@
+=head1 NAME
+
+Protocol::WebSocket::XS::errc - HTTP parser error constants
+
+=head1 SYNOPSIS
+
+    use Protocol::WebSocket::XS::errc;
+
+    my $server = Protocol::WebSocket::XS::ServerParser->new;
+    my $req    = $server->accept('garbage');
+
+    $req->error;    # Protocol::WebSocket::XS::errc or Protocol::HTTP::errc instance
+
+
+=head1 DESCRIPTION
+
+Constants provided by this package are returned by parsers to signal about
+websocket and HTTP protocol errors.
+
+All errors are L<XS::STL::ErrorCode> objects and are of category
+C<Protocol::WebSocket::XS::error_category>.
+
+    Protocol::WebSocket::XS::errc::invalid_opcode->category() == Protocol::WebSocket::XS::error_category; # true
+
+=head1 CONSTANTS
+
+=head2 garbage_after_connect
+
+Nothing was expected after HTTP "connection upgrade" on server-side
+
+=head2 version_update_required
+
+Server-side expected "connection upgrade" on client request
+
+=head2 unsupported_version
+
+The requested websockets protocol version isn't supported by the module
+
+=head2 response_code_101
+
+The client-side expected 101/Protocol switch from the server response to switch
+from HTTP to websockets protocol
+
+=head2 connection_mustbe_upgrade
+
+Client-side expected "connection upgrade" confirmation on server response
+headers
+
+=head2 upgrade_mustbe_websocket
+
+Client-side expected that "connection upgrade" on server response headers
+should be C<websocket>
+
+=head2 sec_accept_missing
+
+Client-side expected the valid C<Sec-WebSocket-Accept> header on server
+response headers
+
+=head2 method_mustbe_get
+
+Server-side expected that initial client HTTP request should use C<GET> method.
+
+=head2 http_1_1_required
+
+Server-side expected that initial client HTTP request should use C<HTTP/1.1>
+protocol version.
+
+=head2 body_prohobited
+
+Server-side expected that initial client HTTP request should have no body
+
+=head2 invalid_opcode
+
+Wrong opcode in websocket protocol frame
+
+=head2 control_fragmented
+
+Websocket protocol C<control frame> should not be fragmented
+
+=head2 control_payload_too_big
+
+Websocket protocol C<control frame> size exceeds max size for the control frame
+
+=head2 not_masked
+
+Server-side expects client's frames to be masked
+
+=head2 max_frame_size
+
+Websocket protocol C<frame> size exceeds max configured size
+
+=head2 close_frame_invalid_data
+
+The close frame contains invalid data
+
+=head2 initial_continue
+
+The initial frame cannot have opcode C<CONTINUE>
+
+=head2 fragment_no_continue
+
+Fragmented websocket frame should have opcode C<CONTINUE>
+
+=head2 max_message_size
+
+Websocket protocol C<message> size exceeds max configured size.
+
+=head2 deflate_negotiation_failed
+
+C<permessage-deflate> websocket extension negotiation failed, e.g. if peer
+uses different extension settings
+
+=head2 control_frame_compression
+
+C<permessage-deflate> websocket extension cannot be applied for C<control frames>
+
+=head2 deflate_max_message_size
+
+Websocket protocol C<message> size exceeds max configured size after
+payload uncompression.
+
+=head2 inflate_error
+
+Compressed payload is corrupted
+
+
+=head1 SEE ALSO
+
+L<Protocol::WebSocket::XS>
+
+L<Protocol::HTTP::errc>
+
+=cut
