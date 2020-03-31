@@ -6,36 +6,29 @@ BOOT {
 
     Stash ecstash("Protocol::WebSocket::XS::Error", GV_ADD);
     xs::exp::create_constants(ecstash, {
-        {"garbage_after_connect", xs::out(ErrorCode(errc::GARBAGE_AFTER_CONNECT))},
-
-        {"version_update_required",   xs::out(ErrorCode(errc::VERSION_UPGRADE_REQUIRED))},
-        {"unsupported_version",       xs::out(ErrorCode(errc::UNSUPPORTED_VERSION))},
-        {"response_code_101",         xs::out(ErrorCode(errc::RESPONSE_CODE_101))},
-        {"connection_mustbe_upgrade", xs::out(ErrorCode(errc::CONNECTION_MUSTBE_UPGRADE))},
-        {"upgrade_mustbe_websocket",  xs::out(ErrorCode(errc::UPGRADE_MUSTBE_WEBSOCKET))},
-        {"sec_accept_missing",        xs::out(ErrorCode(errc::SEC_ACCEPT_MISSING))},
-
-        {"method_mustbe_get", xs::out(ErrorCode(errc::METHOD_MUSTBE_GET))},
-        {"http_1_1_required", xs::out(ErrorCode(errc::HTTP_1_1_REQUIRED))},
-        {"body_prohobited",   xs::out(ErrorCode(errc::BODY_PROHIBITED))},
-
-        {"invalid_opcode",          xs::out(ErrorCode(errc::INVALID_OPCODE))},
-        {"control_fragmented",      xs::out(ErrorCode(errc::CONTROL_FRAGMENTED))},
-        {"control_payload_too_big", xs::out(ErrorCode(errc::CONTROL_PAYLOAD_TOO_BIG))},
-        {"not_masked",              xs::out(ErrorCode(errc::NOT_MASKED))},
-        {"max_frame_size",          xs::out(ErrorCode(errc::MAX_FRAME_SIZE))},
-        {"close_frame_invalid_data",xs::out(ErrorCode(errc::CLOSE_FRAME_INVALID_DATA))},
-        {"initial_continue",        xs::out(ErrorCode(errc::INITIAL_CONTINUE))},
-        {"fragment_no_continue",    xs::out(ErrorCode(errc::FRAGMENT_NO_CONTINUE))},
-
-        {"max_message_size", xs::out(ErrorCode(errc::MAX_MESSAGE_SIZE))},
-
-        {"deflate_negotiation_failed", xs::out(ErrorCode(DeflateError::NEGOTIATION_FAILED))},
-        {"control_frame_compression", xs::out(ErrorCode(DeflateError::CONTROL_FRAME_COMPRESSION))},
-        {"deflate_max_message_size", xs::out(ErrorCode(DeflateError::MAX_MESSAGE_SIZE))},
-        {"inflate_error", xs::out(ErrorCode(DeflateError::INFALTE_ERROR))},
+        {"garbage_after_connect",      xs::out(make_error_code(errc::garbage_after_connect))},
+        {"unsupported_version",        xs::out(make_error_code(errc::unsupported_version))},
+        {"response_code_101",          xs::out(make_error_code(errc::response_code_101))},
+        {"connection_mustbe_upgrade",  xs::out(make_error_code(errc::connection_mustbe_upgrade))},
+        {"upgrade_mustbe_websocket",   xs::out(make_error_code(errc::upgrade_mustbe_websocket))},
+        {"sec_accept_missing",         xs::out(make_error_code(errc::sec_accept_missing))},
+        {"method_mustbe_get",          xs::out(make_error_code(errc::method_mustbe_get))},
+        {"http_1_1_required",          xs::out(make_error_code(errc::http_1_1_required))},
+        {"body_prohibited",            xs::out(make_error_code(errc::body_prohibited))},
+        {"invalid_opcode",             xs::out(make_error_code(errc::invalid_opcode))},
+        {"control_fragmented",         xs::out(make_error_code(errc::control_fragmented))},
+        {"control_payload_too_big",    xs::out(make_error_code(errc::control_payload_too_big))},
+        {"not_masked",                 xs::out(make_error_code(errc::not_masked))},
+        {"max_frame_size",             xs::out(make_error_code(errc::max_frame_size))},
+        {"close_frame_invalid_data",   xs::out(make_error_code(errc::close_frame_invalid_data))},
+        {"initial_continue",           xs::out(make_error_code(errc::initial_continue))},
+        {"fragment_no_continue",       xs::out(make_error_code(errc::fragment_no_continue))},
+        {"max_message_size",           xs::out(make_error_code(errc::max_message_size))},
+        {"deflate_negotiation_failed", xs::out(make_error_code(errc::deflate_negotiation_failed))},
+        {"control_frame_compression",  xs::out(make_error_code(errc::control_frame_compression))},
+        {"inflate_error",              xs::out(make_error_code(errc::inflate_error))},
     });
     xs::exp::autoexport(ecstash);
 
-    s.add_const_sub("error_category", xs::out<const std::error_category*>(&protocol_error_categoty));
+    s.add_const_sub("error_category", xs::out<const std::error_category*>(&error_categoty));
 }

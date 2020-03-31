@@ -53,19 +53,21 @@ void Parser::get_messages (string buf = string()) {
     }
 }
 
-XSFrameBuilder* Parser::start_message (...) {
-    RETVAL = new XSFrameBuilder(THIS->start_message());
+XSFrameSender* Parser::start_message (...) {
+    Opcode opcode = Opcode::BINARY;
+    auto deflate = DeflateFlag::NO;
     
     for (I32 i = 1; i < items - 1; i += 2) {
         auto name = xs::in<string_view>(ST(i));
         if (!name.length()) continue;
         auto val = ST(i+1);
         switch (name[0]) {
-            case 'd': if (name == "deflate") RETVAL->deflate(SvTRUE(val)); break;
-            case 'o': if (name == "opcode")  RETVAL->opcode ((Opcode)SvIV(val)); break;
-            case 'f': if (name == "final")   RETVAL->final  (SvTRUE(val)); break;
+            case 'd': if (name == "deflate") deflate = SvTRUE(val) ? DeflateFlag::YES : DeflateFlag::NO; break;
+            case 'o': if (name == "opcode")  opcode  = (Opcode)SvIV(val); break;
         }
     }
+    
+    RETVAL = new XSFrameSender(THIS->start_message(opcode, deflate));
 }
 
 Simple Parser::send_control (int opcode, string payload = string()) {
@@ -100,8 +102,8 @@ Simple Parser::send_message (...) : ALIAS(send_message_multiframe=1) {
         if (!name.length()) continue;
         auto val = ST(i+1);
         switch (name[0]) {
-            case 'd': if (name == "deflate") builder.deflate(SvTRUE(val)); break;
-            case 'o': if (name == "opcode")  builder.opcode ((Opcode)SvIV(val)); break;
+            case 'd': if (name == "deflate" && SvOK(val)) builder.deflate(SvTRUE(val)); break;
+            case 'o': if (name == "opcode")  builder.opcode((Opcode)SvIV(val)); break;
             case 'p': if (name == "payload") payload_sv = val; break;
         }
     }

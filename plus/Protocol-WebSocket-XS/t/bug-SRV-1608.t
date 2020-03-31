@@ -42,7 +42,7 @@ subtest 'lorem-ipsum' => sub {
         ( ($sample) x 500000 ),
     );
     my ($c, $s) = $create_pair->();
-    my $bin = $s->start_message({final => 0, deflate => 1})->send_av(\@payload);
+    my $bin = $s->start_message(deflate => 1)->send(\@payload);
     pass "no crash occur";
 };
 

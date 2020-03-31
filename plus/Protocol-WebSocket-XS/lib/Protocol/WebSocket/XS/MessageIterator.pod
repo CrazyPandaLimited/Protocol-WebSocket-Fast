@@ -2,15 +2,16 @@
 
 Protocol::WebSocket::XS::MessageIterator - WebSocket message iterator class
 
-=cut
+
 
 =head1 DESCRIPTION
 
 The class allows developer traverse on parsed websocket messages.
 
 You cannot instantiate an object of the class direcly, it can be accessed
-only via L<Protocol::WebSocket::XS::Parser> or
-L<Protocol::WebSocket::XS::FrameIterator>.
+only via L<Protocol::WebSocket::XS::Parser> or L<Protocol::WebSocket::XS::FrameIterator>.
+
+
 
 =head1 METHODS
 
@@ -19,12 +20,17 @@ L<Protocol::WebSocket::XS::FrameIterator>.
 Returns next unvisited L<Protocol::WebSocket::XS::Message> parsed from receive buffer;
 otherwise (i.e. when end of buffer is reached) it returns C<undef>.
 
+
 =head2 get_frames()
 
-Returns L<Protocol::WebSocket::XS::FrameIterator>, if there is any unread frame left.
+Returns L<Protocol::WebSocket::XS::FrameIterator>, if there is any unread frames left.
 Otherwise it returns C<undef>.
 
-=head1 REFERENCE
+See L<Protocol::WebSocket::XS::Parser> for more details on switching between frame and message modes.
+
+
+
+=head1 SEE ALSO
 
 L<Protocol::WebSocket::XS>
 
@@ -33,8 +39,6 @@ L<Protocol::WebSocket::XS::FrameIterator>
 L<Protocol::WebSocket::XS::Message>
 
 L<Protocol::WebSocket::XS::Parser>
-
-=head1 SEE ALSO
 
 L<rfc6455|https://tools.ietf.org/html/rfc6455>
 

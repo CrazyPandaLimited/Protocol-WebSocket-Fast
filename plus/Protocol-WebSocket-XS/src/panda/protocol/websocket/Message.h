@@ -1,8 +1,8 @@
 #pragma once
+#include "Frame.h"
 #include <vector>
 #include <panda/refcnt.h>
 #include <panda/string.h>
-#include <panda/protocol/websocket/Frame.h>
 #include <panda/error.h>
 
 namespace panda { namespace protocol { namespace websocket {

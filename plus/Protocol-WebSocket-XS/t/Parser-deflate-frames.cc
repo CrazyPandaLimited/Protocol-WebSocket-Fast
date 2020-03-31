@@ -14,7 +14,7 @@ string to_string(T range) {
     return r;
 }
 
-TEST_CASE("FrameBuilder & Message builder", "[deflate-extension]") {
+TEST_CASE("FrameSender & Message builder", "[deflate-extension]") {
     Parser::Config cfg;
     cfg.deflate->compression_threshold = 0;
 
@@ -44,8 +44,7 @@ TEST_CASE("FrameBuilder & Message builder", "[deflate-extension]") {
             std::vector<string> fragments;
             fragments.push_back("hello");
             fragments.push_back(" world");
-            auto data = server.start_message().deflate(true).final(true)
-                .send(fragments.begin(), fragments.end());
+            auto data = server.start_message(DeflateFlag::YES).send(fragments.begin(), fragments.end(), true);
             auto data_string = to_string(data);
             auto messages_it = client.get_messages(data_string);
             REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
@@ -54,8 +53,7 @@ TEST_CASE("FrameBuilder & Message builder", "[deflate-extension]") {
 
         SECTION("send (iterator, empty)") {
             std::vector<string> fragments;
-            auto data = server.start_message().deflate(true).final(true)
-                .send(fragments.begin(), fragments.end());
+            auto data = server.start_message(DeflateFlag::YES).send(fragments.begin(), fragments.end(), true);
             auto data_string = to_string(data);
             auto messages_it = client.get_messages(data_string);
             REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
@@ -69,8 +67,7 @@ TEST_CASE("FrameBuilder & Message builder", "[deflate-extension]") {
             fragments.push_back("");
             fragments.push_back(" world");
             fragments.push_back("");
-            auto data = server.start_message().deflate(true).final(true)
-                .send(fragments.begin(), fragments.end());
+            auto data = server.start_message(DeflateFlag::YES).send(fragments.begin(), fragments.end(), true);
             auto data_string = to_string(data);
             auto messages_it = client.get_messages(data_string);
             REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
@@ -111,8 +108,7 @@ TEST_CASE("FrameBuilder & Message builder", "[deflate-extension]") {
             fragments.emplace_back(sso_23.substr(23, 0));
             REQUIRE(bool(fragments.back().shared_buf())); // bool to prevent Catch printing data
             REQUIRE(fragments.back().shared_capacity() == 0);
-            auto data = server.start_message().deflate(true).final(true)
-                .send(fragments.begin(), fragments.end());
+            auto data = server.start_message(DeflateFlag::YES).send(fragments.begin(), fragments.end(), true);
             auto data_string = to_string(data);
             auto messages_it = client.get_messages(data_string);
             REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
@@ -293,7 +289,7 @@ TEST_CASE("FrameBuilder & Message builder", "[deflate-extension]") {
         string payload;
         REQUIRE(payload.length() == 0);
         //auto builder =
-        auto data = server.start_message().deflate(true).final(true).send(payload);
+        auto data = server.start_message(DeflateFlag::YES).send(payload, true);
         auto it = std::begin(data) + 1;
         REQUIRE((*it).length() == 1);
         REQUIRE((*it).capacity() >= ((*it).length()));
@@ -329,14 +325,14 @@ TEST_CASE("FrameBuilder & Message builder", "[deflate-extension]") {
         FrameHeader fh(Opcode::PING, true, true, false, false, true, (uint32_t)std::rand());
         auto data_string = Frame::compile(fh, payload);
         auto frames_it = client.get_frames(data_string);
-        REQUIRE(frames_it.begin()->error == DeflateError::CONTROL_FRAME_COMPRESSION);
+        REQUIRE(frames_it.begin()->error == errc::control_frame_compression);
     }
 
     SECTION("send compressed frame bigger then original") {
         string payload = encode::decode_base16("8e008f8f8f0090909000919191009292");
         string payload_copy = payload;
 
-        auto data = server.start_message().deflate(true).final(true).send(payload);
+        auto data = server.start_message(DeflateFlag::YES).send(payload, true);
         auto it = std::begin(data) + 1;
         REQUIRE((*it).length() == 24);
         auto data_string = to_string(data);

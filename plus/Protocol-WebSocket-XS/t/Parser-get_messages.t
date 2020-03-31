@@ -32,7 +32,7 @@ my $test_message = sub {
         my ($message) = @messages;
         ok(scalar(@messages) == 1 && $message, "one message returned");
         if ($error) {
-            cmp_deeply($message->error, $error, "message parsing error: $error");
+            is($message->error, $error, "message parsing error: $error");
             MyTest::reset($p);
         } else {
             is($message->error, undef, "no errors");
@@ -50,7 +50,7 @@ my $test_message = sub {
         ok($message && !$bin && !$it->next, "got message on last char") unless $error;
 
         if ($error) {
-            cmp_deeply($message->error, $error, "message parsing error: $error");
+            is($message->error, $error, "message parsing error: $error");
             MyTest::reset($p);
         } else {
             is($message->error, undef, "no errors");

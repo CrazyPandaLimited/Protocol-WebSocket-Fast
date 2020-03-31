@@ -1,14 +1,14 @@
 #pragma once
+#include "inc.h"
+#include "utils.h"
+#include "Error.h"
+#include "FrameHeader.h"
 #include <vector>
 #include <cassert>
 #include <panda/refcnt.h>
 #include <panda/string.h>
 #include <panda/memory.h>
-#include <panda/protocol/websocket/inc.h>
-#include <panda/protocol/websocket/utils.h>
-#include <panda/protocol/websocket/FrameHeader.h>
 #include <panda/error.h>
-#include "Error.h"
 
 namespace panda { namespace protocol { namespace websocket {
 
@@ -37,9 +37,9 @@ struct Frame : virtual panda::Refcnt, AllocatedObject<Frame> {
         assert(_state == State::DONE);
         if (is_control() || error) return;
         if (!fragment_in_message) {
-            if (opcode() == Opcode::CONTINUE) error = errc::INITIAL_CONTINUE;
+            if (opcode() == Opcode::CONTINUE) error = errc::initial_continue;
         }
-        else if (opcode() != Opcode::CONTINUE) error = errc::FRAGMENT_NO_CONTINUE;
+        else if (opcode() != Opcode::CONTINUE) error = errc::fragment_no_continue;
     }
 
     void reset () {

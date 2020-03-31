@@ -24,8 +24,6 @@ struct ConnectRequest : http::Request {
         method = Request::Method::GET;
     }
 
-    ~ConnectRequest();
-
     virtual void process_headers ();
 
     const HeaderValues& ws_extensions        () const { return _ws_extensions; }

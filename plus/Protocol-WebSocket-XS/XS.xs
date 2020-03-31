@@ -62,7 +62,7 @@ INCLUDE: xsi/ConnectResponse.xsi
 
 INCLUDE: xsi/Frame.xsi
 
-INCLUDE: xsi/FrameBuilder.xsi
+INCLUDE: xsi/FrameSender.xsi
 
 INCLUDE: xsi/FrameIterator.xsi
 

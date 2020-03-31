@@ -1,4 +1,4 @@
-#include <panda/protocol/websocket/Frame.h>
+#include "Frame.h"
 #include <cassert>
 #include <iostream>
 
@@ -14,32 +14,32 @@ bool Frame::parse (string& buf) {
         if (!_header.parse(buf)) return false;
 
         if (opcode() > Opcode::PONG || (opcode() > Opcode::BINARY && opcode() < Opcode::CLOSE)) {
-            error = errc::INVALID_OPCODE;
+            error = errc::invalid_opcode;
             _state = State::DONE;
             return true;
         }
 
         if (is_control()) {
             if (!final()) {
-                error = errc::CONTROL_FRAGMENTED;
+                error = errc::control_fragmented;
                 _state = State::DONE;
                 return true;
             }
             if (_header.length > MAX_CONTROL_PAYLOAD) {
-                error = errc::CONTROL_PAYLOAD_TOO_BIG;
+                error = errc::control_payload_too_big;
                 _state = State::DONE;
                 return true;
             }
         }
 
         if (!_header.has_mask && _mask_required && _header.length) {
-            error = errc::NOT_MASKED;
+            error = errc::not_masked;
             _state = State::DONE;
             return true;
         }
 
         if (_max_size && _header.length > _max_size) {
-            error = errc::MAX_FRAME_SIZE;
+            error = errc::max_frame_size;
             _state = State::DONE;
             return true;
         }
@@ -88,7 +88,7 @@ bool Frame::parse (string& buf) {
                 payload.push_back(_close_message);
                 _header.length = _close_message.length();
             }
-            else error = errc::CLOSE_FRAME_INVALID_DATA;
+            else error = errc::close_frame_invalid_data;
         }
         //cout << "Frame[parse]: CLOSE CODE=" << _close_code << " MSG=" << _close_message << endl;
     }

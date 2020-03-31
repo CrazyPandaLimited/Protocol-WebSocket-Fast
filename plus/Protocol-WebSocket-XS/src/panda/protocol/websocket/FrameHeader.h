@@ -1,7 +1,7 @@
 #pragma once
+#include "inc.h"
 #include <panda/string.h>
 #include <panda/iterator.h>
-#include <panda/protocol/websocket/inc.h>
 
 namespace panda { namespace protocol { namespace websocket {
 

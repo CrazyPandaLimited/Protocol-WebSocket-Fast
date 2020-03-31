@@ -1,8 +1,8 @@
 #pragma once
+#include "Parser.h"
+#include "ConnectRequest.h"
+#include "ConnectResponse.h"
 #include <panda/string.h>
-#include <panda/protocol/websocket/Parser.h>
-#include <panda/protocol/websocket/ConnectRequest.h>
-#include <panda/protocol/websocket/ConnectResponse.h>
 #include <panda/protocol/http/ResponseParser.h>
 
 namespace panda { namespace protocol { namespace websocket {
@@ -22,11 +22,11 @@ struct ClientParser : Parser {
     virtual ~ClientParser () {}
 
 private:
-    static const int STATE_CONNECTION_REQUESTED       = STATE_LAST + 1;
-    static const int STATE_CONNECTION_RESPONSE_PARSED = STATE_CONNECTION_REQUESTED + 1;
+    static const int CONNECTION_REQUESTED       = LAST_FLAG + 1;
+    static const int CONNECTION_RESPONSE_PARSED = CONNECTION_REQUESTED + 1;
 
-    ConnectRequestSP  _connect_request;
-    ConnectResponseSP _connect_response;
+    ConnectRequestSP     _connect_request;
+    ConnectResponseSP    _connect_response;
     http::ResponseParser _connect_response_parser;
 };
 

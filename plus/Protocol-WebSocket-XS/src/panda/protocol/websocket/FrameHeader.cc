@@ -1,9 +1,9 @@
-#include <panda/protocol/websocket/FrameHeader.h>
+#include "FrameHeader.h"
+#include "utils.h"
 #include <cassert>
 #include <cstring>
 #include <iostream>
 #include <panda/endian.h>
-#include <panda/protocol/websocket/utils.h>
 
 namespace panda { namespace protocol { namespace websocket {
 

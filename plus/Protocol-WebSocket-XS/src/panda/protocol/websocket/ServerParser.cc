@@ -1,38 +1,28 @@
-#include <panda/protocol/websocket/ServerParser.h>
-#include <exception>
-#include <panda/protocol/websocket/ParserError.h>
-#include <panda/protocol/http/RequestParser.h>
+#include "ServerParser.h"
 #include <sstream>
+#include <exception>
 
 namespace panda { namespace protocol { namespace websocket {
 
 struct RequestFactory : http::RequestParser::IFactory {
-    http::RequestSP new_request() override {
+    http::RequestSP new_request () override {
         return make_iptr<ConnectRequest>();
     }
 };
 
-ServerParser::ServerParser()
-    : Parser(true)
-    , _connect_parser(new RequestFactory)
-{
+ServerParser::ServerParser () : Parser(true), _connect_parser(new RequestFactory) {
     _connect_parser.max_body_size = 0;
 }
 
 ConnectRequestSP ServerParser::accept (string& buf) {
-    if (_state[STATE_ACCEPT_PARSED]) throw ParserError("already parsed accept");
-
-//    if (!_connect_request) {
-//        _connect_request = new ConnectRequest();
-//
-//    }
-
-//    if (!_connect_request->parse(buf)) return NULL;
+    if (_flags[ACCEPT_PARSED]) throw Error("already parsed accept");
     _connect_parser.max_headers_size = _max_handshake_size;
+
     http::RequestParser::Result res = _connect_parser.parse(buf);
     _connect_request = dynamic_pointer_cast<ConnectRequest>(res.request);
+
     if (res.error) {
-        _state.set(STATE_ACCEPT_PARSED);
+        _flags.set(ACCEPT_PARSED);
         _connect_request->error = res.error;
         return _connect_request;
     } else if (res.state != http::State::done) {
@@ -40,13 +30,13 @@ ConnectRequestSP ServerParser::accept (string& buf) {
     }
 
     _connect_request->process_headers();
-    _state.set(STATE_ACCEPT_PARSED);
+    _flags.set(ACCEPT_PARSED);
 
     if (!_connect_request->error) {
         if (res.position != buf.size()) {
-            _connect_request->error = errc::GARBAGE_AFTER_CONNECT;
+            _connect_request->error = errc::garbage_after_connect;
         } else {
-            _state.set(STATE_ACCEPTED);
+            _flags.set(ACCEPTED);
         }
     }
 
@@ -54,9 +44,9 @@ ConnectRequestSP ServerParser::accept (string& buf) {
 }
 
 string ServerParser::accept_error () {
-    if (!_state[STATE_ACCEPT_PARSED]) throw ParserError("accept not parsed yet");
-    if (established()) throw ParserError("already established");
-    if (!_connect_request->error) throw ParserError("no errors found");
+    if (!_flags[ACCEPT_PARSED]) throw Error("accept not parsed yet");
+    if (established()) throw Error("already established");
+    if (!_connect_request->error) throw Error("no errors found");
 
     http::ResponseSP res = new http::Response();
     res->headers.add("Content-Type", "text/plain");
@@ -86,8 +76,8 @@ string ServerParser::accept_error () {
 }
 
 string ServerParser::accept_error (http::Response* res) {
-    if (!_state[STATE_ACCEPT_PARSED]) throw ParserError("accept not parsed yet");
-    if (established()) throw ParserError("already established");
+    if (!_flags[ACCEPT_PARSED]) throw Error("accept not parsed yet");
+    if (established()) throw Error("already established");
     if (_connect_request->error) return accept_error();
 
     if (!res->code) {
@@ -107,8 +97,8 @@ string ServerParser::accept_error (http::Response* res) {
 }
 
 string ServerParser::accept_response (ConnectResponse* res) {
-    if (!accepted()) throw ParserError("client has not been accepted");
-    if (established()) throw ParserError("already established");
+    if (!accepted()) throw Error("client has not been accepted");
+    if (established()) throw Error("already established");
 
     res->_ws_key = _connect_request->ws_key;
     if (!res->ws_protocol) res->ws_protocol = _connect_request->ws_protocol;
@@ -126,7 +116,7 @@ string ServerParser::accept_response (ConnectResponse* res) {
     }
     res->ws_extensions(std::move(used_extensions));
 
-    _state.set(STATE_ESTABLISHED);
+    _flags.set(ESTABLISHED);
     _connect_request = NULL;
     return res->to_string();
 }

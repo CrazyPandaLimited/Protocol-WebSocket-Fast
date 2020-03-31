@@ -41,7 +41,7 @@ Protocol::WebSocket::XS - very fast WebSocket protocol implementation
     $frame_1->final;                            # => success
 
     # send message split by frame
-    my $builder = $server->start_message({opcode => OPCODE_TEXT, final => 0, deflate => 0});
+    my $builder = $server->start_message(opcode => OPCODE_TEXT, final => 0, deflate => 0);
     my $data_2 = $builder->send("Lorem ");
     my $data_3 = $builder->send("ipsum ");
     my $data_4 = $builder->final(1)->send("dolor ");
@@ -56,18 +56,18 @@ Protocol::WebSocket::XS - very fast WebSocket protocol implementation
     $message_1->frame_count;                    # => 3
 
     # convenient way just to send message
-    my $data_5 = $client->send_message({deflate => 1, payload => 'sit amet, '});
+    my $data_5 = $client->send_message(deflate => 1, payload => 'sit amet, ');
 
     # pieces merged into single frame/message
     my @payload_pieces = ('consectetur ', 'adipiscing ', 'elit.');
-    my $data_6 = $client->send_message_av({deflate => 0, payload => \@payload_pieces});
+    my $data_6 = $client->send_message(deflate => 0, payload => \@payload_pieces);
     my $fit = $server->get_frames($data_6);    # => isa 'Protocol::WebSocket::XS::FrameIterator'
     $fit->next;                                # => isa 'Protocol::WebSocket::XS::Frame'
     $fit->next;                                # => undef
 
     # pieces are send as frames; a bit faster, when you already have your data and compression
     # is turned off
-    my $data_7 = $client->send_message_multiframe({deflate => 0, payload =>\@payload_pieces});
+    my $data_7 = $client->send_message_multiframe(deflate => 0, payload =>\@payload_pieces);
     my $mit = $server->get_messages($data_7);  # => isa 'Protocol::WebSocket::XS::MessageIterator'
     my $message_2 = $mit->next;                # => isa 'Protocol::WebSocket::XS::Message'
     $message_2->frame_count;                   # => 3
@@ -190,7 +190,9 @@ L<Protocol::WebSocket::XS::Frame>
 
 L<Protocol::WebSocket::XS::FrameIterator>
 
-L<Protocol::WebSocket::XS::FrameBuilder>
+L<Protocol::WebSocket::XS::FrameSender>
+
+L<Protocol::WebSocket::XS::Error>
 
 
 

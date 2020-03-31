@@ -5,6 +5,7 @@ use lib 't'; use MyTest;
 *gen_frame = \&MyTest::gen_frame;
 
 my $p = MyTest::get_established_server();
+my $c = MyTest::get_established_client();
 
 subtest 'send_control PING' => sub {
     subtest 'empty' => sub {
@@ -49,9 +50,9 @@ subtest 'send_control CLOSE' => sub {
         is_bin($bin, gen_frame({fin => 1, opcode => OPCODE_CLOSE}), "frame ok");
     };
     
-    ok(!eval { $p->start_message->final(1)->send("asdf"); 1 }, "can't send after CLOSE sent");
+    ok(!eval { $p->start_message->send("asdf", 1); 1 }, "can't send after CLOSE sent");
     MyTest::reset($p);
-    ok(eval { $p->start_message->final(1)->send("asdf"); 1 }, "can send after reset");
+    ok(eval { $p->start_message->send("asdf", 1); 1 }, "can send after reset");
     
     subtest 'with payload' => sub {
         my $bin = $p->send_control(OPCODE_CLOSE, "hi there");
@@ -132,7 +133,7 @@ subtest 'send_close' => sub {
 };
 
 subtest 'control frames do not reset message state in frame mode' => sub {
-    my $builder = $p->start_message({deflate => 0});
+    my $builder = $p->start_message(deflate => 0);
     my $bin = $builder->send("frame1");
     is_bin($bin, gen_frame({fin => 0, opcode => OPCODE_BINARY, data => "frame1"}), "initial frame ok");
     $p->send_control(OPCODE_PING);
@@ -145,8 +146,14 @@ subtest 'control frames do not reset message state in frame mode' => sub {
     $p->send_control(OPCODE_PONG);
     $p->send_ping;
     $p->send_pong;
-    $bin = $builder->final(1)->send("frame3");
+    $bin = $builder->send("frame3", 1);
     is_bin($bin, gen_frame({fin => 1, opcode => OPCODE_CONTINUE, data => "frame3"}), "final frame ok");
+};
+
+subtest 'control frames from client get masked' => sub {
+    my $bin = $c->send_ping();
+    is(length($bin), 6, "frame length ok");
+    is_bin($bin, gen_frame({fin => 1, opcode => OPCODE_PING, mask => substr($bin, 2, 4)}), "frame ok");
 };
 
 done_testing();

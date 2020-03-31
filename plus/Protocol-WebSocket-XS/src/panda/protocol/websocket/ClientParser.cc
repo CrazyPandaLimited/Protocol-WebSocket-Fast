@@ -1,8 +1,7 @@
-#include <panda/protocol/websocket/ClientParser.h>
+#include "ClientParser.h"
 #include <ctime>
 #include <cstdlib>
 #include <exception>
-#include <panda/protocol/websocket/ParserError.h>
 
 namespace panda { namespace protocol { namespace websocket {
 
@@ -14,10 +13,8 @@ static bool _init () {
 static const bool _inited = _init();
 
 string ClientParser::connect_request (const ConnectRequestSP& req) {
-    if (_state[STATE_CONNECTION_REQUESTED]) {
-        throw ParserError("already requested connection");
-    }
-    _state.set(STATE_CONNECTION_REQUESTED);
+    if (_flags[CONNECTION_REQUESTED]) throw Error("already requested connection");
+    _flags.set(CONNECTION_REQUESTED);
     _connect_request = req;
     _connect_response_parser.set_context_request(req);
     if (_deflate_cfg) req->add_deflate(*_deflate_cfg);
@@ -25,13 +22,8 @@ string ClientParser::connect_request (const ConnectRequestSP& req) {
 }
 
 ConnectResponseSP ClientParser::connect (string& buf) {
-    if (!_state[STATE_CONNECTION_REQUESTED]) throw ParserError("has not requested connection");
-    if (_state[STATE_CONNECTION_RESPONSE_PARSED]) throw ParserError("already parsed connect response");
-
-//    if (!_connect_response) {
-//        _connect_response = new ConnectResponse();
-        //_connect_response->max_headers_size = _max_handshake_size; // TODO: add support of max
-//    }
+    if (!_flags[CONNECTION_REQUESTED]) throw Error("has not requested connection");
+    if (_flags[CONNECTION_RESPONSE_PARSED]) throw Error("already parsed connect response");
 
     _connect_response_parser.max_headers_size = _max_handshake_size;
     http::ResponseParser::Result res = _connect_response_parser.parse(buf);
@@ -39,7 +31,7 @@ ConnectResponseSP ClientParser::connect (string& buf) {
 
     if (res.error) {
         _connect_response->error = res.error;
-        _state.set(STATE_CONNECTION_RESPONSE_PARSED);
+        _flags.set(CONNECTION_RESPONSE_PARSED);
 
         ConnectResponseSP ret(_connect_response);
         _connect_request = NULL;
@@ -52,7 +44,7 @@ ConnectResponseSP ClientParser::connect (string& buf) {
     _connect_response->_ws_key = _connect_request->ws_key;
     _connect_response->process_headers();
 
-    _state.set(STATE_CONNECTION_RESPONSE_PARSED);
+    _flags.set(CONNECTION_RESPONSE_PARSED);
 
     if (!_connect_response->error && _deflate_cfg) {
         using result_t = DeflateExt::EffectiveConfig::NegotiationsResult;
@@ -69,13 +61,13 @@ ConnectResponseSP ClientParser::connect (string& buf) {
             /* NOOP */
             break;
         case result_t::ERROR:
-            _connect_response->error = DeflateError::NEGOTIATION_FAILED;
+            _connect_response->error = errc::deflate_negotiation_failed;
         }
     }
 
     if (!_connect_response->error) {
         _buffer = buf.substr(res.position);// if something remains in buf, user can get it via get_frames() or get_messages() without buf param.
-        _state.set(STATE_ESTABLISHED);
+        _flags.set(ESTABLISHED);
     }
 
     ConnectResponseSP ret(_connect_response);

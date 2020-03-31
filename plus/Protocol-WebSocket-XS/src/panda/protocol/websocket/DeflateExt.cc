@@ -6,10 +6,15 @@
 namespace panda { namespace protocol { namespace websocket {
 
 const char* DeflateExt::extension_name = "permessage-deflate";
-static const char* PARAM_SERVER_NO_CONTEXT_TAKEOVER = "server_no_context_takeover";
-static const char* PARAM_CLIENT_NO_CONTEXT_TAKEOVER = "client_no_context_takeover";
-static const char* PARAM_SERVER_MAX_WINDOW_BITS = "server_max_window_bits";
-static const char* PARAM_CLIENT_MAX_WINDOW_BITS = "client_max_window_bits";
+
+static const int   UNCOMPRESS_PREALLOCATE_RATIO = 10;
+static const float COMPRESS_PREALLOCATE_RATIO   = 1;
+static const float GROW_RATIO                   = 1.5;
+
+static const char PARAM_SERVER_NO_CONTEXT_TAKEOVER[] = "server_no_context_takeover";
+static const char PARAM_CLIENT_NO_CONTEXT_TAKEOVER[] = "client_no_context_takeover";
+static const char PARAM_SERVER_MAX_WINDOW_BITS[] = "server_max_window_bits";
+static const char PARAM_CLIENT_MAX_WINDOW_BITS[] = "client_max_window_bits";
 
 panda::optional<panda::string> DeflateExt::bootstrap() {
     using result_t = panda::optional<panda::string>;
@@ -126,7 +131,7 @@ DeflateExt::DeflateExt(const DeflateExt::Config& cfg, Role role): effective_cfg{
     auto rx_window = role == Role::CLIENT ? cfg.server_max_window_bits : cfg.client_max_window_bits;
     auto tx_window = role == Role::CLIENT ? cfg.client_max_window_bits : cfg.server_max_window_bits;
 
-    //rx_stream.next_in = reinterpret_cast<Bytef*>(rx_buff.buf());
+    rx_stream.next_in = Z_NULL;
     rx_stream.avail_in = 0;
     rx_stream.zalloc = Z_NULL;
     rx_stream.zfree = Z_NULL;
@@ -140,7 +145,7 @@ DeflateExt::DeflateExt(const DeflateExt::Config& cfg, Role role): effective_cfg{
         throw std::runtime_error(err);
     }
 
-    //tx_stream.next_in = reinterpret_cast<Bytef*>(tx_buff.buf());
+    tx_stream.next_in = Z_NULL;
     tx_stream.avail_in = 0;
     tx_stream.zalloc = Z_NULL;
     tx_stream.zfree = Z_NULL;
@@ -163,6 +168,9 @@ DeflateExt::DeflateExt(const DeflateExt::Config& cfg, Role role): effective_cfg{
 }
 
 void DeflateExt::reset_tx() {
+    if (!tx_stream.next_in) return;
+    tx_stream.next_in = Z_NULL;
+
     if (deflateReset(&tx_stream) != Z_OK) {
         panda::string err = panda::string("zlib::deflateEnd error ");
         if (tx_stream.msg) {
@@ -173,6 +181,9 @@ void DeflateExt::reset_tx() {
 }
 
 void DeflateExt::reset_rx() {
+    if (!rx_stream.next_in) return;
+    rx_stream.next_in = Z_NULL;
+
     if (inflateReset(&rx_stream) != Z_OK) {
         panda::string err = panda::string("zlib::inflateEnd error ");
         if(rx_stream.msg) {
@@ -204,7 +215,7 @@ string& DeflateExt::compress(string& str, bool final) {
     string in = str;
     tx_stream.next_in = (Bytef*)(in.data());
     tx_stream.avail_in = static_cast<uInt>(in.length());
-    str = string(in.length()); // detach and realloc for result here
+    str = string(in.length() * COMPRESS_PREALLOCATE_RATIO); // detach and realloc for result here
     tx_stream.next_out = reinterpret_cast<Bytef*>(str.buf()); // buf would not detach, we just created new string and refcnt == 1
     auto sz = str.capacity();
     str.length(sz);
@@ -215,12 +226,13 @@ string& DeflateExt::compress(string& str, bool final) {
     });
 
     sz -= tx_stream.avail_out;
-    // remove tail empty-frame 0x00 0x00 0xff 0xff for final messages only
-    assert(sz);
-    if (final) sz -= TRAILER_SIZE;
+
+    if (final) {
+        sz -= TRAILER_SIZE; // remove tail empty-frame 0x00 0x00 0xff 0xff for final messages only
+        if (reset_after_tx) reset_tx();
+    }
     str.length(sz);
 
-    if(final && reset_after_tx) reset_tx();
     return str;
 }
 
@@ -228,7 +240,7 @@ bool DeflateExt::uncompress(Frame& frame) {
     bool r;
     if (frame.error) r = false;
     else if (frame.is_control()) {
-        frame.error = DeflateError::CONTROL_FRAME_COMPRESSION;
+        frame.error = errc::control_frame_compression;
         r = false;
     }
     else if (frame.payload_length() == 0) r = true;
@@ -246,7 +258,7 @@ bool DeflateExt::uncompress_check_overflow(Frame& frame, const string& acc) {
     auto unpacked_frame_size = acc.capacity() - rx_stream.avail_out;
     auto unpacked_message_size = message_size + unpacked_frame_size;
     if (unpacked_message_size > max_message_size) {
-        frame.error = DeflateError::MAX_MESSAGE_SIZE;
+        frame.error = errc::max_message_size;
         return false;
     }
     return true;
@@ -254,7 +266,7 @@ bool DeflateExt::uncompress_check_overflow(Frame& frame, const string& acc) {
 
 void DeflateExt::rx_increase_buffer(string& acc) {
     auto prev_sz = acc.capacity();
-    size_t new_sz = 3 * prev_sz / 2; // * 1.5
+    size_t new_sz = prev_sz * GROW_RATIO;
     acc.length(prev_sz);
     acc.reserve(new_sz);
     rx_stream.next_out = reinterpret_cast<Bytef*>(acc.buf() + prev_sz);
@@ -270,7 +282,7 @@ bool DeflateExt::uncompress_impl(Frame& frame) {
     It end = frame.payload.end();
 
     string acc;
-    acc.reserve(frame.payload_length() * 2);
+    acc.reserve(frame.payload_length() * UNCOMPRESS_PREALLOCATE_RATIO);
 
     rx_stream.next_out = reinterpret_cast<Bytef*>(acc.buf());
     rx_stream.avail_out = static_cast<uInt>(acc.capacity());
@@ -315,7 +327,7 @@ bool DeflateExt::uncompress_impl(Frame& frame) {
                 if (rx_stream.msg) err += rx_stream.msg;
                 else err += to_string(r);
                 panda_mlog_info(pwslog, err);
-                frame.error = DeflateError::INFALTE_ERROR;
+                frame.error = errc::inflate_error;
                 return false;
             }
         } while(has_more_output);
@@ -323,24 +335,15 @@ bool DeflateExt::uncompress_impl(Frame& frame) {
     } while(it_in != end);
 
     acc.length(acc.capacity() - rx_stream.avail_out);
-    if (max_message_size) message_size += acc.length();
+    message_size += acc.length();
 
-    frame.payload.resize(1);
-    frame.payload.at(0) = std::move(acc);
+    if (acc) {
+        frame.payload.resize(1);
+        frame.payload[0] = std::move(acc);
+    }
+    else frame.payload.clear(); // remove empty string from payload if no data
 
     return true;
 }
-
-std::string DeflateErrorCategoty::message(int ev) const {
-    switch (DeflateError(ev)) {
-    case DeflateError::NEGOTIATION_FAILED:        return "Websocket: deflate paramenters negotiation error";
-    case DeflateError::CONTROL_FRAME_COMPRESSION: return "Websocket: compression of control frames is not allowed (rfc7692)";
-    case DeflateError::MAX_MESSAGE_SIZE:          return "Websocket: zlib::inflate error: max message size has been reached";
-    case DeflateError::INFALTE_ERROR:             return "Websocket: custom zlib::inflate error, look info log for details";
-    default: return "Unknown websocket deflate error";
-    }
-}
-
-const std::error_category& deflate_error_categoty = DeflateErrorCategoty();
 
 }}}

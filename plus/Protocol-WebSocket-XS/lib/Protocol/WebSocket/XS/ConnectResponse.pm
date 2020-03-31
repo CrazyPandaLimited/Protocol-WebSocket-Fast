@@ -1,1 +1,3 @@
-use Protocol::WebSocket::XS; 1;
+package Protocol::WebSocket::XS::ConnectResponse;
+use Protocol::WebSocket::XS;
+1;

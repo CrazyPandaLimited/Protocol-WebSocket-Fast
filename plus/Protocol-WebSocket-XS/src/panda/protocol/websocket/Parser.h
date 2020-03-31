@@ -1,10 +1,9 @@
 #pragma once
+#include "Error.h"
 #include "Frame.h"
 #include "Message.h"
 #include "iterator.h"
 #include "DeflateExt.h"
-#include "ParserError.h"
-#include "FrameBuilder.h"
 #include <deque>
 #include <bitset>
 #include <iterator>
@@ -19,69 +18,27 @@ namespace panda { namespace protocol { namespace websocket {
 using panda::string;
 using panda::IteratorPair;
 
-struct MessageBuilder;
+enum class DeflateFlag { NO, DEFAULT, YES };
 
 struct Parser : virtual panda::Refcnt {
-public:
-    struct MessageIterator : std::iterator<std::input_iterator_tag, MessageSP> {
-    public:
-        typedef IteratorPair<MessageIterator> MessageIteratorPair;
+    // include child classes to solve cross-dependencies without moving one-liners to *.cc files (to avoid performance loses)
+    #include "Parser-FrameSender.h"
+    #include "Parser-MessageBuilder.h"
+    #include "Parser-MessageIterator.h"
 
-        struct FrameIterator : std::iterator<std::input_iterator_tag, FrameSP> {
-            FrameIterator (Parser* parser, const FrameSP& start_frame) : parser(parser), cur(start_frame) {}
-            FrameIterator (const FrameIterator& oth)                   : parser(oth.parser), cur(oth.cur) {}
-
-            FrameIterator& operator++ ()                               { if (cur) cur = parser->_get_frame(); return *this; }
-            FrameIterator  operator++ (int)                            { FrameIterator tmp(*this); operator++(); return tmp; }
-            bool           operator== (const FrameIterator& rhs) const { return parser == rhs.parser && cur.get() == rhs.cur.get(); }
-            bool           operator!= (const FrameIterator& rhs) const { return parser != rhs.parser || cur.get() != rhs.cur.get();}
-            FrameSP        operator*  ()                               { return cur; }
-            FrameSP        operator-> ()                               { return cur; }
-
-            MessageIteratorPair get_messages () {
-                cur = NULL; // invalidate current iterator
-                return MessageIteratorPair(MessageIterator(parser, parser->_get_message()), MessageIterator(parser, NULL));
-            }
-        protected:
-            Parser* parser;
-            FrameSP cur;
-        };
-        typedef IteratorPair<FrameIterator> FrameIteratorPair;
-
-        MessageIterator (Parser* parser, const MessageSP& start_message) : parser(parser), cur(start_message) {}
-        MessageIterator (const MessageIterator& oth)                     : parser(oth.parser), cur(oth.cur) {}
-
-        MessageIterator& operator++ ()                                 { if (cur) cur = parser->_get_message(); return *this; }
-        MessageIterator  operator++ (int)                              { MessageIterator tmp(*this); operator++(); return tmp; }
-        bool             operator== (const MessageIterator& rhs) const { return parser == rhs.parser && cur.get() == rhs.cur.get(); }
-        bool             operator!= (const MessageIterator& rhs) const { return parser != rhs.parser || cur.get() != rhs.cur.get();}
-        MessageSP        operator*  ()                                 { return cur; }
-        MessageSP        operator-> ()                                 { return cur; }
-
-        FrameIteratorPair get_frames () {
-            cur = NULL; // invalidate current iterator
-            return FrameIteratorPair(FrameIterator(parser, parser->_get_frame()), FrameIterator(parser, NULL));
-        }
-    protected:
-        Parser*   parser;
-        MessageSP cur;
-    };
-    typedef MessageIterator::FrameIterator       FrameIterator;
-    typedef MessageIterator::MessageIteratorPair MessageIteratorPair;
-    typedef MessageIterator::FrameIteratorPair   FrameIteratorPair;
-    typedef panda::optional<DeflateExt::Config>  DeflateConfigOption;
+    using DeflateConfigOption = panda::optional<DeflateExt::Config>;
 
     struct Config {
-        Config():max_frame_size{0}, max_message_size{0}, max_handshake_size{http::SIZE_UNLIMITED}, deflate{ DeflateExt::Config() } {}
-        size_t max_frame_size;
-        size_t max_message_size;
-        size_t max_handshake_size;
-        DeflateConfigOption deflate;
+        Config () {}
+        size_t max_frame_size       = 0;
+        size_t max_message_size     = 0;
+        size_t max_handshake_size   = http::SIZE_UNLIMITED;
+        DeflateConfigOption deflate = DeflateExt::Config();
     };
 
-    bool established () const { return _state[STATE_ESTABLISHED]; }
-    bool recv_closed () const { return _state[STATE_RECV_CLOSED]; }
-    bool send_closed () const { return _state[STATE_SEND_CLOSED]; }
+    bool established () const { return _flags[ESTABLISHED]; }
+    bool recv_closed () const { return _flags[RECV_CLOSED]; }
+    bool send_closed () const { return _flags[SEND_CLOSED]; }
 
     FrameIteratorPair get_frames () {
         return FrameIteratorPair(FrameIterator(this, _get_frame()), FrameIterator(this, NULL));
@@ -103,19 +60,62 @@ public:
         return get_messages();
     }
 
-    FrameBuilder start_message() {
-        return FrameBuilder(*this);
+    FrameSender start_message (Opcode opcode = Opcode::BINARY, DeflateFlag deflate = DeflateFlag::NO) {
+        _check_send();
+        if (_flags[SEND_FRAME]) throw Error("can't start message: previous message wasn't finished");
+        _flags.set(SEND_FRAME);
+        _send_opcode = opcode;
+        if (_deflate_ext && deflate != DeflateFlag::NO) _flags.set(SEND_DEFLATE);
+        return FrameSender(*this);
     }
 
-    MessageBuilder message();
+    FrameSender start_message (DeflateFlag deflate) { return start_message(Opcode::BINARY, deflate); }
 
-    string     send_control (Opcode opcode)                  { return send_control_frame(opcode); }
+    string send_frame (bool final) {
+        bool deflate = _flags[SEND_DEFLATE];
+        auto header = _prepare_frame_header(final);
+        if (final && deflate) _deflate_ext->reset_tx();
+        return Frame::compile(header);
+    }
+
+    StringPair send_frame(string& payload, bool final) {
+        bool deflate = _flags[SEND_DEFLATE];
+        auto header = _prepare_frame_header(final);
+        if (deflate) _deflate_ext->compress(payload, final);
+        string hbin = Frame::compile(header, payload);
+        return make_string_pair(hbin, payload);
+    }
+
+    template<typename It>
+    StringChain<It> send_frame (It payload_begin, It payload_end, bool final) {
+        bool deflate = _flags[SEND_DEFLATE];
+        auto header = _prepare_frame_header(final);
+        if (deflate) {
+            if (payload_begin == payload_end) {
+                string trailer;
+                _deflate_ext->compress(trailer, final);
+                string hbin = Frame::compile(header, trailer);
+                if (trailer) hbin += trailer;
+                return make_string_pair(hbin, payload_begin, payload_end);
+            }
+            payload_end = _deflate_ext->compress(payload_begin, payload_end, final);
+        }
+        string hbin = Frame::compile(header, payload_begin, payload_end);
+        return make_string_pair(hbin, payload_begin, payload_end);
+    }
+
+    MessageBuilder message () { return MessageBuilder(*this); }
+
+    string send_control (Opcode opcode) { return Frame::compile(_prepare_control_header(opcode)); }
+
     StringPair send_control (Opcode opcode, string& payload) {
         if (payload.length() > Frame::MAX_CONTROL_PAYLOAD) {
             panda_mlog_critical(pwslog, "control frame payload is too long");
             payload.offset(0, Frame::MAX_CONTROL_PAYLOAD);
         }
-        return send_control_frame(payload, opcode);
+        auto header = _prepare_control_header(opcode);
+        string hbin = Frame::compile(header, payload);
+        return make_string_pair(hbin, payload);
     }
 
     string     send_ping  ()                { return send_control(Opcode::PING); }
@@ -129,12 +129,12 @@ public:
         return send_control(Opcode::CLOSE, frpld);
     }
 
-    void configure(const Config& cfg) {
+    void configure (const Config& cfg) {
         _max_frame_size     = cfg.max_frame_size;
         _max_message_size   = cfg.max_message_size;
         _max_handshake_size = cfg.max_handshake_size;
 
-        if (!_state[STATE_ESTABLISHED]) {
+        if (!_flags[ESTABLISHED]) {
             _deflate_cfg = cfg.deflate;
             if (_deflate_cfg) _deflate_cfg->max_message_size = _max_message_size;
         }
@@ -144,224 +144,80 @@ public:
     size_t max_message_size()   const { return  _max_message_size; }
     size_t max_handshake_size() const { return  _max_handshake_size; }
 
-    const DeflateConfigOption& deflate_config() const { return _deflate_cfg; }
-    void no_deflate() {
-        if (!_state[STATE_ESTABLISHED]) _deflate_cfg = DeflateConfigOption();
-    }
-
     virtual void reset ();
 
-    bool is_deflate_active() const { return (bool)_deflate_ext; }
-    panda::optional<DeflateExt::Config> effective_deflate_config() const {
+    bool is_deflate_active () const { return (bool)_deflate_ext; }
+
+    const DeflateConfigOption& deflate_config () const { return _deflate_cfg; }
+
+    DeflateConfigOption effective_deflate_config () const {
         if (!_deflate_ext) return {};
         return _deflate_ext->effective_config();
+    }
+
+    void no_deflate () {
+        if (!_flags[ESTABLISHED]) _deflate_cfg = DeflateConfigOption();
     }
 
     virtual ~Parser () {}
 
 protected:
-    static const int STATE_ESTABLISHED  = 1;
-    static const int STATE_RECV_FRAME   = 2;
-    static const int STATE_RECV_MESSAGE = 3;
-    static const int STATE_RECV_CLOSED  = 4;
-    static const int STATE_SEND_FRAME   = 5;
-    static const int STATE_SEND_MESSAGE = 6;
-    static const int STATE_SEND_CLOSED  = 7;
-    static const int STATE_LAST         = STATE_SEND_CLOSED;
+    using DeflateExtPtr = std::unique_ptr<DeflateExt>;
 
-    size_t _max_frame_size;
-    size_t _max_message_size;
-    size_t _max_handshake_size;
+    static const int ESTABLISHED  = 1; // connection has been established
+    static const int RECV_FRAME   = 2; // frame mode receive
+    static const int RECV_MESSAGE = 3; // message mode receive
+    static const int RECV_INFLATE = 4; // receiving compressed message
+    static const int RECV_CLOSED  = 5; // no more messages from peer (close packet received)
+    static const int SEND_FRAME   = 6; // outgoing message started
+    static const int SEND_DEFLATE = 7; // sending compressed message
+    static const int SEND_CLOSED  = 8; // no more messages from user (close packet sent)
+    static const int LAST_FLAG    = SEND_CLOSED;
 
-    std::bitset<32> _state;
-    string          _buffer;
-    std::unique_ptr<DeflateExt> _deflate_ext;
+    size_t              _max_frame_size;
+    size_t              _max_message_size;
+    size_t              _max_handshake_size;
+    DeflateConfigOption _deflate_cfg;
+    std::bitset<32>     _flags = 0;
+    string              _buffer;
+    DeflateExtPtr       _deflate_ext;
 
     Parser (bool recv_mask_required, Config cfg = Config()) :
-        _max_frame_size{cfg.max_frame_size},
-        _max_message_size{cfg.max_message_size},
-        _max_handshake_size{cfg.max_handshake_size},
-        _state(0),
-        _deflate_cfg{cfg.deflate},
-        _recv_mask_required(recv_mask_required),
-        _frame_count(0),
-        _message_frame(_recv_mask_required, _max_frame_size),
-        _sent_frame_count(0)
-    {}
-
-    DeflateConfigOption _deflate_cfg;
+        _max_frame_size(cfg.max_frame_size), _max_message_size(cfg.max_message_size), _max_handshake_size(cfg.max_handshake_size),
+        _deflate_cfg(cfg.deflate), _recv_mask_required(recv_mask_required), _message_frame(_recv_mask_required, _max_frame_size) {}
 
 private:
-    string send_control_frame (Opcode opcode = Opcode::BINARY) {
-        auto header = _prepare_frame_header(true, false, opcode);
-        return Frame::compile(header);
-    }
-
-    StringPair send_control_frame (string& payload, Opcode opcode = Opcode::BINARY) {
-        auto header = _prepare_frame_header(true, false, opcode);
-        string hbin = Frame::compile(header, payload);
-        return make_string_pair(hbin, payload);
-    }
-
-    string send_frame(const FrameBuilder& fb) {
-        bool is_final = fb.final();
-        auto header = _prepare_frame_header(is_final, false, fb.opcode());
-        return Frame::compile(header);
-    }
-
-    StringPair send_frame(string& payload, const FrameBuilder& fb) {
-        bool use_deflate = fb.deflate() && _deflate_ext;
-        bool is_final = fb.final();
-        auto header = _prepare_frame_header(is_final, use_deflate, fb.opcode());
-        string& frame_payload = use_deflate ? _deflate_ext->compress(payload, is_final) : payload;
-        string hbin = Frame::compile(header, frame_payload);
-        return make_string_pair(hbin, frame_payload);
-    }
-
-    template<typename It>
-    StringChain<It> send_frame(It payload_begin, It payload_end, const FrameBuilder& fb) {
-        size_t payload_length = 0;
-        for(auto it = payload_begin; it != payload_end; ++it) {
-            payload_length += (*it).length();
-        }
-        bool non_empty = payload_length > 0;
-        bool use_deflate = fb.deflate() && _deflate_ext && non_empty;
-        bool is_final = fb.final();
-        auto header = _prepare_frame_header(is_final, use_deflate, fb.opcode());
-        It frame_payload_end = use_deflate ? _deflate_ext->compress(payload_begin, payload_end, is_final) : payload_end;
-        string hbin = Frame::compile(header, payload_begin, frame_payload_end);
-        return make_string_pair(hbin, payload_begin, frame_payload_end);
-    }
-
     bool      _recv_mask_required;
-    FrameSP   _frame;            // current frame being received (frame mode)
-    int       _frame_count;      // frame count for current message being received (frame mode)
-    bool      _use_compression;  // have true, deflate extension is active and 1st frame has rsv1 flag on
-    MessageSP _message;          // current message being received (message mode)
-    Frame     _message_frame;    // current frame being received (message mode)
-    int       _sent_frame_count; // frame count for current message being sent (frame mode)
+    FrameSP   _frame;                // current frame being received (frame mode)
+    int       _frame_count = 0;      // frame count for current message being received (frame mode)
+    MessageSP _message;              // current message being received (message mode)
+    Frame     _message_frame;        // current frame being received (message mode)
+    int       _sent_frame_count = 0; // frame count for current message being sent (frame mode)
+    Opcode    _send_opcode;          // opcode for first frame to be sent (frame mode)
 
     std::deque<string> _simple_payload_tmp;
 
     FrameSP   _get_frame ();
     MessageSP _get_message();
-    bool      _apply_deflate_message();
-    bool      _apply_deflate_frame();
 
-    FrameHeader _prepare_frame_header (bool final, bool deflate, Opcode opcode);
-    friend struct FrameBuilder;
+    void _check_send () const {
+        if (!_flags[ESTABLISHED]) throw Error("not established");
+        if (_flags[SEND_CLOSED]) throw Error("close sent, can't send anymore");
+    }
+
+    FrameHeader _prepare_control_header (Opcode opcode);
+    FrameHeader _prepare_frame_header   (bool final);
+
+    friend struct FrameSender;
     friend struct MessageBuilder;
-
-};
-
-template<class Begin, class End>
-StringChain<Begin, End> FrameBuilder::send(Begin payload_begin, End payload_end) {
-    if (_finished) throw std::runtime_error("messsage is already finished");
-    _finished = _final;
-    return _parser.send_frame(payload_begin, payload_end, *this);
-}
-
-struct MessageBuilder {
-    MessageBuilder(MessageBuilder&&) = default;
-    Opcode opcode() const noexcept;
-    MessageBuilder& opcode(Opcode value) noexcept { _opcode = value; return *this; }
-
-    MessageBuilder& deflate(bool value) noexcept {
-        _deflate = value ? apply_deflate_t::YES : apply_deflate_t::NO;
-        return *this;
-    }
-    bool deflate() const noexcept { return _deflate == apply_deflate_t::YES; }
-
-    StringPair send(string& payload) {
-        bool apply_deflate = maybe_deflate(payload.length());
-        return _parser.start_message().final(true).opcode(_opcode).deflate(apply_deflate).send(payload);
-    }
-
-    template <class Begin, class End, typename = typename std::enable_if<std::is_same<typename std::decay<decltype(*std::declval<Begin>())>::type, string>::value>::type>
-    StringChain<Begin, End> send(Begin payload_begin, End payload_end) {
-        size_t payload_length = 0;
-        for(auto it = payload_begin; it != payload_end; ++it) {
-            payload_length += (*it).length();
-        }
-        bool apply_deflate = maybe_deflate(payload_length);
-        return _parser.start_message().final(true).opcode(_opcode).deflate(apply_deflate).send(payload_begin, payload_end);
-    }
-
-    template <class Begin, class End, typename = typename std::enable_if<std::is_same<decltype(*((*Begin()).begin())), string&>::value>::type>
-    std::vector<string> send(Begin cont_begin, End cont_end) {
-        std::vector<string> ret;
-
-        size_t sz = 0, idx = 0, payload_sz = 0, last_nonempty = 0;
-        auto cont_range = make_iterator_pair(cont_begin, cont_end);
-        for (const auto& range : cont_range) {
-            size_t piece_sz = 0;
-            for(const auto& it: range) {
-                auto length = it.length();
-                piece_sz += length;
-                if (length) ++sz;
-            }
-            if (piece_sz) { last_nonempty = idx; };
-            payload_sz += piece_sz;
-            ++idx;
-        };
-
-        auto fb = _parser.start_message();
-        fb.opcode(_opcode);
-
-        if (!payload_sz) {
-            ret.reserve(1);
-            ret.push_back(fb.deflate(false).final(true).send());
-            return ret;
-        }
-
-        ret.reserve(sz);
-
-        fb.deflate(maybe_deflate(payload_sz));
-        idx = 0;
-        for (auto& range : cont_range) {
-            size_t piece_sz = 0;
-            for(const auto& it: range) piece_sz += it.length();
-            if (piece_sz) {
-                auto frame_range = fb.final(idx == last_nonempty).send(range.begin(), range.end());
-                for (const auto& s : frame_range) ret.push_back(s);
-            }
-            if (idx == last_nonempty) break;
-            ++idx;
-        }
-
-        return ret;
-    }
-
-private:
-    enum class apply_deflate_t { YES, NO, TEXT_BY_THRESHOLD };
-
-    bool maybe_deflate(size_t payload_length) {
-        bool r = false;
-        switch (_deflate) {
-        case apply_deflate_t::NO:  r = false; break;
-        case apply_deflate_t::YES: r = true; break;
-        case apply_deflate_t::TEXT_BY_THRESHOLD: r
-                =  _opcode == Opcode::TEXT
-                && _parser._deflate_cfg
-                && _parser._deflate_cfg->compression_threshold <= payload_length
-                && payload_length > 0;
-            break;
-        }
-        return r;
-    }
-
-    MessageBuilder(Parser& parser):_parser{parser}{}
-    MessageBuilder(MessageBuilder&) = delete;
-    Parser& _parser;
-    apply_deflate_t _deflate = apply_deflate_t::TEXT_BY_THRESHOLD;
-    Opcode _opcode = Opcode::BINARY;
-    friend struct Parser;
 };
 
 using FrameIteratorPair   = Parser::FrameIteratorPair;
 using FrameIterator       = Parser::FrameIterator;
 using MessageIteratorPair = Parser::MessageIteratorPair;
 using MessageIterator     = Parser::MessageIterator;
+using FrameSender         = Parser::FrameSender;
+using MessageBuilder      = Parser::MessageBuilder;
 using ParserSP            = iptr<Parser>;
 
 }}}

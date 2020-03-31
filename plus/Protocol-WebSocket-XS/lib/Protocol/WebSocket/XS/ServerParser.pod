@@ -61,7 +61,7 @@ Extensions-related headers are automatically added for the build-in extensions,
 which where enabled by configuration (L<Protocol::WebSocket::XS::Parser::configure>)
 if request contained acceptable extension configurations.
 
-Developer might supply customized L<Protocol::WebSocket::XS::ConnectResponse> C<$response> with predefined headers, custom extensions, etc...
+Developer might supply customized C<$response> with predefined headers, custom extensions, etc...
 
 C<$response> may be an L<Protocol::WebSocket::XS::ConnectResponse> object or a params hashref that its constructor supports.
 
@@ -74,14 +74,12 @@ C<$response> may be an L<Protocol::WebSocket::XS::ConnectResponse> object or a p
 
 =head2 accept_error([$response])
 
-=head2 accept_error(Protocol::WebSocket::XS::ConnectResponse $object)
-
 Returns serialized B<failure> response from server to client.
 Further communication with server is not possible, as websocket connection was not established.
 
-Developer might supply customized L<Protocol::WebSocket::XS::ConnectResponse> C<$object> with predefined headers, etc...
+Developer might supply customized C<$object> with predefined headers, etc...
 
-C<$response> may be an L<Protocol::WebSocket::XS::ConnectResponse> object or a params hashref that its constructor supports.
+C<$response> may be a L<Protocol::HTTP::Response> object or a params hashref that its constructor supports.
 
     my $data = $server->accept_error({
         code => 401,

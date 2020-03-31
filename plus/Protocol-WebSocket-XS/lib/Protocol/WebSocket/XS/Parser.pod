@@ -69,8 +69,9 @@ Max size of connect request (for server parser) or connect response (for client 
 
 =item deflate
 
-Compression configuration. Provided as a hashref with the following possible parameters:
+Compression configuration. Can't be changed after connection is established (changes are ignored).
 
+Provided as a hashref with the following possible parameters:
 
 =over
 
@@ -222,46 +223,61 @@ Returns true if connection has been established and peer has agreed to use per-m
 
 =head2 get_frames([$data])
 
-Tries to parse frames from the internal buffer (and from C<$data> afterwards if provided).
+Tries to parse frames from C<$data>.
 
-In list context it returns all parsed L<frames|Protocol::WebSocket::XS::Frame>;
-in scalar context it returns L<Protocol::WebSocket::XS::FrameIterator>.
+In list context it returns all fully arrived frames L<frames|Protocol::WebSocket::XS::Frame> and consumes all of the C<$data>.
+
+In scalar context, if at least one frame is fully arrived, it returns L<Protocol::WebSocket::XS::FrameIterator> which is a lazy frame iterator (parses on-the-fly).
+Otherwise returns undef.
 
 This operation is destructive, i.e. once parsed, data is removed from internal buffer and accessible only via high-level interface,
 i.e. as L<Protocol::WebSocket::XS::Frame> or L<FrameIterator|Protocol::WebSocket::XS::FrameIterator>
 
+This method enables C<frame-by-frame> receiving mode, so that you can't mix it will C<get_messages()> calls. Once you've started receiving a message
+frame-by-frame you have to continue receiving until final frame arrives, but no more than final frame! Thus if you want to mix frame/message mode you
+should use scalar context iterator interface (because list context will return all received frames, possibly even after final frame).
+After that you can safely swith to C<whole-message-mode> by calling C<get_messages>. In other words, switching between C<get_frames()> / C<get_messages()>
+is only possible when you are between two messages.
+
 
 =head2 get_messages([$data])
 
-Tries to parse messages from the internal buffer (and from C<$data> afterwards if provided).
+Tries to parse messages from from C<$data>.
 
-In list context it returns all parsed L<messages|Protocol::WebSocket::XS::Message>;
-in scalar context it returns L<Protocol::WebSocket::XS::MessageIterator>.
+In list context it returns all fully arrived L<messages|Protocol::WebSocket::XS::Message> and consumes all of the C<$data>.
+
+In scalar context, if at least one message is fully arrived, it returns L<Protocol::WebSocket::XS::MessageIterator> which is a lazy message iterator (parses on-the-fly).
+Otherwise returns undef.
 
 This operation is destructive, i.e. once parsed data is be removed from internal buffer and accessible only via high-level interface,
 i.e. as L<Message|Protocol::WebSocket::XS::Message> or L<MessageIterator|Protocol::WebSocket::XS::MessageIterator>.
 
+This method can't be called until current message is fully received if you earlier called C<get_frames()>. See C<get_frames()> description.
 
-=head2 start_message(%options)
+If you plan to switch to C<get_frames()> mode, you should only use scalar context iterator interface, because list context may consume
+consequent frames from the next message.
 
-Returns new L<FrameBuilder|Protocol::WebSocket::XS::FrameBuilder>, assuming that a developer will manually compose message from frames.
 
-    my $builder = $parser->start_message(deflate => 0, opcode => OPCODE_BINARY, final => 0);
+=head2 start_message(opcode => [OPCODE_BINARY], deflate => [0])
+
+Start multiframe message.
+
+Returns new L<FrameSender|Protocol::WebSocket::XS::FrameSender>, assuming that a developer will manually compose message from frames.
+
+    my $sender = $parser->start_message(opcode => OPCODE_TEXT, deflate => 0);
+    $sender->send("hello ");
+    $sender->send("world")
+    $sender->send("!!!", 1); # final frame
 
 Options can be:
 
 =over
 
-=item deflate [1]
+=item deflate
 
 Use compression for the B<whole message> or not.
 
-=item final [0]
-
-Gives a hint, whether the next payload forms a final frame
-(i.e. finishes message) or not (default).
-
-=item opcode [OPCODE_BINARY]
+=item opcode
 
 B<Message> opcode (from L<Protocol::WebSocket::XS>). Should be either C<OPCODE_TEXT> or C<OPCODE_BINARY>.
 
@@ -300,23 +316,11 @@ Max payload length is 123, everythin bigger will be trimmed.
 The constructed frame is always final and is never compressed.
 
 
-=head2 send_message(%message)
+=head2 send_message(payload => $msg|\@msg, opcode => [OPCODE_BINARY], deflate => [unspecified])
 
 Returns serialized single frame message with the supplied payload data.
 
-Message parameters are as following:
-
-=over
-
-=item deflate [smart-deflate]
-
-=item opcode [OPCODE_BINARY]
-
-=item payload
-
-Can be a string or arrayref of strings
-
-=back
+C<payload> can be a string or arrayref of strings
 
 When C<deflate> option is specified, then the payload is either compressed
 or not. Otherwise, if C<deflate> option is not specified, then compression
@@ -338,7 +342,7 @@ Example:
     );
 
 
-=head2 send_message_multiframe(%message)
+=head2 send_message_multiframe(payload => \@strings, opcode => [OPCODE_BINARY], deflate => [unspecified])
 
 This method sends one message as multiple frames. It is useful if it is
 desirable to preserve payload decomposition into multiple pieces, which
@@ -372,7 +376,7 @@ L<Protocol::WebSocket::XS::ConnectResponse>
 
 L<Protocol::WebSocket::XS::Frame>
 
-L<Protocol::WebSocket::XS::FrameBuilder>
+L<Protocol::WebSocket::XS::FrameSender>
 
 L<Protocol::WebSocket::XS::FrameIterator>
 

@@ -30,7 +30,7 @@ $client->is_deflate_active;
 $server->is_deflate_active;
 
 
-my $data = $server->send_message({opcode => OPCODE_TEXT, deflate => 0, payload => "Lorem ipsum dolor " x 10});
+my $data = $server->send_message(opcode => OPCODE_TEXT, deflate => 0, payload => "Lorem ipsum dolor " x 10);
 
 cmpthese(-1, {
     "Protocol::WebSocket::XS" => sub { $client->get_messages($data) },

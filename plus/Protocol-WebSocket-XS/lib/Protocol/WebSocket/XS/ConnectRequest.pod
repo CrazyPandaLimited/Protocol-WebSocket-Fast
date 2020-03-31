@@ -98,7 +98,7 @@ Returns true if websocket version is supported by the package
 
 L<XS::ErrorCode> object which represents Perl API for convenient
 C++ C<std::error_code> subsystem. Possible errors are described in
-L<Protocol::WebSocket::XS::errc>, L<Protocol::HTTP::errc>.
+L<Protocol::WebSocket::XS::Error>, L<Protocol::HTTP::Error>.
 
 
 
@@ -118,6 +118,6 @@ L<Protocol::HTTP::Request>
 
 L<XS::ErrorCode>
 
-L<Protocol::HTTP::errc>
+L<Protocol::HTTP::Error>
 
 =cut

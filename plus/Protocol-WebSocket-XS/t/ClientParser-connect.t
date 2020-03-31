@@ -72,7 +72,7 @@ subtest 'version upgrade required' => sub {
     }, {
         code    => 426,
         message => "Upgrade Required",
-        error   => Protocol::WebSocket::XS::Error::version_update_required,
+        error   => XS::ErrorCode->new(Protocol::WebSocket::XS::Error::unsupported_version),
     });
 };
 
@@ -84,7 +84,7 @@ subtest 'wrong code' => sub {
     my $res_str = $sp->accept_response;
     $res_str =~ s/^(HTTP\/1.1) (\d+)/$1 102/i; # code must be "bodyless", otherwise http parser waits for body
     my $cres = $p->connect($res_str);
-    is ($cres->error, Protocol::WebSocket::XS::Error::response_code_101(), "error ok");
+    is($cres->error, Protocol::WebSocket::XS::Error::response_code_101(), "error ok");
 };
 
 subtest 'wrong connection header' => sub {
@@ -95,7 +95,7 @@ subtest 'wrong connection header' => sub {
     my $res_str = $sp->accept_response;
     $res_str =~ s/^(Connection:) (\S+)/$1 migrate/im;
     my $cres = $p->connect($res_str);
-    is ($cres->error, Protocol::WebSocket::XS::Error::connection_mustbe_upgrade(), "error ok");
+    is($cres->error, Protocol::WebSocket::XS::Error::connection_mustbe_upgrade(), "error ok");
 };
 
 subtest 'wrong upgrade header' => sub {

@@ -1,54 +1,52 @@
 #pragma once
-
-#include <system_error>
 #include <panda/log.h>
+#include <system_error>
+#include <panda/exception.h>
 
 namespace panda { namespace protocol { namespace websocket {
 
+extern const std::error_category& error_categoty;
+extern log::Module pwslog;
+
 enum class errc {
-    GARBAGE_AFTER_CONNECT = 1,
-
-    VERSION_UPGRADE_REQUIRED,
-    UNSUPPORTED_VERSION,
-    RESPONSE_CODE_101,
-    CONNECTION_MUSTBE_UPGRADE,
-    UPGRADE_MUSTBE_WEBSOCKET,
-    SEC_ACCEPT_MISSING,
-
-    METHOD_MUSTBE_GET,
-    HTTP_1_1_REQUIRED,
-    BODY_PROHIBITED,
-
-    INVALID_OPCODE,
-    CONTROL_FRAGMENTED,
-    CONTROL_PAYLOAD_TOO_BIG,
-    NOT_MASKED,
-    MAX_FRAME_SIZE,
-    CLOSE_FRAME_INVALID_DATA,
-    INITIAL_CONTINUE,
-    FRAGMENT_NO_CONTINUE,
-
-    MAX_MESSAGE_SIZE
+    garbage_after_connect = 1,
+    unsupported_version,
+    response_code_101,
+    connection_mustbe_upgrade,
+    upgrade_mustbe_websocket,
+    sec_accept_missing,
+    method_mustbe_get,
+    http_1_1_required,
+    body_prohibited,
+    invalid_opcode,
+    control_fragmented,
+    control_payload_too_big,
+    not_masked,
+    max_frame_size,
+    max_message_size,
+    close_frame_invalid_data,
+    initial_continue,
+    fragment_no_continue,
+    deflate_negotiation_failed,
+    control_frame_compression,
+    inflate_error,
 };
 
-class ProtocolErrorCategoty : public std::error_category
-{
-public:
-    const char * name() const noexcept override {return "websocket::ProtocolError";}
-    std::string message(int ev) const override;
+struct ErrorCategoty : std::error_category {
+    const char* name () const noexcept override;
+    std::string message (int ev) const override;
 };
 
-extern const std::error_category& protocol_error_categoty;
-
-
-inline std::error_code make_error_code(errc err) noexcept {
-    return std::error_code(int(err), protocol_error_categoty);
+inline std::error_code make_error_code (errc err) noexcept {
+    return std::error_code(int(err), error_categoty);
 }
 
-extern log::Module pwslog;
+struct Error : panda::exception {
+    using exception::exception;
+};
 
 }}}
 
 namespace std {
-template <> struct is_error_code_enum<panda::protocol::websocket::errc> : std::true_type {};
+    template <> struct is_error_code_enum<panda::protocol::websocket::errc> : std::true_type {};
 }

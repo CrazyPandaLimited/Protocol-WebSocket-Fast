@@ -20,7 +20,7 @@ my $test_frame = sub {
         my ($frame) = @frames;
         ok(scalar(@frames) == 1 && $frame, "one frame returned");
         if ($error) {
-            cmp_deeply($frame->error, $error, "frame parsing error: $error");
+            is($frame->error, $error, "frame parsing error: $error");
             MyTest::reset($p);
         } else {
             is($frame->error, undef, "no errors");
@@ -37,7 +37,7 @@ my $test_frame = sub {
         ok($frame && !$bin && !$it->next, "got frame on last char") unless $error;
 
         if ($error) {
-            cmp_deeply($frame->error, $error, "frame parsing error: $error");
+            is($frame->error, $error, "frame parsing error: $error");
             MyTest::reset($p);
         } else {
             is($frame->error, undef, "no errors");

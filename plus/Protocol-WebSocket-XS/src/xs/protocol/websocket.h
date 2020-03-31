@@ -47,12 +47,12 @@ private:
     bool nexted;
 };
 
-struct XSFrameBuilder : FrameBuilder {
-    XSFrameBuilder(FrameBuilder&& fb): FrameBuilder(std::move(fb)) {
-        // keep link to make XSFrameBuilder perl-safe
+struct XSFrameSender : FrameSender {
+    XSFrameSender (FrameSender&& fb): FrameSender(std::move(fb)) {
+        // keep link to make XSFrameSender perl-safe
         _parser.retain();
     }
-    ~XSFrameBuilder() { _parser.release(); }
+    ~XSFrameSender () { _parser.release(); }
 };
 
 }}}
@@ -121,8 +121,8 @@ namespace xs {
     };
 
     template <class TYPE>
-    struct Typemap<xs::protocol::websocket::XSFrameBuilder*, TYPE> : TypemapObject<xs::protocol::websocket::XSFrameBuilder*, TYPE, ObjectTypePtr, ObjectStorageMG> {
-        static std::string package () { return "Protocol::WebSocket::XS::FrameBuilder"; }
+    struct Typemap<xs::protocol::websocket::XSFrameSender*, TYPE> : TypemapObject<xs::protocol::websocket::XSFrameSender*, TYPE, ObjectTypePtr, ObjectStorageMG> {
+        static std::string package () { return "Protocol::WebSocket::XS::FrameSender"; }
     };
 
     template <class TYPE> struct Typemap<panda::protocol::websocket::DeflateExt::Config, TYPE> : TypemapBase<panda::protocol::websocket::DeflateExt::Config, TYPE> {

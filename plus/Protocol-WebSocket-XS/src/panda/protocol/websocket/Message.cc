@@ -1,4 +1,4 @@
-#include <panda/protocol/websocket/Message.h>
+#include "Message.h"
 #include <cassert>
 
 namespace panda { namespace protocol { namespace websocket {
@@ -21,7 +21,7 @@ bool Message::add_frame (const Frame& frame) {
     }
 
     if (_max_size && _payload_length + frame.payload_length() > _max_size) {
-        error = errc::MAX_MESSAGE_SIZE;
+        error = errc::max_message_size;
         _state = State::DONE;
         return true;
     }
