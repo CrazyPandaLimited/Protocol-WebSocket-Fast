@@ -4,6 +4,18 @@ Protocol::WebSocket::XS::Error - Websocket error constants
 
 
 
+=head1 SYNOPSIS
+
+    use Protocol::WebSocket::XS;
+
+    my @msgs = $server->get_messages($buf);
+    ...
+    if ($msg->error == Protocol::WebSocket::XS::Error::max_message_size) {
+        ...
+    }
+
+
+
 =head1 DESCRIPTION
 
 Constants provided by this package are returned by parsers to signal about websocket protocol errors.
@@ -30,7 +42,8 @@ Client wants version that server does not support
 
 =item response_code_101
 
-Server answered with http code != 101
+The client-side expected 101/Protocol switch from the server response to switch
+from HTTP to websockets protocol, but other code has been received.
 
 
 =item connection_mustbe_upgrade
@@ -70,7 +83,7 @@ Frame with invalid or reserved opcode
 
 =item control_fragmented
 
-Control frame without final flag
+Fragmented C<control frame> received.
 
 
 =item control_payload_too_big
@@ -85,12 +98,12 @@ Unmasked frame from client
 
 =item max_frame_size
 
-Max frame size exceeded
+C<frame> size exceeds max configured size.
 
 
 =item max_message_size
 
-Max message size exceeded
+C<message> size exceeds max configured size.
 
 
 =item close_frame_invalid_data
@@ -100,12 +113,12 @@ Bad payload for close frame
 
 =item initial_continue
 
-Received first frame of a message with opcode C<OPCODE_CONTINUE>
+The initial frame cannot have opcode C<CONTINUE>
 
 
 =item fragment_no_continue
 
-Received non-first frame of a message with opcode != C<OPCODE_CONTINUE>
+Fragmented websocket frame should have opcode C<CONTINUE>
 
 
 =item deflate_negotiation_failed
@@ -115,12 +128,12 @@ Client received unsupported per-message deflate extension settings from server
 
 =item control_frame_compression
 
-Control frame was compressed
+Received control frame was compressed, but C<permessage-deflate> websocket extension cannot be applied for control frames
 
 
 =item inflate_error
 
-Internal error in C<zlib> library
+Internal error in C<zlib> library, compressed payload is corrupted
 
 =back
 
