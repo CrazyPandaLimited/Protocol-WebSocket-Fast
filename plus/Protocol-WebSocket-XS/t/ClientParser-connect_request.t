@@ -91,4 +91,14 @@ subtest 'body is not allowed' => sub {
     ok(!eval { $p->connect_request({uri => "ws://dev.ru/", body => "hello world"}); 1}, "exception thrown: $@");
 };
 
+subtest 'to_string twice' => sub {
+    my $p = new Protocol::WebSocket::XS::ClientParser;
+    my $r = new Protocol::WebSocket::XS::ConnectRequest({uri => "wss://crazypanda.ru"});
+    my $first = $p->connect_request($r);
+
+    $p->reset();
+    my $second = $p->connect_request($r);
+    is $first, $second, 'no changes';
+};
+
 done_testing();

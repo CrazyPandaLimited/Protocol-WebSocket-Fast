@@ -29,6 +29,13 @@ panda::optional<panda::string> DeflateExt::bootstrap() {
 }
 
 void DeflateExt::request(HeaderValues& ws_extensions, const Config& cfg) {
+    auto iter = std::find_if(ws_extensions.begin(), ws_extensions.end(), [](const HeaderValue& cur) {
+        return cur.name == extension_name;
+    });
+    if (iter != ws_extensions.end()) {
+        return;
+    }
+
     HeaderValueParams params;
     params.emplace(PARAM_SERVER_MAX_WINDOW_BITS, panda::to_string(cfg.server_max_window_bits));
     params.emplace(PARAM_CLIENT_MAX_WINDOW_BITS, panda::to_string(cfg.client_max_window_bits));
