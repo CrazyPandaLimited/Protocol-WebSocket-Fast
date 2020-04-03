@@ -5,7 +5,7 @@
 
 namespace panda { namespace protocol { namespace websocket {
 
-extern const std::error_category& error_categoty;
+extern const std::error_category& error_category;
 extern log::Module pwslog;
 
 enum class errc {
@@ -32,13 +32,13 @@ enum class errc {
     inflate_error,
 };
 
-struct ErrorCategoty : std::error_category {
+struct ErrorCategory : std::error_category {
     const char* name () const noexcept override;
     std::string message (int ev) const override;
 };
 
 inline std::error_code make_error_code (errc err) noexcept {
-    return std::error_code(int(err), error_categoty);
+    return std::error_code(int(err), error_category);
 }
 
 struct Error : panda::exception {

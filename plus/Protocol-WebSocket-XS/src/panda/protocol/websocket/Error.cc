@@ -6,11 +6,11 @@ namespace panda { namespace protocol { namespace websocket {
 
 log::Module pwslog("Protocol""WebSocket", log::Warning);
 
-const std::error_category& error_categoty = ErrorCategoty();
+const std::error_category& error_category = ErrorCategory();
 
-const char* ErrorCategoty::name () const noexcept { return "protocol-websocket"; }
+const char* ErrorCategory::name () const noexcept { return "protocol-websocket"; }
 
-std::string ErrorCategoty::message (int ev) const {
+std::string ErrorCategory::message (int ev) const {
     switch (errc(ev)) {
         case errc::garbage_after_connect      : return "garbage found after http request";
         case errc::response_code_101          : return "handshake response code must be 101";

@@ -30,5 +30,5 @@ BOOT {
     });
     xs::exp::autoexport(ecstash);
 
-    s.add_const_sub("error_category", xs::out<const std::error_category*>(&error_categoty));
+    s.add_const_sub("error_category", xs::out<const std::error_category*>(&error_category));
 }
