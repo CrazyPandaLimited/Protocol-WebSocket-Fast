@@ -4,7 +4,7 @@ use XS::Install;
 my %params = (
     NAME          => 'Protocol::WebSocket::XS',
     CPLUS         => 11,
-    TEST_REQUIRES => {'Test::Exception' => 0, 'Test::Warnings' => 0},
+    TEST_REQUIRES => {'Test::Exception' => 0, 'Test::Warnings' => 0, 'Test::Fatal' => 0},
     BIN_DEPS      => ['Export::XS', 'URI::XS', 'Encode::Base2N', 'Protocol::HTTP'],
     LIBS          => ['-lcrypto -lz'],
     SRC           => 'src',

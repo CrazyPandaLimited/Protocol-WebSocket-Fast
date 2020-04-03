@@ -7,11 +7,7 @@ use Test::Deep;
 use Test::Exception;
 use Test::Fatal;
 use Protocol::WebSocket::XS;
-use Data::Dumper 'Dumper';
-use Panda::Lib qw/crypt_xor/;
 use Encode::Base2N 'decode_base64';
-use Panda::Lib;
-use Protocol::HTTP;
 
 XS::Loader::load();
 
@@ -19,11 +15,12 @@ init();
 
 sub init {
     if ($ENV{LOGGER}) {
+        require Panda::Lib::Logger;
         Panda::Lib::Logger::set_native_logger(sub {
             my ($level, $code, $msg) = @_;
             say "$level $code $msg";
         });
-        Panda::Lib::Logger::set_log_level(Panda::Lib::Logger::LOG_VERBOSE_DEBUG);
+        Panda::Lib::Logger::set_log_level(Panda::Lib::Logger::LOG_VERBOSE_DEBUG());
     }
 }
 
@@ -34,7 +31,7 @@ sub import {
     foreach my $sym_name (qw/
         plan is is_deeply cmp_deeply ok done_testing skip isnt pass fail cmp_ok like isa_ok unlike ignore code all any noneof methods subtest dies_ok note
         exception
-        Dumper is_bin catch_run
+        is_bin catch_run
         OPCODE_CONTINUE OPCODE_TEXT OPCODE_BINARY OPCODE_CLOSE OPCODE_PING OPCODE_PONG
         CLOSE_DONE CLOSE_AWAY CLOSE_PROTOCOL_ERROR CLOSE_INVALID_DATA CLOSE_UNKNOWN CLOSE_ABNORMALLY CLOSE_INVALID_TEXT
         CLOSE_BAD_REQUEST CLOSE_MAX_SIZE CLOSE_EXTENSION_NEEDED CLOSE_INTERNAL_ERROR CLOSE_TLS
@@ -235,6 +232,14 @@ sub is_bin {
     return if our $leak_test;
     state $has_binary = eval { require Test::BinaryData; Test::BinaryData->import(); 1 };
     $has_binary ? is_binary($got, $expected, $name) : is($got, $expected, $name);
+}
+
+sub crypt_xor {
+    my ($data, $mask) = @_;
+    my @key = unpack("C*", $mask);
+
+    my $result = pack("C*", map { my $c = shift @key; push @key, $c; $_ ^ $c } unpack("C*", $data));
+    return $result;
 }
 
 1;
