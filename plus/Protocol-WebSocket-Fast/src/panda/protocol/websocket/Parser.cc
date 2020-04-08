@@ -40,12 +40,15 @@ bool Parser::_parse_frame (Frame& frame) {
         _frame_count = 0;
         _flags.reset(RECV_FRAME);
         _flags.reset(RECV_INFLATE);
+        _suggested_close_code = CloseCode::PROTOCOL_ERROR;
     }
     else if (frame.is_control()) { // control frames can't be fragmented, no need to increment frame count
         if (!_frame_count) _flags.reset(RECV_FRAME); // do not reset state if control frame arrives in the middle of message
         if (frame.opcode() == Opcode::CLOSE) {
             _buffer.clear();
             _flags.set(RECV_CLOSED);
+            if (frame.close_code() == CloseCode::UNKNOWN) _suggested_close_code = CloseCode::DONE;
+            else                                          _suggested_close_code = frame.close_code();
         }
     }
     else if (frame.final()) {

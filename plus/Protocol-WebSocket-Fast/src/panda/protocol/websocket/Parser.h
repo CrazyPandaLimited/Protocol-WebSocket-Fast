@@ -144,6 +144,8 @@ struct Parser : virtual panda::Refcnt {
     size_t max_message_size()   const { return  _max_message_size; }
     size_t max_handshake_size() const { return  _max_handshake_size; }
 
+    uint16_t suggested_close_code () const { return _suggested_close_code; }
+
     virtual void reset ();
 
     bool is_deflate_active () const { return (bool)_deflate_ext; }
@@ -188,12 +190,13 @@ protected:
 
 private:
     bool      _recv_mask_required;
-    FrameSP   _frame;                // current frame being received (frame mode)
-    int       _frame_count = 0;      // frame count for current message being received (frame mode)
-    MessageSP _message;              // current message being received (message mode)
-    Frame     _message_frame;        // current frame being received (message mode)
-    int       _sent_frame_count = 0; // frame count for current message being sent (frame mode)
-    Opcode    _send_opcode;          // opcode for first frame to be sent (frame mode)
+    FrameSP   _frame;                    // current frame being received (frame mode)
+    int       _frame_count = 0;          // frame count for current message being received
+    MessageSP _message;                  // current message being received (message mode)
+    Frame     _message_frame;            // current frame being received (message mode)
+    int       _sent_frame_count = 0;     // frame count for current message being sent (frame mode)
+    Opcode    _send_opcode;              // opcode for first frame to be sent (frame mode)
+    uint16_t  _suggested_close_code = 0; // suggested close code to send to peer after error or receiving close frame from peer
 
     std::deque<string> _simple_payload_tmp;
 
