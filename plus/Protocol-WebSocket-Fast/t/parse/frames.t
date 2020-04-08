@@ -97,6 +97,12 @@ subtest "server parser" => sub {
         MyTest::reset($p);
         subtest 'long' => $test_frame,  $p, {opcode => OPCODE_CLOSE, mask => 1, fin => 1, close_code => CLOSE_AWAY, data => ("1" x 1000)}, Protocol::WebSocket::Fast::Error::control_payload_too_big;
         MyTest::reset($p);
+        foreach my $code (0, 999, 1004, CLOSE_UNKNOWN, CLOSE_ABNORMALLY, CLOSE_TLS, 1100) {
+            subtest "invalid close $code" => $test_frame,  $p, {opcode => OPCODE_CLOSE, mask => 1, fin => 1, close_code => $code, data => "a"}, Protocol::WebSocket::Fast::Error::close_frame_invalid_data;
+            MyTest::reset($p);
+        }
+        subtest 'custom code' => $test_frame,  $p, {opcode => OPCODE_CLOSE, mask => 1, fin => 1, close_code => 3000};
+        MyTest::reset($p);
     };
 
     subtest '2 frames via it->next' => sub {

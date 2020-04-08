@@ -126,6 +126,9 @@ bool FrameHeader::parse_close_payload (const string& payload, uint16_t& code, st
         auto ptr = payload.data();
         code = be2h16(*((uint16_t*)ptr));
         message = payload.substr(sizeof(code));
+        // check for invalid close codes
+        if (code < CloseCode::DONE || code == 1004 || code == CloseCode::UNKNOWN || code == CloseCode::ABNORMALLY ||
+            (code > CloseCode::INTERNAL_ERROR && code < 3000)) return false;
     }
     return true;
 }
