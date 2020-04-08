@@ -18,97 +18,97 @@ void Parser::reset () {
     if (_deflate_ext) _deflate_ext->reset();
 }
 
-FrameSP Parser::_get_frame () {
-    if (!_flags[ESTABLISHED]) throw Error("not established");
-    if (_flags[RECV_MESSAGE]) throw Error("message is being parsed");
-    if (_flags[RECV_CLOSED]) { _buffer.clear(); return NULL; }
-    if (!_buffer) return NULL;
-
-    _flags.set(RECV_FRAME);
-    if (!_frame) _frame = new Frame(_recv_mask_required, _max_frame_size);
-
-    if (!_frame->parse(_buffer)) {
+bool Parser::_parse_frame (Frame& frame) {
+    if (!frame.parse(_buffer)) {
         _buffer.clear();
-        return NULL;
+        return false;
     }
-    _frame->check(_frame_count);
+    frame.check(_frame_count);
 
-    if (_frame_count == 0 && _frame->rsv1() && _deflate_ext) _flags.set(RECV_INFLATE);
-    if (_flags[RECV_INFLATE]) _deflate_ext->uncompress(*_frame);
+    if (_frame_count == 0) {
+        if (frame.rsv1()) {
+            if (_deflate_ext) _flags.set(RECV_INFLATE);
+            else frame.error = errc::unexpected_rsv;
+        }
+        if (frame.rsv2() | frame.rsv3()) frame.error = errc::unexpected_rsv;
+    }
 
-    if (_frame->error) {
+    if (_flags[RECV_INFLATE]) _deflate_ext->uncompress(frame);
+
+    if (frame.error) {
         _buffer.clear();
         _frame_count = 0;
+        _flags.reset(RECV_FRAME);
         _flags.reset(RECV_INFLATE);
     }
-    else if (_frame->is_control()) { // control frames can't be fragmented, no need to increment frame count
+    else if (frame.is_control()) { // control frames can't be fragmented, no need to increment frame count
         if (!_frame_count) _flags.reset(RECV_FRAME); // do not reset state if control frame arrives in the middle of message
-        if (_frame->opcode() == Opcode::CLOSE) {
+        if (frame.opcode() == Opcode::CLOSE) {
             _buffer.clear();
             _flags.set(RECV_CLOSED);
         }
     }
-    else if (_frame->final()) {
+    else if (frame.final()) {
         _flags.reset(RECV_FRAME);
         _flags.reset(RECV_INFLATE);
         _frame_count = 0;
     }
     else ++_frame_count;
 
-    FrameSP ret(_frame);
-    _frame = NULL;
+    return true;
+}
+
+FrameSP Parser::_get_frame () {
+    if (!_flags[ESTABLISHED]) throw Error("not established");
+    if (_flags[RECV_MESSAGE]) throw Error("message is being parsed");
+    if (_flags[RECV_CLOSED]) { _buffer.clear(); return nullptr; }
+    if (!_buffer) return nullptr;
+
+    _flags.set(RECV_FRAME);
+    if (!_frame) _frame = new Frame(_recv_mask_required, _max_frame_size);
+
+    if (!_parse_frame(*_frame)) return nullptr;
+
+    FrameSP ret = std::move(_frame);
+    _frame = nullptr;
     return ret;
 }
 
 MessageSP Parser::_get_message () {
     if (!_flags[ESTABLISHED]) throw Error("not established");
     if (_flags[RECV_FRAME]) throw Error("frame mode active");
-    if (_flags[RECV_CLOSED]) { _buffer.clear(); return NULL; }
-    if (!_buffer) return NULL;
+    if (_flags[RECV_CLOSED]) { _buffer.clear(); return nullptr; }
+    if (!_buffer) return nullptr;
 
     _flags.set(RECV_MESSAGE);
     if (!_message) _message = new Message(_max_message_size);
 
     while (1) {
-        if (!_message_frame.parse(_buffer)) {
-            _buffer.clear();
-            return NULL;
-        }
+        if (!_parse_frame(_message_frame)) return nullptr;
 
         // control frame arrived in the middle of fragmented message - wrap in new message and return (state remains MESSAGE)
         // because user can only switch to getting frames after receiving non-control message
-        if (!_message_frame.error && _message_frame.is_control()) {
-            if (_message_frame.opcode() == Opcode::CLOSE) {
-                _buffer.clear();
-                _flags.set(RECV_CLOSED);
-            }
-            if (_message->frame_count) {
-                auto cntl_msg = new Message(_max_message_size);
-                bool done = cntl_msg->add_frame(_message_frame);
-                assert(done);
-                _message_frame.reset();
-                return cntl_msg;
-            }
+        if (!_message_frame.error && _message_frame.is_control() && _message->frame_count) {
+            auto cntl_msg = new Message(_max_message_size);
+            bool done = cntl_msg->add_frame(_message_frame);
+            assert(done);
+            _message_frame.reset();
+            return cntl_msg;
         }
-
-        _message_frame.check(_message->frame_count);
-
-        if (_message->frame_count == 0 && _message_frame.rsv1() && _deflate_ext) _flags.set(RECV_INFLATE);
-        if (_flags[RECV_INFLATE]) _deflate_ext->uncompress(_message_frame);
 
         bool done = _message->add_frame(_message_frame);
         _message_frame.reset();
 
         if (done) break;
-        if (!_buffer) return NULL;
+        if (!_buffer) return nullptr;
     }
 
     if (_message->error) _buffer.clear();
 
     _flags.reset(RECV_MESSAGE);
     _flags.reset(RECV_INFLATE);
-    MessageSP ret(_message);
-    _message = NULL;
+    MessageSP ret = std::move(_message);
+    _message = nullptr;
     return ret;
 }
 

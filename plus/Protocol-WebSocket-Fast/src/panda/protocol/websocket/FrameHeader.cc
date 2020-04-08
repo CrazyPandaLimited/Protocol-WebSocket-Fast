@@ -41,7 +41,6 @@ bool FrameHeader::parse (string& buf) {
         rsv3   = first.rsv3;
         opcode = (Opcode)first.opcode;
         _state = State::SECOND;
-        //cout << "FrameHeader[parse]: FIN=" << fin << ", RSV1=" << rsv1 << ", RSV2=" << rsv2 << ", RSV3=" << rsv3 << ", OPCODE=" << (int)opcode << endl;
     }
 
     if (_state == State::SECOND) {

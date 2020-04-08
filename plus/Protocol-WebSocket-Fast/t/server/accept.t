@@ -1,6 +1,6 @@
 use 5.012;
 use warnings;
-use lib 't'; use MyTest;
+use lib 't/lib'; use MyTest;
 
 *accept_packet = \&MyTest::accept_packet;
 *accept_parsed = \&MyTest::accept_parsed;

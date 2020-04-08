@@ -56,7 +56,6 @@ sub accept_packet {
         "Accept-Language: ru-RU,ru;q=0.8,en-US;q=0.6,en;q=0.4\r\n",
         "Cookie: _ga=GA1.2.1700804447.1456741171\r\n",
         "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n",
-        #"Sec-WebSocket-Extensions: permessage-deflate; client_max_window_bits\r\n",
         "Sec-WebSocket-Protocol: chat\r\n",
         "\r\n",
     );
@@ -69,7 +68,6 @@ sub accept_parsed {
             'pragma' => 'no-cache',
             'sec-websocket-protocol' => 'chat',
             'upgrade' => 'websocket',
-            #'sec-websocket-extensions' => 'permessage-deflate; client_max_window_bits',
             'accept-encoding' => 'gzip, deflate, sdch',
             'origin' => 'http://www.websocket.org',
             'cache-control' => 'no-cache',
@@ -81,11 +79,10 @@ sub accept_parsed {
             'user-agent' => 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36',
             'accept-language' => 'ru-RU,ru;q=0.8,en-US;q=0.6,en;q=0.4'
         },
-        uri           => methods(to_string => '/?encoding=text'),
-        #ws_extensions => [ [ 'permessage-deflate', { 'client_max_window_bits' => '' } ] ],
-        ws_key        => 'dGhlIHNhbXBsZSBub25jZQ==',
-        ws_protocol   => 'chat',
-        ws_version    => 13,
+        uri         => methods(to_string => '/?encoding=text'),
+        ws_key      => 'dGhlIHNhbXBsZSBub25jZQ==',
+        ws_protocol => 'chat',
+        ws_version  => 13,
     );
 }
 

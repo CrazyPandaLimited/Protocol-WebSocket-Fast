@@ -1,6 +1,6 @@
 use 5.012;
 use warnings;
-use lib 't'; use MyTest;
+use lib 't/lib'; use MyTest;
 use Test::Fatal;
 use Encode::Base2N qw/encode_base64pad decode_base64/;
 

@@ -1,6 +1,6 @@
 use 5.012;
 use warnings;
-use lib 't'; use MyTest;
+use lib 't/lib'; use MyTest;
 
 subtest 'parser create' => sub {
     my $p = new Protocol::WebSocket::Fast::ClientParser;

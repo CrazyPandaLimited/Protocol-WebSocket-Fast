@@ -30,6 +30,7 @@ enum class errc {
     deflate_negotiation_failed,
     control_frame_compression,
     inflate_error,
+    unexpected_rsv,
 };
 
 struct ErrorCategory : std::error_category {

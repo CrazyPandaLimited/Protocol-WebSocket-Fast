@@ -197,8 +197,9 @@ private:
 
     std::deque<string> _simple_payload_tmp;
 
-    FrameSP   _get_frame ();
-    MessageSP _get_message();
+    FrameSP   _get_frame   ();
+    MessageSP _get_message ();
+    bool      _parse_frame (Frame&);
 
     void _check_send () const {
         if (!_flags[ESTABLISHED]) throw Error("not established");
