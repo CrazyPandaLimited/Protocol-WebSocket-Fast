@@ -1,9 +1,9 @@
 use 5.012;
 use warnings;
-use lib 't/lib'; use MyTest;
-
-*accept_packet = \&MyTest::accept_packet;
-*accept_parsed = \&MyTest::accept_parsed;
+use lib 't/lib';
+use MyTest qw/accept_packet accept_parsed/;
+use Test::More;
+use Test::Deep;
 
 my $p = new Protocol::WebSocket::Fast::ServerParser;
 

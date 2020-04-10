@@ -8,6 +8,22 @@ namespace panda { namespace protocol { namespace websocket {
 using std::cout;
 using std::endl;
 
+void Parser::configure (const Config& cfg) {
+    _max_frame_size     = cfg.max_frame_size;
+    _max_message_size   = cfg.max_message_size;
+    _max_handshake_size = cfg.max_handshake_size;
+    _check_utf8         = cfg.check_utf8;
+
+    if (!_flags[ESTABLISHED]) {
+        _deflate_cfg = cfg.deflate;
+        if (_deflate_cfg) _deflate_cfg->max_message_size = _max_message_size;
+    }
+
+    if (_frame) _frame->max_size(_max_frame_size);
+    if (_message) _message->max_size(_max_message_size);
+    _message_frame.max_size(_max_frame_size);
+}
+
 void Parser::reset () {
     _buffer.clear();
     _flags.reset();
@@ -16,6 +32,7 @@ void Parser::reset () {
     _message = NULL;
     _message_frame.reset();
     if (_deflate_ext) _deflate_ext->reset();
+    _suggested_close_code = 0;
 }
 
 bool Parser::_parse_frame (Frame& frame) {
@@ -23,35 +40,70 @@ bool Parser::_parse_frame (Frame& frame) {
         _buffer.clear();
         return false;
     }
-    frame.check(_frame_count);
 
-    if (_frame_count == 0) {
-        if (frame.rsv1()) {
-            if (_deflate_ext) _flags.set(RECV_INFLATE);
-            else frame.error = errc::unexpected_rsv;
-        }
-        if (frame.rsv2() | frame.rsv3()) frame.error = errc::unexpected_rsv;
-    }
-
-    if (_flags[RECV_INFLATE]) _deflate_ext->uncompress(frame);
-
-    if (frame.error) {
+    auto _err = [&]() -> bool {
         _buffer.clear();
         _frame_count = 0;
         _flags.reset(RECV_FRAME);
         _flags.reset(RECV_INFLATE);
-        _suggested_close_code = CloseCode::PROTOCOL_ERROR;
-    }
-    else if (frame.is_control()) { // control frames can't be fragmented, no need to increment frame count
+        _utf8_checker.reset();
+        if      (frame.error == errc::invalid_utf8)   _suggested_close_code = CloseCode::INVALID_TEXT;
+        else if (frame.error == errc::max_frame_size) _suggested_close_code = CloseCode::MAX_SIZE;
+        else                                          _suggested_close_code = CloseCode::PROTOCOL_ERROR;
+
+        return true;
+    };
+
+    auto _seterr = [&](const std::error_code& ec) -> bool {
+        frame.error = ec;
+        return _err();
+    };
+
+    if (frame.error) return _err();
+
+    if (frame.is_control()) { // control frames can't be fragmented, no need to increment frame count
         if (!_frame_count) _flags.reset(RECV_FRAME); // do not reset state if control frame arrives in the middle of message
         if (frame.opcode() == Opcode::CLOSE) {
             _buffer.clear();
             _flags.set(RECV_CLOSED);
             if (frame.close_code() == CloseCode::UNKNOWN) _suggested_close_code = CloseCode::DONE;
             else                                          _suggested_close_code = frame.close_code();
+
+            if (_check_utf8 && frame.close_message()) {
+                _utf8_checker.reset();
+                if (!_utf8_checker.write(frame.close_message()) || !_utf8_checker.finish()) return _seterr(errc::invalid_utf8);
+            }
+        }
+        return true;
+    }
+
+    if (_frame_count == 0) {
+        if (frame.opcode() == Opcode::CONTINUE) return _seterr(errc::initial_continue);
+        if (frame.rsv1()) {
+            if (_deflate_ext) _flags.set(RECV_INFLATE);
+            else return _seterr(errc::unexpected_rsv);
+        }
+        if (frame.rsv2() | frame.rsv3()) return _seterr(errc::unexpected_rsv);
+    }
+    else {
+        if (frame.opcode() != Opcode::CONTINUE) return _seterr(errc::fragment_no_continue);
+    }
+
+    if (_flags[RECV_INFLATE]) {
+        _deflate_ext->uncompress(frame);
+        if (frame.error) return _err();
+    }
+
+    if (_check_utf8) {
+        if (_frame_count == 0 && frame.opcode() == Opcode::TEXT) _flags.set(RECV_TEXT);
+        if (_flags[RECV_TEXT] && !_utf8_checker.write(frame.payload)) return _seterr(errc::invalid_utf8);
+        if (frame.final()) {
+            if (!_utf8_checker.finish()) return _seterr(errc::invalid_utf8);
+            _flags.reset(RECV_TEXT);
         }
     }
-    else if (frame.final()) {
+
+    if (frame.final()) {
         _flags.reset(RECV_FRAME);
         _flags.reset(RECV_INFLATE);
         _frame_count = 0;
@@ -106,7 +158,9 @@ MessageSP Parser::_get_message () {
         if (!_buffer) return nullptr;
     }
 
-    if (_message->error) _buffer.clear();
+    if (_message->error) {
+        if (_message->error == errc::max_message_size) _suggested_close_code = CloseCode::MAX_SIZE;
+    }
 
     _flags.reset(RECV_MESSAGE);
     _flags.reset(RECV_INFLATE);

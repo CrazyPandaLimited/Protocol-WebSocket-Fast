@@ -1,44 +1,21 @@
 package MyTest;
 use 5.012;
 use warnings;
-use Test::Catch;
 use Test::More;
 use Test::Deep;
-use Test::Exception;
-use Test::Fatal;
+use Test::Catch;
+use Export::XS::Auto;
 use Protocol::WebSocket::Fast;
-use Encode::Base2N 'decode_base64';
 
 XS::Loader::load();
 
-init();
-
-sub init {
-    if ($ENV{LOGGER}) {
-        require Panda::Lib::Logger;
-        Panda::Lib::Logger::set_native_logger(sub {
-            my ($level, $code, $msg) = @_;
-            say "$level $code $msg";
-        });
-        Panda::Lib::Logger::set_log_level(Panda::Lib::Logger::LOG_VERBOSE_DEBUG());
-    }
-}
-
-sub import {
-    my $class = shift;
-
-    my $caller = caller();
-    foreach my $sym_name (qw/
-        plan is is_deeply cmp_deeply ok done_testing skip isnt pass fail cmp_ok like isa_ok unlike ignore code all any noneof methods subtest dies_ok note
-        exception
-        is_bin catch_run
-        OPCODE_CONTINUE OPCODE_TEXT OPCODE_BINARY OPCODE_CLOSE OPCODE_PING OPCODE_PONG
-        CLOSE_DONE CLOSE_AWAY CLOSE_PROTOCOL_ERROR CLOSE_INVALID_DATA CLOSE_UNKNOWN CLOSE_ABNORMALLY CLOSE_INVALID_TEXT
-        CLOSE_BAD_REQUEST CLOSE_MAX_SIZE CLOSE_EXTENSION_NEEDED CLOSE_INTERNAL_ERROR CLOSE_TLS
-    /) {
-        no strict 'refs';
-        *{"${caller}::$sym_name"} = *$sym_name;
-    }
+if ($ENV{LOGGER}) {
+    require Panda::Lib::Logger;
+    Panda::Lib::Logger::set_native_logger(sub {
+        my ($level, $code, $msg) = @_;
+        say "$level $code $msg";
+    });
+    Panda::Lib::Logger::set_log_level(Panda::Lib::Logger::LOG_VERBOSE_DEBUG());
 }
 
 sub accept_packet {
@@ -108,7 +85,7 @@ sub connect_response {
 }
 
 sub get_established_server {
-    my $p = new Protocol::WebSocket::Fast::ServerParser;
+    my $p = Protocol::WebSocket::Fast::ServerParser->new(shift);
     _establish_server($p);
     return $p;
 }
@@ -128,7 +105,7 @@ sub reset {
 }
 
 sub get_established_client {
-    my $p = new Protocol::WebSocket::Fast::ClientParser;
+    my $p = Protocol::WebSocket::Fast::ClientParser->new(shift);
     _establish_client($p);
     return $p;
 }
@@ -237,6 +214,104 @@ sub crypt_xor {
 
     my $result = pack("C*", map { my $c = shift @key; push @key, $c; $_ ^ $c } unpack("C*", $data));
     return $result;
+}
+
+sub test_frame {
+    my ($p, $frame_data, $error, $suggested_close_code) = @_;
+    my $bin = gen_frame($frame_data);
+    my $check_data = {};
+    $check_data->{opcode}         = $frame_data->{opcode};
+    $check_data->{is_control}     = ($check_data->{opcode} >= OPCODE_CLOSE);
+    $check_data->{final}          = $frame_data->{fin} || '';
+    $check_data->{payload_length} = length($frame_data->{data}//'');
+    $check_data->{payload}        = $frame_data->{data};
+    $check_data->{close_code}     = $frame_data->{close_code} if exists $frame_data->{close_code};
+
+    subtest 'whole buffer' => sub {
+        my @frames = $p->get_frames($bin);
+        my ($frame) = @frames;
+        ok(scalar(@frames) == 1 && $frame, "one frame returned");
+        if ($error) {
+            is($frame->error, $error, "frame parsing error: $error");
+            is $p->suggested_close_code, $suggested_close_code, "suggested close code: $suggested_close_code" if $suggested_close_code;
+            &reset($p);
+        } else {
+            is($frame->error, undef, "no errors");
+            cmp_deeply($frame, methods(%$check_data), "frame properties ok");
+        }
+    };
+
+    &reset($p) if $check_data->{opcode} == OPCODE_CLOSE;
+
+    subtest 'buffer by char' => sub {
+        my $it;
+        while (length($bin) && !$it) { $it = $p->get_frames(substr($bin, 0, 1, '')); }
+        my $frame = $it->next;
+        ok($frame && !$bin && !$it->next, "got frame on last char") unless $error;
+
+        if ($error) {
+            is($frame->error, $error, "frame parsing error: $error");
+            is $p->suggested_close_code, $suggested_close_code, "suggested close code: $suggested_close_code" if $suggested_close_code;
+            &reset($p);
+        } else {
+            is($frame->error, undef, "no errors");
+            cmp_deeply($frame, methods(%$check_data), "frame properties ok");
+        }
+    }
+};
+
+sub test_message {
+    my ($p, $message_data, $error) = @_;
+    my $opcode = $message_data->{opcode} // OPCODE_TEXT;
+    my $nframes = $message_data->{nframes} //= 1;
+
+    my $check_data = {};
+    $check_data->{opcode}         = $opcode;
+    $check_data->{is_control}     = ($opcode >= OPCODE_CLOSE);
+    $check_data->{payload_length} = length($message_data->{data}//'');
+    $check_data->{payload}        = $message_data->{data};
+    $check_data->{close_code}     = $message_data->{close_code} if exists $message_data->{close_code};
+    $check_data->{frame_count}    = $nframes;
+
+    my $bin;
+    if ($opcode >= OPCODE_CLOSE) {
+        $bin = gen_frame($message_data);
+    } else {
+        $bin = gen_message($message_data);
+    }
+
+    subtest 'whole buffer' => sub {
+        my @messages = $p->get_messages($bin);
+        my ($message) = @messages;
+        ok(scalar(@messages) == 1 && $message, "one message returned");
+        if ($error) {
+            is($message->error, $error, "message parsing error: $error");
+            &reset($p);
+        } else {
+            is($message->error, undef, "no errors");
+            cmp_deeply($message, methods(%$check_data), "message properties ok");
+        }
+    };
+
+    &reset($p) if $check_data->{opcode} == OPCODE_CLOSE;
+
+    my $message;
+    subtest 'buffer by char' => sub {
+        my $it;
+        while (length($bin) && !$it) { $it = $p->get_messages(substr($bin, 0, 1, '')); }
+        $message = $it->next;
+        ok($message && !$bin && !$it->next, "got message on last char") unless $error;
+
+        if ($error) {
+            is($message->error, $error, "message parsing error: $error");
+            &reset($p);
+        } else {
+            is($message->error, undef, "no errors");
+            cmp_deeply($message, methods(%$check_data), "message properties ok");
+        }
+    };
+
+    return $message;
 }
 
 1;

@@ -1,9 +1,10 @@
 use 5.012;
 use warnings;
-use lib 't/lib'; use MyTest;
-
-*gen_frame   = \&MyTest::gen_frame;
-*gen_message = \&MyTest::gen_message;
+use lib 't/lib';
+use MyTest qw/gen_frame gen_message/;
+use Test::More;
+use Test::Deep;
+use Protocol::WebSocket::Fast;
 
 my $p = MyTest::get_established_server();
 

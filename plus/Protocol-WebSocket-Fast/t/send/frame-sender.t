@@ -1,7 +1,8 @@
 use 5.012;
 use warnings;
-use lib 't/lib'; use MyTest;
-use Encode::Base2N qw/encode_base64pad/;
+use lib 't/lib';
+use MyTest;
+use Test::More;
 use Test::Fatal;
 
 subtest "attempt to send frame after sending final frame" => sub {

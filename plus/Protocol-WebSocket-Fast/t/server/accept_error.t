@@ -1,10 +1,10 @@
 use 5.012;
 use warnings;
-use lib 't/lib'; use MyTest;
+use lib 't/lib';
+use MyTest 'accept_packet';
+use Test::More;
 
 my $p = new Protocol::WebSocket::Fast::ServerParser;
-
-*accept_packet = \&MyTest::accept_packet;
 
 sub bad_http {
     my ($from,$to) = @_;

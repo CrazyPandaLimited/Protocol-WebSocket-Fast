@@ -1,6 +1,9 @@
 use 5.012;
 use warnings;
-use lib 't/lib'; use MyTest;
+use lib 't/lib';
+use MyTest qw/gen_frame/;
+use Test::More;
+use Protocol::WebSocket::Fast;
 
 subtest 'RSV must be 0, when no extension defining RSV meaning has been negotiated' => sub {
     my $bin = MyTest::gen_frame({opcode => OPCODE_TEXT, mask => 1, fin => 1, data => "jopa1", rsv1 => 1});

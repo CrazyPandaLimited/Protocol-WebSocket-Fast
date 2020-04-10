@@ -1,8 +1,10 @@
 use 5.012;
 use warnings;
-use lib 't/lib'; use MyTest;
+use lib 't/lib';
+use MyTest;
+use Test::More;
 use Test::Fatal;
-use Encode::Base2N qw/encode_base64pad decode_base64/;
+use Protocol::WebSocket::Fast;
 
 my $create_pair = sub {
     my $configure = shift;

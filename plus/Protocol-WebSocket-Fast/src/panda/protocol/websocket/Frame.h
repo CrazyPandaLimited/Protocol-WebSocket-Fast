@@ -33,16 +33,10 @@ struct Frame : virtual panda::Refcnt, AllocatedObject<Frame> {
     uint16_t close_code     () const { return _close_code; }
     string   close_message  () const { return _close_message; }
 
-    bool parse (string& buf);
+    size_t max_size () const         { return _max_size; }
+    void   max_size (size_t newsize) { _max_size = newsize; }
 
-    void check (bool fragment_in_message) {
-        assert(_state == State::DONE);
-        if (is_control() || error) return;
-        if (!fragment_in_message) {
-            if (opcode() == Opcode::CONTINUE) error = errc::initial_continue;
-        }
-        else if (opcode() != Opcode::CONTINUE) error = errc::fragment_no_continue;
-    }
+    bool parse (string& buf);
 
     void reset () {
         _state = State::HEADER;

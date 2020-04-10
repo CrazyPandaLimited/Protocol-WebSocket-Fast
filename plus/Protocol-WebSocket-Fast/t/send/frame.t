@@ -1,9 +1,9 @@
 use 5.012;
 use warnings;
-use lib 't/lib'; use MyTest;
-
-*gen_frame = \&MyTest::gen_frame;
-
+use lib 't/lib';
+use MyTest qw/gen_frame is_bin/;
+use Test::More;
+use Protocol::WebSocket::Fast;
 
 my $create_parser = sub {
     my ($server_or_client) = @_;

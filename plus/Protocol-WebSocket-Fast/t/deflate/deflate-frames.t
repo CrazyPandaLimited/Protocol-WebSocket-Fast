@@ -1,11 +1,13 @@
 use 5.012;
 use warnings;
-use lib 't/lib'; use MyTest;
-use Encode::Base2N qw/encode_base64pad/;
+use lib 't/lib';
+use MyTest qw/gen_frame/;
+use Test::More;
+use Test::Catch;
+use Encode::Base2N 'encode_base64pad';
+use Protocol::WebSocket::Fast;
 
 catch_run('[deflate-extension]');
-
-*gen_frame = \&MyTest::gen_frame;
 
 my $default_compression =<<END;
 GET /?encoding=text HTTP/1.1\r

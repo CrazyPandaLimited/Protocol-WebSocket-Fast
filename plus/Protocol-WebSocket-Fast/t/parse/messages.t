@@ -1,111 +1,59 @@
 use 5.012;
 use warnings;
-use lib 't/lib'; use MyTest;
+use lib 't/lib';
+use MyTest qw/gen_frame gen_message test_message/;
+use Test::More;
+use Test::Deep;
+use Test::Exception;
+use Protocol::WebSocket::Fast;
 
-*gen_frame = \&MyTest::gen_frame;
-*gen_message = \&MyTest::gen_message;
-
-ok(!eval { Protocol::WebSocket::Fast::ServerParser->new->get_messages('asdasd'); }, "cant get messages until established");
-
-my $test_message = sub {
-    my ($p, $message_data, $error) = @_;
-    my $opcode = $message_data->{opcode} // OPCODE_TEXT;
-    my $nframes = $message_data->{nframes} //= 1;
-
-    my $check_data = {};
-    $check_data->{opcode}         = $opcode;
-    $check_data->{is_control}     = ($opcode >= OPCODE_CLOSE);
-    $check_data->{payload_length} = length($message_data->{data}//'');
-    $check_data->{payload}        = $message_data->{data};
-    $check_data->{close_code}     = $message_data->{close_code} if exists $message_data->{close_code};
-    $check_data->{frame_count}    = $nframes;
-
-    my $bin;
-    if ($opcode >= OPCODE_CLOSE) {
-        $bin = MyTest::gen_frame($message_data);
-    } else {
-        $bin = gen_message($message_data);
-    }
-
-    subtest 'whole buffer' => sub {
-        my @messages = $p->get_messages($bin);
-        my ($message) = @messages;
-        ok(scalar(@messages) == 1 && $message, "one message returned");
-        if ($error) {
-            is($message->error, $error, "message parsing error: $error");
-            MyTest::reset($p);
-        } else {
-            is($message->error, undef, "no errors");
-            cmp_deeply($message, methods(%$check_data), "message properties ok");
-        }
-    };
-
-    MyTest::reset($p) if $check_data->{opcode} == OPCODE_CLOSE;
-
-    my $message;
-    subtest 'buffer by char' => sub {
-        my $it;
-        while (length($bin) && !$it) { $it = $p->get_messages(substr($bin, 0, 1, '')); }
-        $message = $it->next;
-        ok($message && !$bin && !$it->next, "got message on last char") unless $error;
-
-        if ($error) {
-            is($message->error, $error, "message parsing error: $error");
-            MyTest::reset($p);
-        } else {
-            is($message->error, undef, "no errors");
-            cmp_deeply($message, methods(%$check_data), "message properties ok");
-        }
-    };
-
-    return $message;
-};
+dies_ok { Protocol::WebSocket::Fast::ServerParser->new->get_messages('asdasd') } "cant get messages until established";
 
 subtest "server parser" => sub {
     my $p = MyTest::get_established_server();
 
-    subtest 'single frame' => $test_message, $p, {mask => 1, data => "hello world", nframes => 1};
-    subtest '2 frames'     => $test_message, $p, {mask => 1, data => "hello world", nframes => 2};
-    subtest 'many frames'  => $test_message, $p, {mask => 1, data => ("suchka hey" x 100), nframes => 49};
-    subtest 'empty'        => $test_message, $p, {mask => 1};
+    subtest 'single frame' => \&test_message, $p, {mask => 1, data => "hello world", nframes => 1};
+    subtest '2 frames'     => \&test_message, $p, {mask => 1, data => "hello world", nframes => 2};
+    subtest 'many frames'  => \&test_message, $p, {mask => 1, data => ("suchka hey" x 100), nframes => 49};
+    subtest 'empty'        => \&test_message, $p, {mask => 1};
 
     subtest 'ping' => sub {
-        subtest 'empty'      => $test_message, $p, {opcode => OPCODE_PING, mask => 1, fin => 1};
-        subtest 'payload'    => $test_message, $p, {opcode => OPCODE_PING, mask => 1, fin => 1, data => "pingdata"};
-        subtest 'fragmented' => $test_message, $p, {opcode => OPCODE_PING, mask => 1, fin => 0}, Protocol::WebSocket::Fast::Error::control_fragmented;
-        subtest 'long'       => $test_message, $p, {opcode => OPCODE_PING, mask => 1, fin => 1, data => ("1" x 1000)}, Protocol::WebSocket::Fast::Error::control_payload_too_big;
+        subtest 'empty'      => \&test_message, $p, {opcode => OPCODE_PING, mask => 1, fin => 1};
+        subtest 'payload'    => \&test_message, $p, {opcode => OPCODE_PING, mask => 1, fin => 1, data => "pingdata"};
+        subtest 'fragmented' => \&test_message, $p, {opcode => OPCODE_PING, mask => 1, fin => 0}, Protocol::WebSocket::Fast::Error::control_fragmented;
+        subtest 'long'       => \&test_message, $p, {opcode => OPCODE_PING, mask => 1, fin => 1, data => ("1" x 1000)}, Protocol::WebSocket::Fast::Error::control_payload_too_big;
     };
 
     subtest 'pong' => sub {
-        subtest 'empty'      => $test_message, $p, {opcode => OPCODE_PONG, mask => 1, fin => 1};
-        subtest 'payload'    => $test_message, $p, {opcode => OPCODE_PONG, mask => 1, fin => 1, data => "pongdata"};
-        subtest 'fragmented' => $test_message, $p, {opcode => OPCODE_PONG, mask => 1, fin => 0}, Protocol::WebSocket::Fast::Error::control_fragmented;
-        subtest 'long'       => $test_message, $p, {opcode => OPCODE_PONG, mask => 1, fin => 1, data => ("1" x 1000)}, Protocol::WebSocket::Fast::Error::control_payload_too_big;
+        subtest 'empty'      => \&test_message, $p, {opcode => OPCODE_PONG, mask => 1, fin => 1};
+        subtest 'payload'    => \&test_message, $p, {opcode => OPCODE_PONG, mask => 1, fin => 1, data => "pongdata"};
+        subtest 'fragmented' => \&test_message, $p, {opcode => OPCODE_PONG, mask => 1, fin => 0}, Protocol::WebSocket::Fast::Error::control_fragmented;
+        subtest 'long'       => \&test_message, $p, {opcode => OPCODE_PONG, mask => 1, fin => 1, data => ("1" x 1000)}, Protocol::WebSocket::Fast::Error::control_payload_too_big;
     };
 
     subtest 'close' => sub {
-        subtest 'empty' => $test_message, $p, {opcode => OPCODE_CLOSE, mask => 1, fin => 1, close_code => all(CLOSE_UNKNOWN)};
+        subtest 'empty' => \&test_message, $p, {opcode => OPCODE_CLOSE, mask => 1, fin => 1, close_code => all(CLOSE_UNKNOWN)};
 
         my ($message) = $p->get_messages(gen_frame({opcode => OPCODE_TEXT, mask => 1, fin => 1}));
         ok(!$message, "no more messages available after close");
         MyTest::reset($p);
 
-        subtest 'code' => $test_message, $p, {opcode => OPCODE_CLOSE, mask => 1, fin => 1, close_code => CLOSE_DONE};
+        subtest 'code' => \&test_message, $p, {opcode => OPCODE_CLOSE, mask => 1, fin => 1, close_code => CLOSE_DONE};
         MyTest::reset($p);
-        subtest 'message' => $test_message, $p, {opcode => OPCODE_CLOSE, mask => 1, fin => 1, close_code => CLOSE_AWAY, data => "walk"};
+        subtest 'message' => \&test_message, $p, {opcode => OPCODE_CLOSE, mask => 1, fin => 1, close_code => CLOSE_AWAY, data => "walk"};
         MyTest::reset($p);
-        subtest 'invalid payload' => $test_message, $p, {opcode => OPCODE_CLOSE, mask => 1, fin => 1, data => "a"}, Protocol::WebSocket::Fast::Error::close_frame_invalid_data;
+        subtest 'invalid payload' => \&test_message, $p, {opcode => OPCODE_CLOSE, mask => 1, fin => 1, data => "a"}, Protocol::WebSocket::Fast::Error::close_frame_invalid_data;
         MyTest::reset($p);
-        subtest 'fragmented' => $test_message, $p, {opcode => OPCODE_CLOSE, mask => 1, fin => 0}, Protocol::WebSocket::Fast::Error::control_fragmented;
+        subtest 'fragmented' => \&test_message, $p, {opcode => OPCODE_CLOSE, mask => 1, fin => 0}, Protocol::WebSocket::Fast::Error::control_fragmented;
         MyTest::reset($p);
-        subtest 'long' => $test_message, $p, {opcode => OPCODE_CLOSE, mask => 1, fin => 1, close_code => CLOSE_AWAY, data => ("1" x 1000)}, Protocol::WebSocket::Fast::Error::control_payload_too_big;
+        subtest 'long' => \&test_message, $p, {opcode => OPCODE_CLOSE, mask => 1, fin => 1, close_code => CLOSE_AWAY, data => ("1" x 1000)}, Protocol::WebSocket::Fast::Error::control_payload_too_big;
         MyTest::reset($p);
     };
 
     subtest 'max message size' => sub {
         $p->configure({max_frame_size => 2000, max_message_size => 1000});
-        subtest 'allowed' => $test_message, $p, {opcode => OPCODE_TEXT, mask => 1, fin => 1, data => ("1" x 1000)};
-        subtest 'exceeds' => $test_message, $p, {opcode => OPCODE_TEXT, mask => 1, fin => 1, data => ("1" x 1001)}, Protocol::WebSocket::Fast::Error::max_message_size;
+        subtest 'allowed' => \&test_message, $p, {opcode => OPCODE_TEXT, mask => 1, fin => 1, data => ("1" x 1000)};
+        subtest 'exceeds' => \&test_message, $p, {opcode => OPCODE_TEXT, mask => 1, fin => 1, data => ("1" x 1001)}, Protocol::WebSocket::Fast::Error::max_message_size;
         $p->configure({max_frame_size => 0, max_message_size => 0});
     };
 
@@ -183,7 +131,7 @@ subtest "server parser" => sub {
         ], "last 3 data ok, pong is between 3rd and 4th");
     };
 
-    subtest 'first frame in message with CONTINUE' => $test_message, $p, {opcode => OPCODE_CONTINUE, mask => 1, fin => 1, data => 'jopa'}, Protocol::WebSocket::Fast::Error::initial_continue;
+    subtest 'first frame in message with CONTINUE' => \&test_message, $p, {opcode => OPCODE_CONTINUE, mask => 1, fin => 1, data => 'jopa'}, Protocol::WebSocket::Fast::Error::initial_continue;
 
     subtest 'fragment frame in message without CONTINUE' => sub {
         my $bin = gen_frame({opcode => OPCODE_TEXT, mask => 1, fin => 0, data => 'p1'}).
@@ -197,15 +145,15 @@ subtest "server parser" => sub {
     };
 
     subtest 'message with unmasked frame in server parser' => sub {
-        my $message = $test_message->($p, {opcode => OPCODE_TEXT, mask => 0, data => "jopa noviy god", nframes => 2}, Protocol::WebSocket::Fast::Error::not_masked);
+        my $message = test_message($p, {opcode => OPCODE_TEXT, mask => 0, data => "jopa noviy god", nframes => 2}, Protocol::WebSocket::Fast::Error::not_masked);
         is($message->frame_count, 0, "error caught on first frame and rest is dropped, error frame is not counted");
     };
 };
 
 subtest "client parser" => sub {
     my $p = MyTest::get_established_client();
-    subtest 'message with masked frame in client parser'   => $test_message, $p, {mask => 1, data => "jopa"};
-    subtest 'message with unmasked frame in client parser' => $test_message, $p, {mask => 0, data => "jopa"};
+    subtest 'message with masked frame in client parser'   => \&test_message, $p, {mask => 1, data => "jopa"};
+    subtest 'message with unmasked frame in client parser' => \&test_message, $p, {mask => 0, data => "jopa"};
 };
 
 done_testing();

@@ -1,6 +1,9 @@
 use 5.012;
 use warnings;
-use lib 't/lib'; use MyTest;
+use lib 't/lib';
+use MyTest;
+use Test::More;
+use Test::Deep;
 
 my $test_connect = sub {
     my ($req, $check) = @_;
