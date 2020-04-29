@@ -361,6 +361,11 @@ TEST_CASE("FrameSender & Message builder", "[deflate-extension]") {
         char buff1_out[50];
         char buff2_out[50];
 
+        memset(buff1, 0, 50);
+        memset(buff2, 0, 50);
+        memset(buff1_out, 0, 50);
+        memset(buff2_out, 0, 50);
+
         z_stream tx_stream1;
         tx_stream1.avail_in = 0;
         tx_stream1.zalloc = Z_NULL;
@@ -403,6 +408,7 @@ TEST_CASE("FrameSender & Message builder", "[deflate-extension]") {
 
         z_stream rx_stream1;
         rx_stream1.avail_in = 0;
+        rx_stream1.next_in = Z_NULL;
         rx_stream1.zalloc = Z_NULL;
         rx_stream1.zfree = Z_NULL;
         rx_stream1.opaque = Z_NULL;
