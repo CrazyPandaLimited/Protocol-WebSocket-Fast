@@ -325,7 +325,7 @@ TEST_CASE("FrameSender & Message builder", "[deflate-extension]") {
         FrameHeader fh(Opcode::PING, true, true, false, false, true, (uint32_t)std::rand());
         auto data_string = Frame::compile(fh, payload);
         auto frames_it = client.get_frames(data_string);
-        REQUIRE(frames_it.begin()->error == errc::control_frame_compression);
+        REQUIRE(frames_it.begin()->error & errc::control_frame_compression);
     }
 
     SECTION("send compressed frame bigger then original") {
