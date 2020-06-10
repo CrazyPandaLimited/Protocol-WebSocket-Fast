@@ -438,6 +438,11 @@ TEST_CASE("FrameSender & Message builder", "[deflate-extension]") {
         rx_stream2.avail_out = 50;
         r = inflate(&rx_stream2, Z_SYNC_FLUSH);
         REQUIRE(r == Z_OK);
+
+        deflateEnd(&tx_stream1);
+        deflateEnd(&tx_stream2);
+        inflateEnd(&rx_stream1);
+        inflateEnd(&rx_stream2);
     }
 }
 
