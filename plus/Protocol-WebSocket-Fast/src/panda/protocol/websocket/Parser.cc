@@ -183,9 +183,7 @@ FrameHeader Parser::_prepare_frame_header (bool final) {
 
     if (FrameHeader::is_control_opcode(_send_opcode)) {
         if (!final) throw Error("control frame must be final");
-        auto&& fh = _prepare_control_header(_send_opcode);
-        _flags.reset(SEND_FRAME);
-        return fh;
+        return _prepare_control_header(_send_opcode);
     }
 
     Opcode opcode;
