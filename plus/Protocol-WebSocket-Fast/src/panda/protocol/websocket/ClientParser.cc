@@ -53,14 +53,14 @@ ConnectResponseSP ClientParser::connect (string& buf) {
         auto role = DeflateExt::Role::CLIENT;
         auto deflate_matches = DeflateExt::select(exts, *_deflate_cfg, role);
         switch (deflate_matches.result) {
-        case result_t::Success:
+        case result_t::SUCCESS:
             _deflate_ext.reset(DeflateExt::uplift(deflate_matches, used_extensions, role));
             _connect_response->ws_extensions(used_extensions);
             break;
-        case result_t::NotFound:
+        case result_t::NOT_FOUND:
             /* NOOP */
             break;
-        case result_t::Error:
+        case result_t::ERROR:
             _connect_response->error = errc::deflate_negotiation_failed;
         }
     }

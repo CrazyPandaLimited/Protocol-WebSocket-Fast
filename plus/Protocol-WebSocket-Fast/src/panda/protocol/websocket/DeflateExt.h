@@ -40,12 +40,12 @@ public:
         static const constexpr int HAS_SERVER_NO_CONTEXT_TAKEOVER = 1 << 1;
         static const constexpr int HAS_SERVER_MAX_WINDOW_BITS     = 1 << 2;
         static const constexpr int HAS_CLIENT_MAX_WINDOW_BITS     = 1 << 3;
-        enum class NegotiationsResult { Success, NotFound, Error };
+        enum class NegotiationsResult { SUCCESS, NOT_FOUND, ERROR };
 
         EffectiveConfig(const Config& cfg_, NegotiationsResult result_): cfg{cfg_}, result{result_} {}
         EffectiveConfig(NegotiationsResult result_): result{result_} {}
 
-        explicit operator bool() const { return result == NegotiationsResult::Success; }
+        explicit operator bool() const { return result == NegotiationsResult::SUCCESS; }
 
         Config cfg;
         int flags = 0;
@@ -53,12 +53,12 @@ public:
     };
 
     struct NegotiationsResult {
-        enum class Result { Success, NotFound, Error };
+        enum class Result { SUCCESS, NOT_FOUND, ERROR };
 
 
         Config cfg;
         int flags = 0;
-        Result result = Result::Error;
+        Result result = Result::ERROR;
     };
 
     enum class Role { CLIENT, SERVER };

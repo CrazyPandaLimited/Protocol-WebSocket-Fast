@@ -21,7 +21,7 @@ struct ConnectRequest : http::Request {
     ErrorCode error;
 
     ConnectRequest () : ws_version(0), _ws_version_supported(true) {
-        _method = Request::Method::Get;
+        _method = Request::Method::GET;
     }
 
     virtual void process_headers ();
