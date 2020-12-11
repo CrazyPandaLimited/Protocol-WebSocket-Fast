@@ -2,15 +2,11 @@
 #include <catch2/catch.hpp>
 #include <panda/protocol/websocket.h>
 
+namespace test {
+
 using namespace panda;
 using namespace panda::protocol::websocket;
 using panda::protocol::http::Headers;
-
-namespace panda { namespace protocol { namespace websocket {
-    inline bool operator== (const HeaderValue& lhs, const HeaderValue& rhs) {
-        return lhs.name == rhs.name && lhs.params == rhs.params;
-    }
-}}}
 
 struct ReMatcher : Catch::MatcherBase<string> {
     ReMatcher (const string& regex, bool case_sen = false) : re(regex), case_sen(case_sen) {}
@@ -24,6 +20,8 @@ private:
 inline ReMatcher MatchesRe (const string& regex, bool case_sen = false) { return ReMatcher(regex, case_sen); }
 
 void regex_replace (string&, const std::string&, const std::string&);
+
+std::vector<string> accept_packet ();
 
 struct FrameGenerator {
     FrameGenerator& opcode     (Opcode v) { _opcode = v; return *this; }
@@ -70,3 +68,13 @@ inline MessageSP get_message (const T& parser) {
     if (msgs.begin() == msgs.end()) return {};
     return *(msgs.begin());
 }
+
+}
+
+using namespace test;
+
+namespace panda { namespace protocol { namespace websocket {
+    inline bool operator== (const HeaderValue& lhs, const HeaderValue& rhs) {
+        return lhs.name == rhs.name && lhs.params == rhs.params;
+    }
+}}}
