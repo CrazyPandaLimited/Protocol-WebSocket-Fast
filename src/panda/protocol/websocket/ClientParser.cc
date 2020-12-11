@@ -30,7 +30,7 @@ ConnectResponseSP ClientParser::connect (string& buf) {
     _connect_response = dynamic_pointer_cast<ConnectResponse>(res.response);
 
     if (res.error) {
-        _connect_response->error = res.error;
+        _connect_response->error(res.error);
         _flags.set(CONNECTION_RESPONSE_PARSED);
 
         ConnectResponseSP ret(_connect_response);
@@ -41,12 +41,12 @@ ConnectResponseSP ClientParser::connect (string& buf) {
     else if (res.state != http::State::done) {
         return nullptr;
     }
-    _connect_response->_ws_key = _connect_request->ws_key;
+    _connect_response->_ws_key = _connect_request->ws_key();
     _connect_response->process_headers();
 
     _flags.set(CONNECTION_RESPONSE_PARSED);
 
-    if (!_connect_response->error && _deflate_cfg) {
+    if (!_connect_response->error() && _deflate_cfg) {
         using result_t = DeflateExt::EffectiveConfig::NegotiationsResult;
         auto& exts = _connect_response->ws_extensions();
         HeaderValues used_extensions;
@@ -61,11 +61,11 @@ ConnectResponseSP ClientParser::connect (string& buf) {
             /* NOOP */
             break;
         case result_t::Error:
-            _connect_response->error = errc::deflate_negotiation_failed;
+            _connect_response->error(errc::deflate_negotiation_failed);
         }
     }
 
-    if (!_connect_response->error) {
+    if (!_connect_response->error()) {
         _buffer = buf.substr(res.position);// if something remains in buf, user can get it via get_frames() or get_messages() without buf param.
         _flags.set(ESTABLISHED);
     }

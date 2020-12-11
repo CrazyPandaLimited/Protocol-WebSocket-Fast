@@ -10,56 +10,56 @@ void ConnectRequest::process_headers () {
     bool ok;
 
     if (_method != Method::Get) {
-        error = errc::method_mustbe_get;
+        _error = errc::method_mustbe_get;
         return;
     }
 
     if (http_version != 11) {
-        error = errc::http_1_1_required;
+        _error = errc::http_1_1_required;
         return;
     }
 
     if (!body.empty()) {
-        error = errc::body_prohibited;
+        _error = errc::body_prohibited;
         return;
     }
 
     auto it = headers.find("Connection");
     if (it == headers.end() || !string_contains_ci(it->value, "upgrade")) {
-        error = errc::connection_mustbe_upgrade;
+        _error = errc::connection_mustbe_upgrade;
         return;
     }
 
     it = headers.find("Upgrade");
     if (it == headers.end() || !string_contains_ci(it->value, "websocket")) {
-        error = errc::upgrade_mustbe_websocket;
+        _error = errc::upgrade_mustbe_websocket;
         return;
     }
 
     ok = false;
     it = headers.find("Sec-WebSocket-Key");
     if (it != headers.end()) {
-        ws_key = it->value;
-        auto decoded = panda::encode::decode_base64(ws_key);
+        _ws_key = it->value;
+        auto decoded = panda::encode::decode_base64(_ws_key);
         if (decoded.length() == 16) ok = true;
     }
     if (!ok) {
-        error = errc::sec_accept_missing;
+        _error = errc::sec_accept_missing;
         return;
     }
 
     _ws_version_supported = false;
     it = headers.find("Sec-WebSocket-Version");
     if (it != headers.end()) {
-        it->value.to_number(ws_version);
+        it->value.to_number(_ws_version);
         for (int v : supported_ws_versions) {
-            if (ws_version != v) continue;
+            if (_ws_version != v) continue;
             _ws_version_supported = true;
             break;
         }
     }
     if (!_ws_version_supported) {
-        error = errc::unsupported_version;
+        _error = errc::unsupported_version;
         return;
     }
 
@@ -68,7 +68,7 @@ void ConnectRequest::process_headers () {
         parse_header_value(val, _ws_extensions);
     }
 
-    ws_protocol = headers.get("Sec-WebSocket-Protocol");
+    _ws_protocol = headers.get("Sec-WebSocket-Protocol");
 }
 
 void ConnectRequest::add_deflate(const DeflateExt::Config& cfg) {
@@ -88,16 +88,16 @@ string ConnectRequest::to_string() {
 
     _method = Request::Method::Get;
 
-    if (!ws_key) {
+    if (!_ws_key) {
         int32_t keybuf[] = {std::rand(), std::rand(), std::rand(), std::rand()};
-        ws_key = panda::encode::encode_base64(string_view((const char*)keybuf, sizeof(keybuf)), false, true);
+        _ws_key = panda::encode::encode_base64(string_view((const char*)keybuf, sizeof(keybuf)), false, true);
     }
-    headers.set("Sec-WebSocket-Key", ws_key);
+    headers.set("Sec-WebSocket-Key", _ws_key);
 
-    if (ws_protocol) headers.set("Sec-WebSocket-Protocol", ws_protocol);
+    if (_ws_protocol) headers.set("Sec-WebSocket-Protocol", _ws_protocol);
 
-    if (!ws_version) ws_version = 13;
-    headers.set("Sec-WebSocket-Version", string::from_number(ws_version));
+    if (!_ws_version) _ws_version = 13;
+    headers.set("Sec-WebSocket-Version", string::from_number(_ws_version));
 
     if (_ws_extensions.size()) headers.set("Sec-WebSocket-Extensions", compile_header_value(_ws_extensions));
 

@@ -49,9 +49,9 @@ ConnectRequestSP make_request (const Hash& params, const ConnectRequestSP& dest)
 
     Scalar val;
 
-    if ((val = params.fetch("ws_key")))      ret->ws_key      = xs::in<string>(val);
-    if ((val = params.fetch("ws_version")))  ret->ws_version  = SvIV(val);
-    if ((val = params.fetch("ws_protocol"))) ret->ws_protocol = xs::in<string>(val);
+    if ((val = params.fetch("ws_key")))      ret->ws_key(xs::in<string>(val));
+    if ((val = params.fetch("ws_version")))  ret->ws_version(SvIV(val));
+    if ((val = params.fetch("ws_protocol"))) ret->ws_protocol(xs::in<string>(val));
 
     if ((val = params.fetch("ws_extensions"))) {
         auto exts_av = xs::in<Array>(val);
@@ -74,7 +74,7 @@ ConnectResponseSP make_response (const Hash& params, const ConnectResponseSP& de
         ret->ws_extensions(exts);
     }
 
-    if ((val = params.fetch("ws_protocol"))) ret->ws_protocol = xs::in<string>(val);
+    if ((val = params.fetch("ws_protocol"))) ret->ws_protocol(xs::in<string>(val));
 
     return ret;
 }

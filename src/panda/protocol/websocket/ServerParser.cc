@@ -25,7 +25,7 @@ ConnectRequestSP ServerParser::accept (string& buf) {
 
     if (res.error) {
         _flags.set(ACCEPT_PARSED);
-        _connect_request->error = res.error;
+        _connect_request->error(res.error);
         return _connect_request;
     } else if (res.state != http::State::done) {
         return nullptr;
@@ -34,9 +34,9 @@ ConnectRequestSP ServerParser::accept (string& buf) {
     _connect_request->process_headers();
     _flags.set(ACCEPT_PARSED);
 
-    if (!_connect_request->error) {
+    if (!_connect_request->error()) {
         if (res.position != buf.size()) {
-            _connect_request->error = errc::garbage_after_connect;
+            _connect_request->error(errc::garbage_after_connect);
         } else {
             _flags.set(ACCEPTED);
         }
@@ -48,7 +48,7 @@ ConnectRequestSP ServerParser::accept (string& buf) {
 string ServerParser::accept_error () {
     if (!_flags[ACCEPT_PARSED]) throw Error("accept not parsed yet");
     if (established()) throw Error("already established");
-    if (!_connect_request->error) throw Error("no errors found");
+    if (!_connect_request->error()) throw Error("no errors found");
 
     http::ResponseSP res = new http::Response();
     res->headers.add("Content-Type", "text/plain");
@@ -70,7 +70,7 @@ string ServerParser::accept_error () {
         res->code    = 400;
         res->message = "Bad Request";
         res->body.parts.push_back("400 Bad Request\n");
-        res->body.parts.push_back(_connect_request->error.what());
+        res->body.parts.push_back(_connect_request->error().what());
     }
     res->headers.set("Content-Length", panda::to_string(res->body.length()));
 
@@ -80,7 +80,7 @@ string ServerParser::accept_error () {
 string ServerParser::accept_error (http::Response* res) {
     if (!_flags[ACCEPT_PARSED]) throw Error("accept not parsed yet");
     if (established()) throw Error("already established");
-    if (_connect_request->error) return accept_error();
+    if (_connect_request->error()) return accept_error();
 
     if (!res->code) {
         res->code = 400;
@@ -102,8 +102,8 @@ string ServerParser::accept_response (ConnectResponse* res) {
     if (!accepted()) throw Error("client has not been accepted");
     if (established()) throw Error("already established");
 
-    res->_ws_key = _connect_request->ws_key;
-    if (!res->ws_protocol) res->ws_protocol = _connect_request->ws_protocol;
+    res->_ws_key = _connect_request->ws_key();
+    if (!res->ws_protocol()) res->ws_protocol(_connect_request->ws_protocol());
     if (!res->ws_extensions_set()) res->ws_extensions(_connect_request->ws_extensions());
 
     const auto& exts = res->ws_extensions();

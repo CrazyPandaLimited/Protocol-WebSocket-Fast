@@ -1,11 +1,12 @@
-#include <catch2/catch.hpp>
+#include "../test.h"
 #include <vector>
-#include <xs/protocol/websocket.h>
 #include <panda/encode/base16.h>
 #include <panda/encode/base64.h>
 
 using namespace panda;
 using namespace panda::protocol::websocket;
+
+#define TEST(name) TEST_CASE("deflate: " name, "[deflate]")
 
 template <typename T>
 string to_string(T range) {
@@ -14,7 +15,7 @@ string to_string(T range) {
     return r;
 }
 
-TEST_CASE("FrameSender & Message builder", "[deflate-extension]") {
+TEST("FrameSender & Message builder") {
     Parser::Config cfg;
     cfg.deflate->compression_threshold = 0;
 
@@ -24,9 +25,9 @@ TEST_CASE("FrameSender & Message builder", "[deflate-extension]") {
 
     ConnectRequestSP connect_request(new ConnectRequest());
     connect_request->uri = new URI("ws://crazypanda.ru");
-    connect_request->ws_key = "dGhlIHNhbXBsZSBub25jZQ==";
-    connect_request->ws_version = 13;
-    connect_request->ws_protocol = "ws";
+    connect_request->ws_key("dGhlIHNhbXBsZSBub25jZQ==");
+    connect_request->ws_version(13);
+    connect_request->ws_protocol("ws");
     auto client_request = client.connect_request(connect_request);
 
     REQUIRE((bool)server.accept(client_request));
@@ -447,7 +448,7 @@ TEST_CASE("FrameSender & Message builder", "[deflate-extension]") {
 }
 
 
-TEST_CASE("SRV-1236",  "[deflate-extension]") {
+TEST("SRV-1236") {
     Parser::Config cfg;
     cfg.deflate->client_no_context_takeover = true;
 
@@ -457,9 +458,9 @@ TEST_CASE("SRV-1236",  "[deflate-extension]") {
 
     ConnectRequestSP connect_request(new ConnectRequest());
     connect_request->uri = new URI("ws://crazypanda.ru");
-    connect_request->ws_key = "dGhlIHNhbXBsZSBub25jZQ==";
-    connect_request->ws_version = 13;
-    connect_request->ws_protocol = "ws";
+    connect_request->ws_key("dGhlIHNhbXBsZSBub25jZQ==");
+    connect_request->ws_version(13);
+    connect_request->ws_protocol("ws");
     auto client_request = client.connect_request(connect_request);
 
     REQUIRE((bool)server.accept(client_request));

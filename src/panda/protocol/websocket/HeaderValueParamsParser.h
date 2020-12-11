@@ -11,9 +11,9 @@ struct HeaderValue {
     string            name;
     HeaderValueParams params;
 };
-typedef std::vector<HeaderValue> HeaderValues;
+using HeaderValues = std::vector<HeaderValue>;
 
-void   parse_header_value(const string& strval, HeaderValues& values);
-string compile_header_value(const HeaderValues& values);
+void   parse_header_value   (const string& strval, HeaderValues& values);
+string compile_header_value (const HeaderValues& values);
 
 }}}

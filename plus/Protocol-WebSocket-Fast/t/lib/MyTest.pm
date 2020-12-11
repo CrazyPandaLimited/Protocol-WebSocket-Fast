@@ -178,9 +178,7 @@ sub gen_message {
     my $payload = $params->{data} // '';
     my $opcode  = $params->{opcode} // OPCODE_TEXT;
 
-    my $frame_len = int(length($payload) / $nframes);
     my @bin;
-
     my $frames_left = $nframes;
     while ($frames_left) {
         my $curlen = (length($payload) / $frames_left--);

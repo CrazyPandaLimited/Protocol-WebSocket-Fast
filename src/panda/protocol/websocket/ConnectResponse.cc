@@ -9,30 +9,30 @@ namespace panda { namespace protocol { namespace websocket {
 void ConnectResponse::process_headers () {
     if (code == 426) {
         _ws_version = headers.get("Sec-WebSocket-Version");
-        error = errc::unsupported_version;
+        _error = errc::unsupported_version;
         return;
     }
 
     if (code != 101) {
-        error = errc::response_code_101;
+        _error = errc::response_code_101;
         return;
     }
 
     auto it = headers.find("Connection");
     if (it == headers.end() || !string_contains_ci(it->value, "upgrade")) {
-        error = errc::connection_mustbe_upgrade;
+        _error = errc::connection_mustbe_upgrade;
         return;
     }
 
     it = headers.find("Upgrade");
     if (it == headers.end() || !string_contains_ci(it->value, "websocket")) {
-        error = errc::upgrade_mustbe_websocket;
+        _error = errc::upgrade_mustbe_websocket;
         return;
     }
 
     it = headers.find("Sec-WebSocket-Accept");
     if (it == headers.end() || it->value != _calc_accept_key(_ws_key)) {
-        error = errc::sec_accept_missing;
+        _error = errc::sec_accept_missing;
         return;
     }
     else _ws_accept_key = it->value;
@@ -43,7 +43,7 @@ void ConnectResponse::process_headers () {
         parse_header_value(val, _ws_extensions);
     }
 
-    ws_protocol = headers.get("Sec-WebSocket-Protocol");
+    _ws_protocol = headers.get("Sec-WebSocket-Protocol");
 }
 
 string ConnectResponse::_calc_accept_key (string ws_key) {
@@ -59,7 +59,7 @@ string ConnectResponse::to_string() {
     headers.add("Upgrade", "websocket");
     headers.add("Connection", "Upgrade");
 
-    if (ws_protocol) headers.add("Sec-WebSocket-Protocol", ws_protocol);
+    if (_ws_protocol) headers.add("Sec-WebSocket-Protocol", _ws_protocol);
 
     headers.add("Sec-WebSocket-Accept", _calc_accept_key(_ws_key));
     if (!headers.has("Server")) headers.add("Server", "Panda-WebSocket");
