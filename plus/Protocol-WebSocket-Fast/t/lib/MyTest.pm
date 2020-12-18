@@ -15,7 +15,7 @@ if ($ENV{LOGGER}) {
     XLog::set_level(XLog::VERBOSE_DEBUG());
 }
 
-sub accept_packet {
+sub accept_packet { #DONE
     my @data = (
         "GET /?encoding=text HTTP/1.1\r\n",
         "Host: dev.crazypanda.ru:4680\r\n",
@@ -81,34 +81,35 @@ sub connect_response {
     );
 }
 
-sub get_established_server {
+sub get_established_server { #DONE
     my $p = Protocol::WebSocket::Fast::ServerParser->new(shift);
     _establish_server($p);
     return $p;
 }
 
-sub _establish_server {
+sub _establish_server { #DONE
     my $p = shift;
     $p->accept(scalar accept_packet()) or die "should not happen";
     $p->accept_response;
     die "should not happen" unless $p->established;
 }
 
-sub reset {
+sub reset { #DONE
     my $p = shift;
     $p->reset;
     die "should not happen" if $p->established;
     $p->isa("Protocol::WebSocket::Fast::ServerParser") ? _establish_server($p) : _establish_client($p);
 }
 
-sub get_established_client {
+sub get_established_client { #DONE
     my $p = Protocol::WebSocket::Fast::ClientParser->new(shift);
     _establish_client($p);
     return $p;
 }
 
-sub _establish_client {
+sub _establish_client { #DONE
     my $p = shift;
+    $p->no_deflate;
     my $cstr = $p->connect_request({uri => "ws://jopa.ru"});
     my $sp = new Protocol::WebSocket::Fast::ServerParser;
     $sp->accept($cstr) or die "should not happen";
@@ -119,7 +120,7 @@ sub _establish_client {
     return $p;
 }
 
-sub gen_frame {
+sub gen_frame { #DONE
     my $params = shift;
 
     my $first  = 0;
@@ -171,7 +172,7 @@ sub gen_frame {
     return $frame;
 }
 
-sub gen_message {
+sub gen_message { #DONE
     my $params = shift;
 
     my $nframes = $params->{nframes} || 1;
@@ -203,7 +204,7 @@ sub is_bin {
     $has_binary ? is_binary($got, $expected, $name) : is($got, $expected, $name);
 }
 
-sub crypt_xor {
+sub crypt_xor { #DONE
     my ($data, $mask) = @_;
     my @key = unpack("C*", $mask);
 
@@ -211,7 +212,7 @@ sub crypt_xor {
     return $result;
 }
 
-sub test_frame {
+sub test_frame { #DONE
     my ($p, $frame_data, $error, $suggested_close_code) = @_;
     my $bin = gen_frame($frame_data);
     my $check_data = {};
@@ -253,9 +254,9 @@ sub test_frame {
             cmp_deeply($frame, methods(%$check_data), "frame properties ok");
         }
     }
-};
+}
 
-sub test_message {
+sub test_message { #DONE
     my ($p, $message_data, $error) = @_;
     my $opcode = $message_data->{opcode} // OPCODE_TEXT;
     my $nframes = $message_data->{nframes} //= 1;

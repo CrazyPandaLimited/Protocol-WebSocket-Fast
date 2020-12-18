@@ -26,30 +26,33 @@ uint32_t string_hash32_ci (const char *key, size_t len) {
 }
 
 static inline uint32_t rotate_shift (uint32_t x, unsigned shift) {
-    if (shift % 32 == 0) return x;
+    if (!shift) return x;
+    shift *= 8;
     return am_i_little ? ((x >> shift) | (x << (sizeof(x)*8 - shift))) :
                          ((x << shift) | (x >> (sizeof(x)*8 - shift)));
 }
 
-void crypt_mask (char* str, size_t len, uint32_t mask, uint64_t bytes_received) {
-    mask = rotate_shift(mask, (bytes_received & 3)*8);
+void crypt_mask (const char* str, char* dst, size_t len, uint32_t mask, uint64_t bytes_received) {
+    mask = rotate_shift(mask, bytes_received & 3);
     const uint64_t mask64 = ((uint64_t)mask << 32) | mask;
-    auto str64 = (uint64_t*)str;
+    auto str64 = (const uint64_t*)str;
+    auto dst64 = (uint64_t*)dst;
     auto end64 = str64 + (len / 8);
 
-    while (str64 != end64) *str64++ ^= mask64;
+    while (str64 != end64) *dst64++ = *str64++ ^ mask64;
 
-    auto cstr  = (unsigned char*)str64;
+    auto cstr  = (const unsigned char*)str64;
+    auto cdst  = (unsigned char*)dst64;
     auto cmask = (const unsigned char*)&mask64;
     switch (len & 7) {
-        case 7: *cstr++ ^= *cmask++; // fallthrough
-        case 6: *cstr++ ^= *cmask++; // fallthrough
-        case 5: *cstr++ ^= *cmask++; // fallthrough
-        case 4: *cstr++ ^= *cmask++; // fallthrough
-        case 3: *cstr++ ^= *cmask++; // fallthrough
-        case 2: *cstr++ ^= *cmask++; // fallthrough
-        case 1: *cstr++ ^= *cmask++;
-    };
+        case 7: *cdst++ = *cstr++ ^ *cmask++; // fall through
+        case 6: *cdst++ = *cstr++ ^ *cmask++; // fall through
+        case 5: *cdst++ = *cstr++ ^ *cmask++; // fall through
+        case 4: *cdst++ = *cstr++ ^ *cmask++; // fall through
+        case 3: *cdst++ = *cstr++ ^ *cmask++; // fall through
+        case 2: *cdst++ = *cstr++ ^ *cmask++; // fall through
+        case 1: *cdst++ = *cstr++ ^ *cmask++;
+    }
 }
 
 static std::map<uint16_t, string> close_messages = {

@@ -12,7 +12,7 @@ bool Frame::parse (string& buf) {
     assert(_state != State::DONE);
 
     auto _err = [&](const std::error_code& ec) -> bool {
-        error = ec;
+        _error = ec;
         _state = State::DONE;
         return true;
     };
@@ -38,29 +38,65 @@ bool Frame::parse (string& buf) {
     if (_state == State::PAYLOAD) {
         if (!buf) return false;
         auto buflen = buf.length();
-        //cout << "Frame[parse]: have buflen=" << buflen << ", payloadleft=" << _payload_bytes_left << endl;
-        if (buflen >= _payload_bytes_left) { // last needed buffer
-            if (_header.has_mask) crypt_mask(buf.shared_buf(), _payload_bytes_left, _header.mask, _header.length - _payload_bytes_left);
-            if (buflen == _payload_bytes_left) { // payload is the whole buf
+        if (buflen == _payload_bytes_left) { // last needed buffer, payload is the whole buf
+            if (_header.has_mask) {
+                if (buf.use_count() == 1) {
+                    crypt_mask(buf.buf(), _payload_bytes_left, _header.mask, _header.length - _payload_bytes_left);
+                    payload.push_back(buf);
+                }
+                else {
+                    string unmasked;
+                    crypt_mask(buf.data(), unmasked.reserve(_payload_bytes_left), _payload_bytes_left, _header.mask, _header.length - _payload_bytes_left);
+                    unmasked.length(_payload_bytes_left);
+                    payload.push_back(unmasked);
+                }
+            }
+            else {
                 payload.push_back(buf);
-                buf.clear();
             }
-            else { // have extra data after payload
+            buf.clear();
+            _state = State::DONE;
+        }
+        else if (buflen > _payload_bytes_left) { // last needed buffer, have extra data after payload
+            if (_header.has_mask) {
+                if (buf.use_count() == 1) {
+                    crypt_mask(buf.buf(), _payload_bytes_left, _header.mask, _header.length - _payload_bytes_left);
+                    payload.push_back(buf.substr(0, _payload_bytes_left));
+                }
+                else {
+                    string unmasked;
+                    crypt_mask(buf.data(), unmasked.reserve(_payload_bytes_left), _payload_bytes_left, _header.mask, _header.length - _payload_bytes_left);
+                    unmasked.length(_payload_bytes_left);
+                    payload.push_back(unmasked);
+                }
+            }
+            else {
                 payload.push_back(buf.substr(0, _payload_bytes_left));
-                buf.offset(_payload_bytes_left); // leave the rest in buf
             }
+            buf.offset(_payload_bytes_left); // leave the rest in buf
             _state = State::DONE;
         }
         else { // not last buffer
-            if (_header.has_mask) crypt_mask(buf.shared_buf(), buflen, _header.mask, _header.length - _payload_bytes_left);
+            if (_header.has_mask) {
+                if (buf.use_count() == 1) {
+                    crypt_mask(buf.buf(), buflen, _header.mask, _header.length - _payload_bytes_left);
+                    payload.push_back(buf);
+                } else {
+                    string unmasked;
+                    crypt_mask(buf.data(), unmasked.reserve(buflen), buflen, _header.mask, _header.length - _payload_bytes_left);
+                    unmasked.length(buflen);
+                    payload.push_back(unmasked);
+                }
+            }
+            else {
+                payload.push_back(buf);
+            }
             _payload_bytes_left -= buflen;
-            payload.push_back(buf);
             return false;
         }
     }
 
     if (opcode() == Opcode::CLOSE) {
-        //cout << "HERE1\n";
         if (!_header.length) _close_code = (uint16_t)CloseCode::UNKNOWN;
         else {
             string str;
@@ -76,7 +112,6 @@ bool Frame::parse (string& buf) {
             payload.push_back(_close_message);
             _header.length = _close_message.length();
         }
-        //cout << "Frame[parse]: CLOSE CODE=" << _close_code << " MSG=" << _close_message << endl;
     }
 
     return true;

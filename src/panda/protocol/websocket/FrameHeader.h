@@ -26,7 +26,7 @@ struct FrameHeader {
     bool is_control () const { return is_control_opcode(opcode); }
 
     bool   parse   (string& buf);
-    string compile (size_t plen) const;
+    string compile (size_t plen) const; // returns string with enough space to fit <plen> bytes after header
 
     void reset () {
         mask   = 0;
@@ -36,7 +36,7 @@ struct FrameHeader {
     }
 
     static bool   parse_close_payload   (const string& payload, uint16_t& code, string& message);
-    static string compile_close_payload (uint16_t code, const string& message);
+    static string compile_close_payload (uint16_t code, string_view message);
 
     static bool is_control_opcode (Opcode opcode) { return opcode >= Opcode::CLOSE; }
 
@@ -46,9 +46,6 @@ private:
     State    _state;
     uint8_t  _slen;
     uint16_t _len16;
-
-    string _compile_header (size_t plen);
-
 };
 
 }}}

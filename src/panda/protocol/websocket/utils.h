@@ -56,7 +56,11 @@ inline bool parse_binary_number (T& num, const char*& src, size_t len) {
     return false;
 }
 
-void crypt_mask (char* str, size_t len, uint32_t mask, uint64_t bytes_received);
+void crypt_mask (const char* str, char* dst, size_t len, uint32_t mask, uint64_t bytes_received);
+
+inline void crypt_mask (char* str, size_t len, uint32_t mask, uint64_t bytes_received) {
+    crypt_mask(str, str, len, mask, bytes_received);
+}
 
 string close_message(uint16_t code);
 

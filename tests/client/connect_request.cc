@@ -6,13 +6,13 @@
 using namespace Catch::Matchers;
 
 TEST("parser create") {
-    auto p = make_iptr<ClientParser>();
-    CHECK(!p->established());
+    ClientParser p;
+    CHECK(!p.established());
 }
 
 TEST("default request") {
-    auto p = make_iptr<ClientParser>();
-    p->no_deflate();
+    ClientParser p;
+    p.no_deflate();
     auto req = make_iptr<ConnectRequest>();
     req->uri = new URI("ws://crazypanda.ru:4321/path?a=b");
     req->ws_protocol("fuck");
@@ -27,7 +27,7 @@ TEST("default request") {
         {"User-Agent",      "PWS-Test"},
     });
 
-    auto str = p->connect_request(req);
+    auto str = p.connect_request(req);
     CHECK_THAT(str, StartsWith("GET /path?a=b HTTP/1.1\r\n"));
     CHECK_THAT(str, Contains("Sec-WebSocket-Protocol: fuck\r\n"));
     CHECK_THAT(str, Contains("Sec-WebSocket-Version: 12\r\n"));
@@ -41,14 +41,14 @@ TEST("default request") {
     CHECK_THAT(str, Contains("User-Agent: PWS-Test\r\n"));
     CHECK_THAT(str, Contains("Host: crazypanda.ru\r\n"));
 
-    CHECK(!p->established());
+    CHECK(!p.established());
 
-    CHECK_THROWS_AS(p->connect_request(req), Error);
+    CHECK_THROWS_AS(p.connect_request(req), Error);
 }
 
 TEST("default values") {
-    auto p = make_iptr<ClientParser>();
-    auto str = p->connect_request(ConnectRequest::Builder().uri("ws://crazypanda.ru:4321/path?a=b").build());
+    ClientParser p;
+    auto str = p.connect_request(ConnectRequest::Builder().uri("ws://crazypanda.ru:4321/path?a=b").build());
     CHECK_THAT(str, StartsWith("GET /path?a=b HTTP/1.1\r\n"));
     CHECK_THAT(str, Contains("Sec-WebSocket-Version: 13\r\n"));
     CHECK_THAT(str, Contains("Sec-WebSocket-Extensions: permessage-deflate; client_max_window_bits=15; server_max_window_bits=15\r\n"));
@@ -56,8 +56,8 @@ TEST("default values") {
 }
 
 TEST("custom ws_key") {
-    auto p = make_iptr<ClientParser>();
-    auto str = p->connect_request(ConnectRequest::Builder()
+    ClientParser p;
+    auto str = p.connect_request(ConnectRequest::Builder()
         .uri(new URI("ws://crazypanda.ru:4321/path?a=b"))
         .ws_key("suka")
         .build()
@@ -66,18 +66,18 @@ TEST("custom ws_key") {
 }
 
 TEST("empty relative url") {
-    auto p = make_iptr<ClientParser>();
-    auto str = p->connect_request(ConnectRequest::Builder().uri("wss://crazypanda.ru").build());
+    ClientParser p;
+    auto str = p.connect_request(ConnectRequest::Builder().uri("wss://crazypanda.ru").build());
     CHECK_THAT(str, StartsWith("GET / HTTP/1.1\r\n"));
 }
 
 TEST("server parser accepts connect request") {
-    auto p = make_iptr<ClientParser>();
-    auto sp = make_iptr<ServerParser>();
-    auto str = p->connect_request(ConnectRequest::Builder().uri("ws://crazypanda.ru/path?a=b").build());
+    ClientParser p;
+    ServerParser sp;
+    auto str = p.connect_request(ConnectRequest::Builder().uri("ws://crazypanda.ru/path?a=b").build());
     str = string(std::regex_replace((std::string)str, std::regex("websocket"), "WebSocket")); // check case insensitive
-    auto req = sp->accept(str);
-    CHECK(sp->accepted());
+    auto req = sp.accept(str);
+    CHECK(sp.accepted());
     REQUIRE(req);
     CHECK_FALSE(req->error());
     CHECK(req->ws_version() == 13);
@@ -85,28 +85,28 @@ TEST("server parser accepts connect request") {
 }
 
 TEST("no host in uri") {
-    auto p = make_iptr<ClientParser>();
+    ClientParser p;
     auto req = ConnectRequest::Builder().uri("ws:path?a=b").build();
-    CHECK_THROWS_AS(p->connect_request(req), Error);
+    CHECK_THROWS_AS(p.connect_request(req), Error);
 }
 
 TEST("wrong scheme") {
-    auto p = make_iptr<ClientParser>();
+    ClientParser p;
     auto req = ConnectRequest::Builder().uri("wsss://dev.ru/").build();
-    CHECK_THROWS_AS(p->connect_request(req), Error);
+    CHECK_THROWS_AS(p.connect_request(req), Error);
 }
 
 TEST("body is not allowed") {
-    auto p = make_iptr<ClientParser>();
+    ClientParser p;
     auto req = ConnectRequest::Builder().uri("ws://dev.ru/").body("hello world").build();
-    CHECK_THROWS_AS(p->connect_request(req), Error);
+    CHECK_THROWS_AS(p.connect_request(req), Error);
 }
 
 TEST("to_string twice") {
-    auto p = make_iptr<ClientParser>();
+    ClientParser p;
     auto req = ConnectRequest::Builder().uri("wss://crazypanda.ru").build();
-    auto first = p->connect_request(req);
-    p->reset();
-    auto second = p->connect_request(req);
+    auto first = p.connect_request(req);
+    p.reset();
+    auto second = p.connect_request(req);
     CHECK(first == second);
 }

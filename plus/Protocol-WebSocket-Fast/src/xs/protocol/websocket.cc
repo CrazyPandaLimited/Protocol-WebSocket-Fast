@@ -36,13 +36,6 @@ Array header_values_to_av (const HeaderValues& vals) {
     return ret;
 }
 
-void av_to_vstring (const Array& av, std::vector<string>& v) {
-    for (const auto& elem : av) {
-        if (!elem.defined()) continue;
-        v.push_back(xs::in<string>(elem));
-    }
-}
-
 ConnectRequestSP make_request (const Hash& params, const ConnectRequestSP& dest) {
     auto ret = dest ? dest : ConnectRequestSP(new ConnectRequest());
     http::fill(ret, params);

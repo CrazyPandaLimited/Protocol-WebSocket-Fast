@@ -90,7 +90,7 @@ bool FrameHeader::parse (string& buf) {
 }
 
 string FrameHeader::compile (size_t plen) const {
-    string ret(MAX_SIZE);
+    string ret(MAX_SIZE + plen);
     char* ptr = ret.buf();
     const char*const begin = ptr;
 
@@ -130,7 +130,7 @@ bool FrameHeader::parse_close_payload (const string& payload, uint16_t& code, st
     return !CloseCode::is_sending_forbidden(code);
 }
 
-string FrameHeader::compile_close_payload (uint16_t code, const string& message) {
+string FrameHeader::compile_close_payload (uint16_t code, string_view message) {
     size_t sz = sizeof(code) + message.length();
     string ret(sz);
     char* buf = ret.buf();

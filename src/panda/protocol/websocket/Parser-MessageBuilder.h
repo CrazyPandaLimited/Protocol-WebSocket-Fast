@@ -11,21 +11,22 @@ struct MessageBuilder {
     MessageBuilder& deflate (DeflateFlag v) noexcept { _deflate = v; return *this; }
     MessageBuilder& deflate (bool v)        noexcept { _deflate = v ? DeflateFlag::YES : DeflateFlag::NO; return *this; }
 
-    StringPair send (string& payload) {
+    string send (string_view payload) {
         auto apply_deflate = maybe_deflate(payload.length());
-        return _parser.start_message(_opcode, apply_deflate).send(payload, true);
+        return _parser.start_message(_opcode, apply_deflate).send(payload, IsFinal::YES);
     }
 
-    template <class Begin, class End, typename = typename std::enable_if<std::is_same<typename std::decay<decltype(*std::declval<Begin>())>::type, string>::value>::type>
-    StringChain<Begin, End> send (Begin payload_begin, End payload_end) {
+    template <typename It, class T = decltype(*std::declval<It>()), class = std::enable_if_t<std::is_convertible<T, string_view>::value>>
+    string send (It&& payload_begin, It&& payload_end) {
         size_t payload_length = 0;
         for (auto it = payload_begin; it != payload_end; ++it) payload_length += (*it).length();
         auto apply_deflate = maybe_deflate(payload_length);
-        return _parser.start_message(_opcode, apply_deflate).send(payload_begin, payload_end, true);
+        return _parser.start_message(_opcode, apply_deflate).send(payload_begin, payload_end, IsFinal::YES);
     }
 
-    template <class Begin, class End, typename = typename std::enable_if<std::is_same<decltype(*((*Begin()).begin())), string&>::value>::type>
-    std::vector<string> send (Begin cont_begin, End cont_end) {
+    //template <class Begin, class End, typename = typename std::enable_if<std::is_same<decltype(*((*Begin()).begin())), string&>::value>::type>
+    template <class It, class T = decltype(*((*std::declval<It>()).begin())), class = std::enable_if_t<std::is_convertible<T, string_view>::value>>
+    std::vector<string> send (It&& cont_begin, It&& cont_end) {
         std::vector<string> ret;
 
         size_t sz = 0, idx = 0, payload_sz = 0, last_nonempty = 0;
@@ -46,8 +47,7 @@ struct MessageBuilder {
         auto sender = _parser.start_message(_opcode, maybe_deflate(payload_sz));
 
         if (!payload_sz) {
-            ret.reserve(1);
-            ret.push_back(sender.send(true));
+            ret.push_back(sender.send(IsFinal::YES));
             return ret;
         }
 
@@ -58,8 +58,7 @@ struct MessageBuilder {
             size_t piece_sz = 0;
             for (const auto& it: range) piece_sz += it.length();
             if (piece_sz) {
-                auto frame_range = sender.send(range.begin(), range.end(), idx == last_nonempty);
-                for (const auto& s : frame_range) ret.push_back(s);
+                ret.push_back(sender.send(range.begin(), range.end(), idx == last_nonempty ? IsFinal::YES : IsFinal::NO));
             }
             if (idx == last_nonempty) break;
             ++idx;

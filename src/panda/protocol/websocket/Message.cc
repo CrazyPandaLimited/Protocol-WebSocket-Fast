@@ -6,13 +6,13 @@ namespace panda { namespace protocol { namespace websocket {
 bool Message::add_frame (const Frame& frame) {
     assert(_state != State::DONE);
 
-    if (frame.error) {
-        error = frame.error;
+    if (frame.error()) {
+        _error = frame.error();
         _state = State::DONE;
         return true;
     }
 
-    if (!frame_count++) {
+    if (!_frame_count++) {
         _opcode = frame.opcode();
         if (_opcode == Opcode::CLOSE) {
             _close_code    = frame.close_code();
@@ -21,7 +21,7 @@ bool Message::add_frame (const Frame& frame) {
     }
 
     if (_max_size && _payload_length + frame.payload_length() > _max_size) {
-        error = errc::max_message_size;
+        _error = errc::max_message_size;
         _state = State::DONE;
         return true;
     }

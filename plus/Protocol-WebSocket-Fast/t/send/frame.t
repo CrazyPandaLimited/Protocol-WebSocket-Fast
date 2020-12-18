@@ -3,7 +3,12 @@ use warnings;
 use lib 't/lib';
 use MyTest qw/gen_frame is_bin/;
 use Test::More;
+use Test::Catch;
 use Protocol::WebSocket::Fast;
+
+catch_run("[send-frame]");
+
+die "REMOVE ME";
 
 my $create_parser = sub {
     my ($server_or_client) = @_;

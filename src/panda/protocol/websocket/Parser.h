@@ -55,14 +55,26 @@ struct Parser : virtual panda::Refcnt {
         return MessageIteratorPair(MessageIterator(this, _get_message()), MessageIterator(this, NULL));
     }
 
-    FrameIteratorPair get_frames (string& buf) {
-        if (_buffer) _buffer += buf; // user has not iterated previous call to get_frames till the end or remainder after handshake on client side
+    FrameIteratorPair get_frames (string&& buf) {
+        if (_buffer) _buffer += std::move(buf); // user has not iterated previous call to get_frames till the end or remainder after handshake on client side
+        else         _buffer = std::move(buf);
+        return get_frames();
+    }
+
+    FrameIteratorPair get_frames (const string& buf) {
+        if (_buffer) _buffer += buf;
         else         _buffer = buf;
         return get_frames();
     }
 
-    MessageIteratorPair get_messages (string& buf) {
-        if (_buffer) _buffer += buf; // user has not iterated previous call to get_frames till the end or remainder after handshake on client side
+    MessageIteratorPair get_messages (string&& buf) {
+        if (_buffer) _buffer += std::move(buf);
+        else         _buffer = std::move(buf);
+        return get_messages();
+    }
+
+    MessageIteratorPair get_messages (const string& buf) {
+        if (_buffer) _buffer += buf;
         else         _buffer = buf;
         return get_messages();
     }
@@ -78,62 +90,52 @@ struct Parser : virtual panda::Refcnt {
 
     FrameSender start_message (DeflateFlag deflate) { return start_message(Opcode::BINARY, deflate); }
 
-    string send_frame (bool final) {
+    string send_frame (IsFinal final = IsFinal::NO) {
         bool deflate = _flags[SEND_DEFLATE];
         auto header = _prepare_frame_header(final);
-        if (final && deflate) _deflate_ext->reset_tx();
+        if (final == IsFinal::YES && deflate) _deflate_ext->reset_tx();
         return Frame::compile(header);
     }
 
-    StringPair send_frame(string& payload, bool final) {
+    string send_frame (string_view payload, IsFinal final = IsFinal::NO) {
         bool deflate = _flags[SEND_DEFLATE];
         auto header = _prepare_frame_header(final);
-        if (deflate) _deflate_ext->compress(payload, final);
-        string hbin = Frame::compile(header, payload);
-        return make_string_pair(hbin, payload);
+        return deflate ? Frame::compile(header, _deflate_ext->compress(payload, final)) :
+                         Frame::compile(header, payload);
     }
 
-    template<typename It>
-    StringChain<It> send_frame (It payload_begin, It payload_end, bool final) {
+    template <typename It, typename T = decltype(*std::declval<It>()), typename = std::enable_if_t<std::is_convertible<T, string_view>::value>>
+    string send_frame (It&& payload_begin, It&& payload_end, IsFinal final = IsFinal::NO) {
         bool deflate = _flags[SEND_DEFLATE];
         auto header = _prepare_frame_header(final);
-        if (deflate) {
-            if (payload_begin == payload_end) {
-                string trailer;
-                _deflate_ext->compress(trailer, final);
-                string hbin = Frame::compile(header, trailer);
-                if (trailer) hbin += trailer;
-                return make_string_pair(hbin, payload_begin, payload_end);
-            }
-            payload_end = _deflate_ext->compress(payload_begin, payload_end, final);
-        }
-        string hbin = Frame::compile(header, payload_begin, payload_end);
-        return make_string_pair(hbin, payload_begin, payload_end);
+        return deflate ? Frame::compile(header, _deflate_ext->compress(payload_begin, payload_end, final)) :
+                         Frame::compile(header, payload_begin, payload_end);
     }
 
     MessageBuilder message () { return MessageBuilder(*this); }
 
-    string send_control (Opcode opcode) { return Frame::compile(_prepare_control_header(opcode)); }
-
-    StringPair send_control (Opcode opcode, string& payload) {
-        if (payload.length() > Frame::MAX_CONTROL_PAYLOAD) {
-            panda_log_critical("control frame payload is too long");
-            payload.offset(0, Frame::MAX_CONTROL_PAYLOAD);
-        }
-        auto header = _prepare_control_header(opcode);
-        string hbin = Frame::compile(header, payload);
-        return make_string_pair(hbin, payload);
+    string send_control (Opcode opcode) {
+        return Frame::compile(_prepare_control_header(opcode));
     }
 
-    string     send_ping  ()                { return send_control(Opcode::PING); }
-    StringPair send_ping  (string& payload) { return send_control(Opcode::PING, payload); }
-    string     send_pong  ()                { return send_control(Opcode::PONG); }
-    StringPair send_pong  (string& payload) { return send_control(Opcode::PONG, payload); }
-    string     send_close ()                { return send_control(Opcode::CLOSE); }
+    string send_control (Opcode opcode, string_view payload) {
+        if (payload.length() > Frame::MAX_CONTROL_PAYLOAD) {
+            panda_log_critical("control frame payload is too long");
+            payload = payload.substr(0, Frame::MAX_CONTROL_PAYLOAD);
+        }
+        auto header = _prepare_control_header(opcode);
+        return Frame::compile(header, payload);
+    }
 
-    StringPair send_close (uint16_t code, const string& payload = string()) {
-        string frpld = FrameHeader::compile_close_payload(code, payload);
-        return send_control(Opcode::CLOSE, frpld);
+    string send_ping  ()                    { return send_control(Opcode::PING); }
+    string send_ping  (string_view payload) { return send_control(Opcode::PING, payload); }
+    string send_pong  ()                    { return send_control(Opcode::PONG); }
+    string send_pong  (string_view payload) { return send_control(Opcode::PONG, payload); }
+    string send_close ()                    { return send_control(Opcode::CLOSE); }
+
+    string send_close (uint16_t code, string_view close_payload = {}) {
+        string payload = FrameHeader::compile_close_payload(code, close_payload);
+        return send_control(Opcode::CLOSE, payload);
     }
 
     uint16_t suggested_close_code () const { return _suggested_close_code; }
@@ -204,8 +206,8 @@ private:
         if (_flags[SEND_CLOSED]) throw Error("close sent, can't send anymore");
     }
 
-    FrameHeader _prepare_control_header (Opcode opcode);
-    FrameHeader _prepare_frame_header   (bool final);
+    FrameHeader _prepare_control_header (Opcode);
+    FrameHeader _prepare_frame_header   (IsFinal);
 
     friend struct FrameSender;
     friend struct MessageBuilder;

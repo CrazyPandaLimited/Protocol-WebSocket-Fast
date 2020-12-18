@@ -45,18 +45,16 @@ TEST("FrameSender & Message builder") {
             std::vector<string> fragments;
             fragments.push_back("hello");
             fragments.push_back(" world");
-            auto data = server.start_message(DeflateFlag::YES).send(fragments.begin(), fragments.end(), true);
-            auto data_string = to_string(data);
-            auto messages_it = client.get_messages(data_string);
+            auto data = server.start_message(DeflateFlag::YES).send(fragments.begin(), fragments.end(), IsFinal::YES);
+            auto messages_it = client.get_messages(data);
             REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
             REQUIRE(messages_it.begin()->payload[0] == "hello world");
         }
 
         SECTION("send (iterator, empty)") {
             std::vector<string> fragments;
-            auto data = server.start_message(DeflateFlag::YES).send(fragments.begin(), fragments.end(), true);
-            auto data_string = to_string(data);
-            auto messages_it = client.get_messages(data_string);
+            auto data = server.start_message(DeflateFlag::YES).send(fragments.begin(), fragments.end(), IsFinal::YES);
+            auto messages_it = client.get_messages(data);
             REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
             REQUIRE(messages_it.begin()->payload.empty());
         }
@@ -68,9 +66,8 @@ TEST("FrameSender & Message builder") {
             fragments.push_back("");
             fragments.push_back(" world");
             fragments.push_back("");
-            auto data = server.start_message(DeflateFlag::YES).send(fragments.begin(), fragments.end(), true);
-            auto data_string = to_string(data);
-            auto messages_it = client.get_messages(data_string);
+            auto data = server.start_message(DeflateFlag::YES).send(fragments.begin(), fragments.end(), IsFinal::YES);
+            auto messages_it = client.get_messages(data);
             REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
             auto it = messages_it.begin();
             REQUIRE(it->payload.size() == 1);
@@ -109,9 +106,8 @@ TEST("FrameSender & Message builder") {
             fragments.emplace_back(sso_23.substr(23, 0));
             REQUIRE(bool(fragments.back().shared_buf())); // bool to prevent Catch printing data
             REQUIRE(fragments.back().shared_capacity() == 0);
-            auto data = server.start_message(DeflateFlag::YES).send(fragments.begin(), fragments.end(), true);
-            auto data_string = to_string(data);
-            auto messages_it = client.get_messages(data_string);
+            auto data = server.start_message(DeflateFlag::YES).send(fragments.begin(), fragments.end(), IsFinal::YES);
+            auto messages_it = client.get_messages(data);
             REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
             auto it = messages_it.begin();
             REQUIRE(it->payload.size() == 1);
@@ -126,8 +122,7 @@ TEST("FrameSender & Message builder") {
             fragments.push_back("hello");
             fragments.push_back(" world");
             auto data = server.message().send(fragments.begin(), fragments.end());
-            auto data_string = to_string(data);
-            auto messages_it = client.get_messages(data_string);
+            auto messages_it = client.get_messages(data);
             REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
             REQUIRE(messages_it.begin()->payload[0] == "hello world");
         }
@@ -139,8 +134,7 @@ TEST("FrameSender & Message builder") {
             fragments.push_back("");
             fragments.push_back(" world");
             auto data = server.message().send(fragments.begin(), fragments.end());
-            auto data_string = to_string(data);
-            auto messages_it = client.get_messages(data_string);
+            auto messages_it = client.get_messages(data);
             REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
             REQUIRE(messages_it.begin()->payload[0] == "hello world");
         }
@@ -148,8 +142,7 @@ TEST("FrameSender & Message builder") {
         SECTION("MessageBuilder::send (empty string)") {
             panda::string item = "";
             auto data = server.message().send(item);
-            auto data_string = to_string(data);
-            auto messages_it = client.get_messages(data_string);
+            auto messages_it = client.get_messages(data);
             REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
             REQUIRE(messages_it.begin()->payload.size() == 0);
         }
@@ -158,8 +151,7 @@ TEST("FrameSender & Message builder") {
             std::vector<string> fragments;
             fragments.push_back("");
             auto data = server.message().send(fragments.begin(), fragments.end());
-            auto data_string = to_string(data);
-            auto messages_it = client.get_messages(data_string);
+            auto messages_it = client.get_messages(data);
             REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
             REQUIRE(messages_it.begin()->payload.size() == 0);
         }
@@ -174,10 +166,8 @@ TEST("FrameSender & Message builder") {
 
 
             auto builder = server.message();
-            auto data = builder.deflate(true).send(pieces.begin(), pieces.end());
-            auto data_string = to_string(data);
-            REQUIRE(data_string != "hello world!");
-            auto messages_it = client.get_messages(data_string);
+            auto data = to_string(builder.deflate(true).send(pieces.begin(), pieces.end()));
+            auto messages_it = client.get_messages(data);
             REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
 
             auto it = messages_it.begin();
@@ -198,10 +188,9 @@ TEST("FrameSender & Message builder") {
             pieces.push_back(fragments2);
 
             auto builder = server.message();
-            auto data = builder.deflate(true).send(pieces.begin(), pieces.end());
-            auto data_string = to_string(data);
-            REQUIRE(data_string.find("hello") == std::string::npos);
-            auto messages_it = client.get_messages(data_string);
+            auto data = to_string(builder.deflate(true).send(pieces.begin(), pieces.end()));
+            REQUIRE(data.find("hello") == std::string::npos);
+            auto messages_it = client.get_messages(data);
             REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
 
             auto it = messages_it.begin();
@@ -222,10 +211,9 @@ TEST("FrameSender & Message builder") {
             pieces.push_back(fragments2);
 
             auto builder = server.message();
-            auto data = builder.deflate(true).send(pieces.begin(), pieces.end());
-            auto data_string = to_string(data);
-            REQUIRE(data_string.find("hello") == std::string::npos);
-            auto messages_it = client.get_messages(data_string);
+            auto data = to_string(builder.deflate(true).send(pieces.begin(), pieces.end()));
+            REQUIRE(data.find("hello") == std::string::npos);
+            auto messages_it = client.get_messages(data);
             REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
 
             auto it = messages_it.begin();
@@ -253,10 +241,9 @@ TEST("FrameSender & Message builder") {
             pieces.push_back(fragments4);
 
             auto builder = server.message();
-            auto data = builder.deflate(true).send(pieces.begin(), pieces.end());
-            auto data_string = to_string(data);
-            REQUIRE(data_string.find("hello") == std::string::npos);
-            auto messages_it = client.get_messages(data_string);
+            auto data = to_string(builder.deflate(true).send(pieces.begin(), pieces.end()));
+            REQUIRE(data.find("hello") == std::string::npos);
+            auto messages_it = client.get_messages(data);
             REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
 
             auto it = messages_it.begin();
@@ -275,10 +262,9 @@ TEST("FrameSender & Message builder") {
             pieces.push_back(fragments2);
 
             auto builder = server.message();
-            auto data = builder.deflate(true).send(pieces.begin(), pieces.end());
-            auto data_string = to_string(data);
-            REQUIRE(data_string.find("hello") == std::string::npos);
-            auto messages_it = client.get_messages(data_string);
+            auto data = to_string(builder.deflate(true).send(pieces.begin(), pieces.end()));
+            REQUIRE(data.find("hello") == std::string::npos);
+            auto messages_it = client.get_messages(data);
             REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
 
             auto it = messages_it.begin();
@@ -288,23 +274,18 @@ TEST("FrameSender & Message builder") {
 
     SECTION("empty compressed frame with zero payload") {
         string payload;
-        REQUIRE(payload.length() == 0);
-        //auto builder =
-        auto data = server.start_message(DeflateFlag::YES).send(payload, true);
-        auto it = std::begin(data) + 1;
-        REQUIRE((*it).length() == 1);
-        REQUIRE((*it).capacity() >= ((*it).length()));
-        auto data_string = to_string(data);
-        REQUIRE(data_string.length() == 3);
+        auto data = server.start_message(DeflateFlag::YES).send(payload, IsFinal::YES);
+        REQUIRE(data.capacity() >= data.length());
+        REQUIRE(data.length() == 3);
 
         SECTION("zero uncompressed payload") {
-            auto messages_it = client.get_messages(data_string);
+            auto messages_it = client.get_messages(data);
             REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
             REQUIRE(messages_it.begin()->payload_length() == 0);
         }
 
         SECTION("non-zero network payload") {
-            auto frames_it = client.get_frames(data_string);
+            auto frames_it = client.get_frames(data);
             REQUIRE(std::distance(frames_it.begin(), frames_it.end()) == 1);
             REQUIRE(frames_it.begin()->payload_length() == 1);
         }
@@ -326,21 +307,18 @@ TEST("FrameSender & Message builder") {
         FrameHeader fh(Opcode::PING, true, true, false, false, true, (uint32_t)std::rand());
         auto data_string = Frame::compile(fh, payload);
         auto frames_it = client.get_frames(data_string);
-        REQUIRE(frames_it.begin()->error & errc::control_frame_compression);
+        REQUIRE(frames_it.begin()->error() & errc::control_frame_compression);
     }
 
     SECTION("send compressed frame bigger then original") {
         string payload = encode::decode_base16("8e008f8f8f0090909000919191009292");
-        string payload_copy = payload;
 
-        auto data = server.start_message(DeflateFlag::YES).send(payload, true);
-        auto it = std::begin(data) + 1;
-        REQUIRE((*it).length() == 24);
-        auto data_string = to_string(data);
-        auto messages_it = client.get_messages(data_string);
+        auto data = server.start_message(DeflateFlag::YES).send(payload, IsFinal::YES);
+        REQUIRE(data.length() == 2 + 24);
+        auto messages_it = client.get_messages(data);
         REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
-        REQUIRE_FALSE(messages_it.begin()->error);
-        REQUIRE(messages_it.begin()->payload[0] == payload_copy);
+        REQUIRE_FALSE(messages_it.begin()->error());
+        REQUIRE(messages_it.begin()->payload[0] == payload);
     }
 
     SECTION("SRV-1236") {
@@ -348,10 +326,10 @@ TEST("FrameSender & Message builder") {
             string data_sample = "UlBQUDLWM1eyUqjmUoABpaTUjMSyzPwioLCSv7eSDhYp55z84lQs8imlRYklmfl5QCkjZPGi1Nz8klSwLuf8FJBOQwMDNBUF+UUlaZk5YGMTS0vykxIz8goqSzLy8+IN4s2AODmxODXeON5cL6sYaANUby3MECUTPUM9Q9K8AgAAAP//";
             string payload = encode::decode_base64(data_sample);
             FrameHeader fh(Opcode::TEXT, true, true, false, false, true, (uint32_t)std::rand());
-            auto data_string = Frame::compile(fh, payload).append(payload);
-            auto messages_it = server.get_messages(data_string);
+            auto data = Frame::compile(fh, payload);
+            auto messages_it = server.get_messages(data);
             REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
-            REQUIRE(!messages_it.begin()->error);
+            REQUIRE(!messages_it.begin()->error());
         }
     }
 
@@ -482,10 +460,10 @@ TEST("SRV-1236") {
         for(auto it = std::begin(data_samples); it != std::end(data_samples); ++it){
             string payload = encode::decode_base64(*it);
             FrameHeader fh(Opcode::TEXT, true, true, false, false, true, (uint32_t)std::rand());
-            auto data_string = Frame::compile(fh, payload).append(payload);
-            auto messages_it = server.get_messages(data_string);
+            auto data = Frame::compile(fh, payload);
+            auto messages_it = server.get_messages(data);
             REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
-            REQUIRE_FALSE(messages_it.begin()->error);
+            REQUIRE_FALSE(messages_it.begin()->error());
         }
     }
 
@@ -494,15 +472,15 @@ TEST("SRV-1236") {
         string payload2 = encode::decode_base64("Ih0AAAAA//8");
 
         FrameHeader fh1(Opcode::TEXT, false, true, false, false, true, (uint32_t)std::rand());
-        auto data_string1 = Frame::compile(fh1, payload1).append(payload1);
+        auto data1 = Frame::compile(fh1, payload1);
 
         FrameHeader fh2(Opcode::CONTINUE, true, false, false, false, true, (uint32_t)std::rand());
-        auto data_string2 = Frame::compile(fh2, payload2).append(payload2);
-        auto data_string = data_string1 + data_string2;
+        auto data2 = Frame::compile(fh2, payload2);
+        auto data = data1 + data2;
 
-        auto messages_it = server.get_messages(data_string);
+        auto messages_it = server.get_messages(data);
         REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
-        REQUIRE_FALSE(messages_it.begin()->error);
+        REQUIRE_FALSE(messages_it.begin()->error());
         REQUIRE(messages_it.begin()->payload.size() == 2);
         REQUIRE(messages_it.begin()->payload[0] == "00000000000000000000000000000000000000000000000000");
         REQUIRE(messages_it.begin()->payload[1] == "00000000000000000000000000000000000000000000000000");

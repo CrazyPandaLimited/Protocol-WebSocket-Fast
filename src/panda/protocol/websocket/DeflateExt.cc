@@ -7,13 +7,15 @@ namespace panda { namespace protocol { namespace websocket {
 const char* DeflateExt::extension_name = "permessage-deflate";
 
 static const int   UNCOMPRESS_PREALLOCATE_RATIO = 10;
-static const float COMPRESS_PREALLOCATE_RATIO   = 1;
 static const float GROW_RATIO                   = 1.5;
 
 static const char PARAM_SERVER_NO_CONTEXT_TAKEOVER[] = "server_no_context_takeover";
 static const char PARAM_CLIENT_NO_CONTEXT_TAKEOVER[] = "client_no_context_takeover";
 static const char PARAM_SERVER_MAX_WINDOW_BITS[] = "server_max_window_bits";
 static const char PARAM_CLIENT_MAX_WINDOW_BITS[] = "client_max_window_bits";
+
+unsigned char _TRAILER[] = {0x00,  0x00, 0xFF, 0xFF};
+static const string TRAILER((char*)_TRAILER, 4);
 
 panda::optional<panda::string> DeflateExt::bootstrap() {
     using result_t = panda::optional<panda::string>;
@@ -186,19 +188,6 @@ void DeflateExt::reset_tx() {
     }
 }
 
-void DeflateExt::reset_rx() {
-    if (!rx_stream.next_in) return;
-    rx_stream.next_in = Z_NULL;
-
-    if (inflateReset(&rx_stream) != Z_OK) {
-        panda::string err = panda::string("zlib::inflateEnd error ");
-        if(rx_stream.msg) {
-            err += rx_stream.msg;
-        }
-    }
-}
-
-
 DeflateExt::~DeflateExt(){
     if (deflateEnd(&tx_stream) != Z_OK) {
         panda::string err = panda::string("zlib::deflateEnd error ");
@@ -216,133 +205,104 @@ DeflateExt::~DeflateExt(){
     }
 }
 
-
-string& DeflateExt::compress(string& str, bool final) {
-    string in = str;
-    tx_stream.next_in = (Bytef*)(in.data());
-    tx_stream.avail_in = static_cast<uInt>(in.length());
-    str = string(in.length() * COMPRESS_PREALLOCATE_RATIO); // detach and realloc for result here
-    tx_stream.next_out = reinterpret_cast<Bytef*>(str.buf()); // buf would not detach, we just created new string and refcnt == 1
-    auto sz = str.capacity();
-    str.length(sz);
-    tx_stream.avail_out = static_cast<uInt>(sz);
-
-    deflate_iteration(Z_SYNC_FLUSH, [&](){
-        sz += reserve_for_trailer(str);
-    });
-
-    sz -= tx_stream.avail_out;
-
-    if (final) {
-        sz -= TRAILER_SIZE; // remove tail empty-frame 0x00 0x00 0xff 0xff for final messages only
-        if (reset_after_tx) reset_tx();
-    }
-    str.length(sz);
-
-    return str;
-}
-
-bool DeflateExt::uncompress(Frame& frame) {
-    bool r;
-    if (frame.payload_length() == 0) r = true;
-    else                             r = uncompress_impl(frame);
-    // reset stream in case of a) error and b) when it was last frame of message
-    // and there was setting to do not use
-    if(!r || (frame.final() && reset_after_rx)) reset_rx();
-    if (frame.final()) message_size = 0;
-    return r;
-}
-
-bool DeflateExt::uncompress_check_overflow(Frame& frame, const string& acc) {
-    auto unpacked_frame_size = acc.capacity() - rx_stream.avail_out;
-    auto unpacked_message_size = message_size + unpacked_frame_size;
-    if (unpacked_message_size > max_message_size) {
-        frame.error = errc::max_message_size;
-        return false;
-    }
-    return true;
-}
-
-void DeflateExt::rx_increase_buffer(string& acc) {
-    auto prev_sz = acc.capacity();
+static inline void grow (string& dest, z_stream& stream) {
+    auto prev_sz = dest.capacity();
     size_t new_sz = prev_sz * GROW_RATIO;
-    acc.length(prev_sz);
-    acc.reserve(new_sz);
-    rx_stream.next_out = reinterpret_cast<Bytef*>(acc.buf() + prev_sz);
-    rx_stream.avail_out = static_cast<uInt>(new_sz - prev_sz);
+    dest.length(prev_sz);
+    auto buf = dest.reserve(new_sz);
+    stream.next_out = (Bytef*)buf + prev_sz;
+    stream.avail_out = new_sz - prev_sz;
+    assert(stream.avail_out > 0);
 }
 
+void DeflateExt::_compress (string_view src, string& dest, int flush) {
+    tx_stream.next_in = (Bytef*)src.data();
+    tx_stream.avail_in = static_cast<uInt>(src.length());
+    tx_stream.next_out = (Bytef*)dest.buf() + dest.length();
+    tx_stream.avail_out = static_cast<uInt>(dest.capacity() - dest.length());
 
-bool DeflateExt::uncompress_impl(Frame& frame) {
-    using It = decltype(frame.payload)::iterator;
+    auto has_trailer = [](const string& s) -> bool {
+        if (s.length() < TRAILER_SIZE) return false;
+        return s.substr(s.length() - TRAILER_SIZE, TRAILER_SIZE) == TRAILER;
+    };
 
+    while (tx_stream.avail_in || flush == Z_SYNC_FLUSH) {
+        if (!tx_stream.avail_out) grow(dest, tx_stream);
+        auto r = deflate(&tx_stream, flush);
+        assert(r >= 0); (void)r;
+        if (tx_stream.avail_out || has_trailer(dest)) break;
+    }
+
+    dest.length(dest.capacity() - tx_stream.avail_out);
+}
+
+void DeflateExt::reset_rx() {
+    if (!rx_stream.next_in) return;
+    rx_stream.next_in = Z_NULL;
+    auto zerr = inflateReset(&rx_stream);
+    if (zerr != Z_OK) {
+        panda_log_error("zlib::inflateReset error msg='" << rx_stream.msg << "' code=" << zerr);
+    }
+}
+
+void DeflateExt::uncompress (Frame& frame) {
     bool final = frame.final();
-    It it_in = frame.payload.begin();
-    It end = frame.payload.end();
+    auto plen  = frame.payload_length();
+    if (!plen && !final) return;
 
+    // if no data arrived, force at least SSO capacity (by passing X>0)
+    // CAN'T BE ZERO because otherwise capacity will be 0 and inflate will finish with error
     string acc;
-    acc.reserve(frame.payload_length() * UNCOMPRESS_PREALLOCATE_RATIO);
+    acc.reserve(plen ? plen * UNCOMPRESS_PREALLOCATE_RATIO : 1);
 
     rx_stream.next_out = reinterpret_cast<Bytef*>(acc.buf());
     rx_stream.avail_out = static_cast<uInt>(acc.capacity());
 
-    do {
-        string& chunk_in = *it_in;
-        It it_next = ++it_in;
-        if (it_next == end && final) {
-            // append empty-frame 0x00 0x00 0xff 0xff
-            unsigned char trailer[TRAILER_SIZE] = { 0x00,  0x00, 0xFF, 0xFF };
-            chunk_in.append(reinterpret_cast<char*>(trailer), TRAILER_SIZE);
-            rx_stream.avail_in += TRAILER_SIZE;
-        }
-        // std::cout << "[debug] b64 payload: " << encode::encode_base64(chunk_in) << "\n";
-        rx_stream.next_in = reinterpret_cast<Bytef*>(chunk_in.buf());
-        rx_stream.avail_in = static_cast<uInt>(chunk_in.length());
-        auto flush = (it_next == end) ? Z_SYNC_FLUSH : Z_NO_FLUSH;
-        bool has_more_output = true;
-        do {
-            has_more_output = !rx_stream.avail_out;
+    auto inflate_impl = [&](string& dest, const string& src, int flush) -> bool {
+        rx_stream.next_in = (Bytef*)src.data();
+        rx_stream.avail_in = static_cast<uInt>(src.length());
+        while (1) {
             auto r = inflate(&rx_stream, flush);
-            switch (r) {
-            case Z_OK:
-                if (max_message_size && !uncompress_check_overflow(frame, acc)) return false;
-                if (!rx_stream.avail_out) {
-                    rx_increase_buffer(acc);
-                    has_more_output = true;
-                } else {
-                    has_more_output = false;
-                }
-                break;
-            case Z_BUF_ERROR:
-                /* it is non-fatal error. It is unavoidable, if we unpacked the payload which
-                 * fits into accumulator acc exactly, i.e. on the previous iteration it was
-                 * rx_stream.avail_out == 0 and it is not known, whether there is still some
-                 * output or no. If there is no output, than this error code is returned
-                 */
-                has_more_output = false;
-                break;
-            default:
-                string err = "zlib::inflate error ";
-                if (rx_stream.msg) err += rx_stream.msg;
-                else err += to_string(r);
-                panda_log_info(err);
-                frame.error = errc::inflate_error;
+            if (r != Z_OK) {
+                panda_log_error("zlib::inflate error msg='" << rx_stream.msg << "' code=" << r);
+                frame.error(errc::inflate_error);
                 return false;
             }
-        } while(has_more_output);
-        it_in = it_next;
-    } while(it_in != end);
+            if (max_message_size && (message_size + (dest.capacity() - rx_stream.avail_out) > max_message_size)) {
+                frame.error(errc::max_message_size);
+                return false;
+            }
+            if (!rx_stream.avail_in) return true; // no more input
+            assert(!rx_stream.avail_out); // the only case we're here is we're ran out of buffer
+            grow(dest, rx_stream);
+        }
+        return true;
+    };
+
+    // reset stream in case of a) error and b) when it was last frame of message and there was setting to do so
+
+    auto npayloads = frame.payload.size();
+    for (size_t i = 0; i < npayloads; ++i) {
+        auto flush = ((i == npayloads - 1) && !final) ? Z_SYNC_FLUSH : Z_NO_FLUSH;
+        auto res = inflate_impl(acc, frame.payload[i], flush);
+        if (!res) return reset_rx();
+    }
+
+    if (final) {
+        auto res = inflate_impl(acc, TRAILER, Z_SYNC_FLUSH);
+        if (!res) return reset_rx();
+        message_size = 0;
+        if (reset_after_rx) reset_rx();
+    }
 
     acc.length(acc.capacity() - rx_stream.avail_out);
-    message_size += acc.length();
 
     if (acc) {
+        message_size += acc.length();
         frame.payload.resize(1);
         frame.payload[0] = std::move(acc);
     }
     else frame.payload.clear(); // remove empty string from payload if no data
-
-    return true;
 }
 
 }}}

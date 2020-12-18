@@ -6,16 +6,16 @@
 void test_connect (ConnectRequestSP req, int code, string msg, ErrorCode error, string ws_accept_key = "", string ws_protocol = "",
                    HeaderValues ws_extensions = {}, Headers headers = {})
 {
-    auto p    = make_iptr<ClientParser>();
-    auto str  = p->connect_request(req);
-    auto sp   = make_iptr<ServerParser>();
-    auto creq = sp->accept(str);
+    ClientParser p;
+    ServerParser sp;
+    auto str  = p.connect_request(req);
+    auto creq = sp.accept(str);
     REQUIRE(creq);
-    auto res_str = creq->error() ? sp->accept_error() : sp->accept_response();
+    auto res_str = creq->error() ? sp.accept_error() : sp.accept_response();
     ConnectResponseSP cres;
 
     SECTION("whole data") {
-        cres = p->connect(res_str);
+        cres = p.connect(res_str);
     }
     SECTION("chunks") {
         size_t sz = 5;
@@ -23,7 +23,7 @@ void test_connect (ConnectRequestSP req, int code, string msg, ErrorCode error, 
             auto chunk = res_str.substr(0, sz);
             if (res_str.length() > sz) res_str.offset(sz);
             else res_str = "";
-            cres = p->connect(chunk);
+            cres = p.connect(chunk);
         }
         CHECK(res_str == "");
     }
@@ -41,8 +41,8 @@ void test_connect (ConnectRequestSP req, int code, string msg, ErrorCode error, 
         CHECK(hdr == headers);
     }
 
-    if (error) CHECK_FALSE(p->established());
-    else       CHECK(p->established());
+    if (error) CHECK_FALSE(p.established());
+    else       CHECK(p.established());
 }
 
 TEST("simple connect") {
@@ -71,13 +71,13 @@ TEST("simple connect") {
 }
 
 TEST("wrong accept key") {
-    auto p = make_iptr<ClientParser>();
-    auto sp = make_iptr<ServerParser>();
-    auto str = p->connect_request(ConnectRequest::Builder().uri("ws://a.ru").build());
-    sp->accept(str);
-    auto res_str = sp->accept_response();
+    ClientParser p;
+    ServerParser sp;
+    auto str = p.connect_request(ConnectRequest::Builder().uri("ws://a.ru").build());
+    sp.accept(str);
+    auto res_str = sp.accept_response();
     regex_replace(res_str, "(Sec-WebSocket-Accept: )", "$1 a");
-    auto cres = p->connect(res_str);
+    auto cres = p.connect(res_str);
     CHECK(cres->error() == ErrorCode(errc::sec_accept_missing));
 }
 
@@ -92,47 +92,47 @@ TEST("version upgrade required") {
 }
 
 TEST("wrong code") {
-    auto p = make_iptr<ClientParser>();
-    auto str = p->connect_request(ConnectRequest::Builder().uri("ws://a.ru").build());
-    auto sp = make_iptr<ServerParser>();
-    sp->accept(str);
-    auto res_str = sp->accept_response();
+    ClientParser p;
+    ServerParser sp;
+    auto str = p.connect_request(ConnectRequest::Builder().uri("ws://a.ru").build());
+    sp.accept(str);
+    auto res_str = sp.accept_response();
     regex_replace(res_str, "(HTTP/1.1) (\\d+)", "$1 102");
-    auto cres = p->connect(res_str);
+    auto cres = p.connect(res_str);
     CHECK(cres->error() == ErrorCode(errc::response_code_101));
 }
 
 TEST("wrong connection header") {
-    auto p = make_iptr<ClientParser>();
-    auto str = p->connect_request(ConnectRequest::Builder().uri("ws://a.ru").build());
-    auto sp = make_iptr<ServerParser>();
-    sp->accept(str);
-    auto res_str = sp->accept_response();
+    ClientParser p;
+    ServerParser sp;
+    auto str = p.connect_request(ConnectRequest::Builder().uri("ws://a.ru").build());
+    sp.accept(str);
+    auto res_str = sp.accept_response();
     regex_replace(res_str, "(Connection:) (\\S+)", "$1 migrate");
-    auto cres = p->connect(res_str);
+    auto cres = p.connect(res_str);
     CHECK(cres->error() == ErrorCode(errc::connection_mustbe_upgrade));
 }
 
 TEST("wrong upgrade header") {
-    auto p = make_iptr<ClientParser>();
-    auto str = p->connect_request(ConnectRequest::Builder().uri("ws://a.ru").build());
-    auto sp = make_iptr<ServerParser>();
-    sp->accept(str);
-    auto res_str = sp->accept_response();
+    ClientParser p;
+    ServerParser sp;
+    auto str = p.connect_request(ConnectRequest::Builder().uri("ws://a.ru").build());
+    sp.accept(str);
+    auto res_str = sp.accept_response();
     regex_replace(res_str, "(Upgrade:) (\\S+)", "$1 huysocket");
-    auto cres = p->connect(res_str);
+    auto cres = p.connect(res_str);
     CHECK(cres->error() == ErrorCode(errc::upgrade_mustbe_websocket));
 }
 
 TEST("frame just after handshake is reachable") {
-    auto p = make_iptr<ClientParser>();
-    auto str = p->connect_request(ConnectRequest::Builder().uri("ws://a.ru").build());
-    auto sp = make_iptr<ServerParser>();
-    sp->accept(str);
-    auto res_str = sp->accept_response();
-    res_str += gen_message().mask().data("hello!!").str();
-    auto cres = p->connect(res_str);
-    CHECK(p->established());
+    ClientParser p;
+    ServerParser sp;
+    auto str = p.connect_request(ConnectRequest::Builder().uri("ws://a.ru").build());
+    sp.accept(str);
+    auto res_str = sp.accept_response();
+    res_str += gen_message().mask().payload("hello!!").str();
+    auto cres = p.connect(res_str);
+    CHECK(p.established());
     auto msg = get_message(p);
     REQUIRE(msg);
     CHECK(msg->payload[0] == "hello!!");

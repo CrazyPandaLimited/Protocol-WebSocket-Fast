@@ -1,5 +1,6 @@
 #include "test.h"
 #include <regex>
+#include <ctype.h>
 #include <panda/endian.h>
 
 namespace test {
@@ -19,19 +20,32 @@ void regex_replace (string& str, const std::string& re, const std::string& fmt) 
     str = string(std::regex_replace((std::string)str, std::regex(re, std::regex::ECMAScript|std::regex::icase), fmt));
 }
 
+string join (const std::vector<string>& v) {
+    string ret;
+    for (auto& s : v) ret += s;
+    return ret;
+}
+
+string join (const StringPair& pair) {
+    string ret;
+    for (auto& s : pair) ret += s;
+    return ret;
+}
+
+string repeat (string_view s, int times) {
+    string ret;
+    ret.reserve(s.length() * times);
+    for (int i = 0; i < times; ++i) ret += s;
+    return ret;
+}
+
 std::vector<string> FrameGenerator::vec () const {
     if (!_msg_mode) throw std::runtime_error("vector return is only for message mode");
     return _gen_message();
 }
 
 string FrameGenerator::str () const {
-    string ret;
-    if (_msg_mode) {
-        auto vec = _gen_message();
-        for (auto& s : vec) ret += s;
-    }
-    else ret = _gen_frame();
-    return ret;
+    return _msg_mode ? join(_gen_message()) : _gen_frame();
 }
 
 static void crypt_xor (string& str, string_view key) {
@@ -45,7 +59,7 @@ static void crypt_xor (string& str, string_view key) {
 string FrameGenerator::_gen_frame () const {
     uint8_t first = 0, second = 0;
 
-    for (auto v : {_fin, _rsv1, _rsv2, _rsv3}) {
+    for (auto v : {_final, _rsv1, _rsv2, _rsv3}) {
         first |= v ? 1 : 0;
         first <<= 1;
     }
@@ -56,7 +70,7 @@ string FrameGenerator::_gen_frame () const {
     second |= _mask ? 1 : 0;
     second <<= 7;
 
-    auto data = _data;
+    auto data = _payload;
 
     if (_close_code) {
         auto net_cc = h2be16(_close_code);
@@ -95,7 +109,7 @@ std::vector<string> FrameGenerator::_gen_message () const {
     FrameGenerator g = *this;
     auto nframes  = _nframes ? _nframes : 1;
     auto opcode   = _opcode;
-    auto payload  = _data;
+    auto payload  = _payload;
     std::vector<string> ret;
 
     FrameGenerator gen = *this;
@@ -108,8 +122,8 @@ std::vector<string> FrameGenerator::_gen_message () const {
 
         ret.push_back(
             gen.opcode(opcode)
-               .data(chunk)
-               .fin(payload.empty())
+               .payload(chunk)
+               .final(payload.empty())
                .mask(_mask)
                ._gen_frame()
         );
@@ -137,6 +151,150 @@ std::vector<string> accept_packet () {
         "Sec-WebSocket-Protocol: chat\r\n",
         "\r\n",
     };
+}
+
+static void _establish_server (ServerParser& p) {
+    auto str = accept_packet_s();
+    auto res = p.accept(str);
+    if (!res) throw std::runtime_error("should not happen");
+    p.accept_response();
+    if (!p.established()) throw std::runtime_error("should not happen");
+}
+
+static void _establish_client (ClientParser& p) {
+    auto cstr = p.connect_request(ConnectRequest::Builder().uri("ws://jopa.ru").build());
+    ServerParser sp;
+    if (!sp.accept(cstr)) throw std::runtime_error("should not happen");
+    if (!sp.accepted()) throw std::runtime_error("should not happen");
+    auto rstr = sp.accept_response();
+    if (!p.connect(rstr)) throw std::runtime_error("should not happen");
+    if (!p.established()) throw std::runtime_error("should not happen");
+}
+
+EstablishedServerParser::EstablishedServerParser (const Parser::Config& cfg) : ServerParser(cfg) {
+    _establish_server(*this);
+}
+
+EstablishedClientParser::EstablishedClientParser (const Parser::Config& cfg) : ClientParser(cfg) {
+    _establish_client(*this);
+}
+
+void reset (Parser& p) {
+    p.reset();
+    if (p.established()) throw std::runtime_error("should not happen");
+    if (dynamic_cast<ServerParser*>(&p)) _establish_server(dynamic_cast<ServerParser&>(p));
+    else                                 _establish_client(dynamic_cast<ClientParser&>(p));
+}
+
+FMChecker::~FMChecker () noexcept(false) {
+    if (_frame) {
+        CHECK_FALSE(_frame->error());
+        if (_opcode) {
+            CHECK(_frame->opcode() == _opcode.value());
+            CHECK(_frame->is_control() == (_opcode.value() >= Opcode::CLOSE));
+        }
+        if (_fin)           CHECK(_frame->final() == _fin.value());
+        if (_rsv1)          CHECK(_frame->rsv1() == _rsv1.value());
+        if (_rsv2)          CHECK(_frame->rsv1() == _rsv2.value());
+        if (_rsv3)          CHECK(_frame->rsv1() == _rsv3.value());
+        if (_payload)       CHECK(join(_frame->payload) == _payload.value());
+        if (_paylen)        CHECK(_frame->payload_length() == _paylen.value());
+        if (_close_code)    CHECK(_frame->close_code() == _close_code.value());
+        if (_close_message) CHECK(_frame->close_message() == _close_message.value());
+    } else {
+        if (_opcode) {
+            CHECK(_message->opcode() == _opcode.value());
+            CHECK(_message->is_control() == (_opcode.value() >= Opcode::CLOSE));
+        }
+        if (_payload)       CHECK(join(_message->payload) == _payload.value());
+        if (_paylen)        CHECK(_message->payload_length() == _paylen.value());
+        if (_close_code)    CHECK(_message->close_code() == _close_code.value());
+        if (_close_message) CHECK(_message->close_message() == _close_message.value());
+        if (_nframes)       CHECK(_message->frame_count() == _nframes.value());
+
+    }
+}
+
+FrameGenerator::~FrameGenerator () noexcept(false) {
+    if (!_bin) return;
+    if (_binlen) CHECK(_bin.length() == _binlen);
+    // TODO: check in a printable way
+    CHECK((_bin == str()));
+}
+
+void test_frame (Parser& p, FrameGenerator f, const ErrorCode& error, int suggested_close_code) {
+    auto bin = f.str();
+    auto opcode = f.opcode();
+    std::vector<FrameSP> frames;
+
+    SECTION("whole buffer") {
+        frames = get_frames(p, bin);
+    }
+
+    SECTION("buffer by char") {
+        while (bin.length() && !frames.size()) {
+            auto chr = bin.substr(0, 1);
+            bin.offset(1);
+            frames = get_frames(p, chr);
+        }
+        if (!error) CHECK(!bin.length());
+    }
+
+    CHECK(frames.size() == 1);
+    auto frame = frames.front();
+
+    if (error) {
+        CHECK(frame->error() == error);
+        if (suggested_close_code) CHECK(p.suggested_close_code() == suggested_close_code);
+    } else {
+        CHECK_FALSE(frame->error());
+        CHECK(frame->opcode() == opcode);
+        CHECK(frame->is_control() == (opcode >= Opcode::CLOSE));
+        CHECK(frame->final() == f.is_final());
+        CHECK(frame->payload_length() == f.payload().length());
+        CHECK((join(frame->payload) == f.payload()));
+        if (f.close_code()) CHECK(frame->close_code() == f.close_code());
+    }
+}
+
+MessageSP test_message (Parser& p, FrameGenerator f, const ErrorCode& error) {
+    auto opcode = f.opcode();
+    auto nframes = f.nframes() ? f.nframes() : 1;
+    if (opcode < Opcode::CLOSE) f.msg_mode();
+
+    auto bin = f.str();
+    std::vector<MessageSP> messages;
+
+    SECTION("whole buffer") {
+        messages = get_messages(p, bin);
+    }
+
+    SECTION("buffer by char") {
+        while (bin.length() && !messages.size()) {
+            auto chr = bin.substr(0, 1);
+            bin.offset(1);
+            messages = get_messages(p, chr);
+        }
+        if (!error) CHECK(!bin.length());
+    }
+
+    CHECK(messages.size() == 1);
+    auto message = messages.front();
+
+    if (error) {
+        CHECK(message->error() == error);
+    } else {
+        CHECK_FALSE(message->error());
+        CHECK(message->opcode() == opcode);
+        CHECK(message->is_control() == (opcode >= Opcode::CLOSE));
+        CHECK(message->payload_length() == f.payload().length());
+        CHECK((join(message->payload) == f.payload()));
+        if (f.close_code()) CHECK(message->close_code() == f.close_code());
+        if (f.close_code_check()) CHECK(message->close_code() == f.close_code_check());
+        CHECK(message->frame_count() == nframes);
+    }
+
+    return message;
 }
 
 }

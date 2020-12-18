@@ -47,19 +47,19 @@ bool Parser::_parse_frame (Frame& frame) {
         _flags.reset(RECV_FRAME);
         _flags.reset(RECV_INFLATE);
         _utf8_checker.reset();
-        if      (frame.error & errc::invalid_utf8)   _suggested_close_code = CloseCode::INVALID_TEXT;
-        else if (frame.error & errc::max_frame_size) _suggested_close_code = CloseCode::MAX_SIZE;
-        else                                          _suggested_close_code = CloseCode::PROTOCOL_ERROR;
+        if      (frame.error() & errc::invalid_utf8)   _suggested_close_code = CloseCode::INVALID_TEXT;
+        else if (frame.error() & errc::max_frame_size) _suggested_close_code = CloseCode::MAX_SIZE;
+        else                                           _suggested_close_code = CloseCode::PROTOCOL_ERROR;
 
         return true;
     };
 
     auto _seterr = [&](const std::error_code& ec) -> bool {
-        frame.error = ec;
+        frame.error(ec);
         return _err();
     };
 
-    if (frame.error) return _err();
+    if (frame.error()) return _err();
 
     if (frame.is_control()) { // control frames can't be fragmented, no need to increment frame count
         if (!_frame_count) _flags.reset(RECV_FRAME); // do not reset state if control frame arrives in the middle of message
@@ -91,7 +91,7 @@ bool Parser::_parse_frame (Frame& frame) {
 
     if (_flags[RECV_INFLATE]) {
         _deflate_ext->uncompress(frame);
-        if (frame.error) return _err();
+        if (frame.error()) return _err();
     }
 
     if (_check_utf8) {
@@ -143,7 +143,7 @@ MessageSP Parser::_get_message () {
 
         // control frame arrived in the middle of fragmented message - wrap in new message and return (state remains MESSAGE)
         // because user can only switch to getting frames after receiving non-control message
-        if (!_message_frame.error && _message_frame.is_control() && _message->frame_count) {
+        if (!_message_frame.error() && _message_frame.is_control() && _message->frame_count()) {
             auto cntl_msg = new Message(_max_message_size);
             bool done = cntl_msg->add_frame(_message_frame);
             assert(done);
@@ -158,8 +158,8 @@ MessageSP Parser::_get_message () {
         if (!_buffer) return nullptr;
     }
 
-    if (_message->error) {
-        if (_message->error & errc::max_message_size) _suggested_close_code = CloseCode::MAX_SIZE;
+    if (_message->error()) {
+        if (_message->error() & errc::max_message_size) _suggested_close_code = CloseCode::MAX_SIZE;
     }
 
     _flags.reset(RECV_MESSAGE);
@@ -178,11 +178,11 @@ FrameHeader Parser::_prepare_control_header (Opcode opcode) {
     return FrameHeader(opcode, true, 0, 0, 0, !_recv_mask_required, _recv_mask_required ? 0 : (uint32_t)std::rand());
 }
 
-FrameHeader Parser::_prepare_frame_header (bool final) {
+FrameHeader Parser::_prepare_frame_header (IsFinal final) {
     if (!_flags[SEND_FRAME]) throw Error("can't send frame: message has not been started");
 
     if (FrameHeader::is_control_opcode(_send_opcode)) {
-        if (!final) throw Error("control frame must be final");
+        if (final == IsFinal::NO) throw Error("control frame must be final");
         return _prepare_control_header(_send_opcode);
     }
 
@@ -198,14 +198,14 @@ FrameHeader Parser::_prepare_frame_header (bool final) {
         rsv1 = _flags[SEND_DEFLATE];
     }
 
-    if (final) {
+    if (final == IsFinal::YES) {
         _sent_frame_count = 0;
         _flags.reset(SEND_FRAME);
         _flags.reset(SEND_DEFLATE);
     }
     else ++_sent_frame_count;
 
-    return FrameHeader(opcode, final, rsv1, 0, 0, !_recv_mask_required, _recv_mask_required ? 0 : (uint32_t)std::rand());
+    return FrameHeader(opcode, (bool)final, rsv1, 0, 0, !_recv_mask_required, _recv_mask_required ? 0 : (uint32_t)std::rand());
 }
 
 }}}

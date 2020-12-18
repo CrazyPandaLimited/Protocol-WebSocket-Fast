@@ -2,121 +2,183 @@
 
 #define TEST(name) TEST_CASE("parse-frames: " name, "[parse-frames]")
 
+TEST("dies until established") {
+    CHECK_THROWS_AS(ServerParser().get_frames("asdasd"), Error);
+    CHECK_THROWS_AS(ClientParser().get_frames("asdasd"), Error);
+}
 
-//subtest "server parser" => sub {
-//    my $p = MyTest::get_established_server();
-//
-//    dies_ok { Protocol::WebSocket::Fast::ServerParser->new->get_frames('asdasd') } "server parser cant get frames until established";
-//    dies_ok { Protocol::WebSocket::Fast::ClientParser->new->get_frames('asdasd') } "client parser cant get frames until established";
-//
-//    subtest 'small frame'  => \&test_frame,  $p, {opcode => OPCODE_BINARY, mask => 1, fin => 1, data => "hello world"};
-//    subtest 'medium frame' => \&test_frame,  $p, {opcode => OPCODE_BINARY, mask => 1, fin => 1, data => ("1" x 1024)};
-//    subtest 'big frame'    => \&test_frame,  $p, {opcode => OPCODE_TEXT,   mask => 1, fin => 1, data => ("1" x 70000)};
-//    subtest 'empty frame'  => \&test_frame,  $p, {opcode => OPCODE_TEXT,   mask => 1, fin => 1};
-//
-//    subtest "bad opcode $_"   => \&test_frame,  $p, {opcode => $_, mask => 1, fin => 1, data => "hello world"}, Protocol::WebSocket::Fast::Error::invalid_opcode for (3..7);
-//
-//    subtest 'max frame size' => sub {
-//        $p->configure({max_frame_size => 1000});
-//        subtest 'allowed' => \&test_frame,  $p, {opcode => OPCODE_TEXT, mask => 1, fin => 1, data => ("1" x 1000)};
-//        subtest 'exceeds' => \&test_frame,  $p, {opcode => OPCODE_TEXT, mask => 1, fin => 1, data => ("1" x 1001)}, Protocol::WebSocket::Fast::Error::max_frame_size;
-//        $p->configure({max_frame_size => 0});
-//    };
-//
-//    subtest 'ping' => sub {
-//        subtest 'empty'      => \&test_frame,  $p, {opcode => OPCODE_PING, mask => 1, fin => 1};
-//        subtest 'payload'    => \&test_frame,  $p, {opcode => OPCODE_PING, mask => 1, fin => 1, data => "pingdata"};
-//        subtest 'fragmented' => \&test_frame,  $p, {opcode => OPCODE_PING, mask => 1, fin => 0}, Protocol::WebSocket::Fast::Error::control_fragmented;
-//        subtest 'long'       => \&test_frame,  $p, {opcode => OPCODE_PING, mask => 1, fin => 1, data => ("1" x 1000)}, Protocol::WebSocket::Fast::Error::control_payload_too_big;
-//    };
-//
-//    subtest 'pong' => sub {
-//        subtest 'empty'      => \&test_frame,  $p, {opcode => OPCODE_PONG, mask => 1, fin => 1};
-//        subtest 'payload'    => \&test_frame,  $p, {opcode => OPCODE_PONG, mask => 1, fin => 1, data => "pongdata"};
-//        subtest 'fragmented' => \&test_frame,  $p, {opcode => OPCODE_PONG, mask => 1, fin => 0}, Protocol::WebSocket::Fast::Error::control_fragmented;
-//        subtest 'long'       => \&test_frame,  $p, {opcode => OPCODE_PONG, mask => 1, fin => 1, data => ("1" x 1000)}, Protocol::WebSocket::Fast::Error::control_payload_too_big;
-//    };
-//
-//    subtest 'close' => sub {
-//        subtest 'empty' => \&test_frame,  $p, {opcode => OPCODE_CLOSE, mask => 1, fin => 1, close_code => all(CLOSE_UNKNOWN)};
-//
-//        my ($frame) = $p->get_frames(gen_frame({opcode => OPCODE_TEXT, mask => 1, fin => 1}));
-//        ok(!$frame, "no more frames available after close");
-//        MyTest::reset($p);
-//
-//        subtest 'code' => \&test_frame,  $p, {opcode => OPCODE_CLOSE, mask => 1, fin => 1, close_code => CLOSE_DONE};
-//        MyTest::reset($p);
-//        subtest 'message' => \&test_frame,  $p, {opcode => OPCODE_CLOSE, mask => 1, fin => 1, close_code => CLOSE_AWAY, data => "walk"};
-//        MyTest::reset($p);
-//        subtest 'invalid payload' => \&test_frame,  $p, {opcode => OPCODE_CLOSE, mask => 1, fin => 1, data => "a"}, Protocol::WebSocket::Fast::Error::close_frame_invalid_data;
-//        MyTest::reset($p);
-//        subtest 'fragmented' => \&test_frame,  $p, {opcode => OPCODE_CLOSE, mask => 1, fin => 0}, Protocol::WebSocket::Fast::Error::control_fragmented;
-//        MyTest::reset($p);
-//        subtest 'long' => \&test_frame,  $p, {opcode => OPCODE_CLOSE, mask => 1, fin => 1, close_code => CLOSE_AWAY, data => ("1" x 1000)}, Protocol::WebSocket::Fast::Error::control_payload_too_big;
-//        MyTest::reset($p);
-//        foreach my $code (0, 999, 1004, CLOSE_UNKNOWN, CLOSE_ABNORMALLY, CLOSE_TLS, 1100) {
-//            subtest "invalid close $code" => \&test_frame,  $p, {opcode => OPCODE_CLOSE, mask => 1, fin => 1, close_code => $code, data => "a"}, Protocol::WebSocket::Fast::Error::close_frame_invalid_data;
-//            MyTest::reset($p);
-//        }
-//        subtest 'custom code' => \&test_frame,  $p, {opcode => OPCODE_CLOSE, mask => 1, fin => 1, close_code => 3000};
-//        MyTest::reset($p);
-//    };
-//
-//    subtest '2 frames via it->next' => sub {
-//        my $bin = gen_frame({opcode => OPCODE_TEXT, mask => 1, fin => 1, data => "jopa1"}).
-//                  gen_frame({opcode => OPCODE_TEXT, mask => 1, fin => 1, data => "jopa2"});
-//        my $it = $p->get_frames($bin);
-//        my ($first, $second) = ($it->next, $it->next);
-//        ok($first && $second && !$it->next, "2 frames returned");
-//        cmp_deeply([$first->error, $second->error], [undef, undef], "no errors");
-//        cmp_deeply([$first, $second], [methods(final => 1, payload => "jopa1"), methods(final => 1, payload => "jopa2")], "data ok");
-//    };
-//
-//    subtest '3 frames via list context' => sub {
-//        my $bin = gen_frame({opcode => OPCODE_TEXT, mask => 1, fin => 1, data => "jopa1"}).
-//                  gen_frame({opcode => OPCODE_TEXT, mask => 1, fin => 1, data => "jopa2"}).
-//                  gen_frame({opcode => OPCODE_TEXT, mask => 1, fin => 1, data => "jopa3"});
-//        my @frames = $p->get_frames($bin);
-//        is(scalar(@frames), 3, "3 frames returned");
-//        cmp_deeply([map {$_->error} @frames], [undef, undef, undef], "no errors");
-//        cmp_deeply(\@frames, [methods(payload => "jopa1"), methods(payload => "jopa2"), methods(payload => "jopa3")], "data ok");
-//    };
-//
-//    subtest '2.5 frames + 1.5 frames' => sub {
-//        my $tmp = gen_frame({opcode => OPCODE_TEXT, mask => 1, fin => 1, data => "jopa3"});
-//        my $bin = gen_frame({opcode => OPCODE_TEXT, mask => 1, fin => 1, data => "jopa1"}).
-//                  gen_frame({opcode => OPCODE_TEXT, mask => 1, fin => 1, data => "jopa2"}).
-//                  substr($tmp, 0, length($tmp)-1, '');
-//        my @frames = $p->get_frames($bin);
-//        is(scalar(@frames), 2, "2 returned");
-//        cmp_deeply(\@frames, [methods(payload => "jopa1"), methods(payload => "jopa2")], "data ok");
-//        $bin = $tmp.gen_frame({opcode => OPCODE_TEXT, mask => 1, fin => 1, data => "jopa4"});
-//        @frames = $p->get_frames($bin);
-//        is(scalar(@frames), 2, "2 more returned");
-//        cmp_deeply(\@frames, [methods(payload => "jopa3"), methods(payload => "jopa4")], "2 more data ok");
-//    };
-//
-//    subtest 'initial frame in message with CONTINUE' => \&test_frame,  $p, {opcode => OPCODE_CONTINUE, mask => 1, fin => 1, data => 'jopa'}, Protocol::WebSocket::Fast::Error::initial_continue;
-//
-//    subtest 'fragment frame in message without CONTINUE' => sub {
-//        my $bin = gen_frame({opcode => OPCODE_TEXT, mask => 1, fin => 0, data => 'p1'}).
-//                  gen_frame({opcode => OPCODE_TEXT, mask => 1, fin => 0, data => 'p2'});
-//        my ($first, $second) = $p->get_frames($bin);
-//        is($first->error, undef, "initial frame ok");
-//        is($first->payload, 'p1', "initial data ok");
-//        is($second->error, Protocol::WebSocket::Fast::Error::fragment_no_continue, "fragment frame error ok");
-//        $bin = gen_frame({opcode => OPCODE_BINARY, mask => 1, fin => 0, data => 'p1'}).
-//               gen_frame({opcode => OPCODE_BINARY, mask => 1, fin => 1, data => 'p2'});
-//        ($first, $second) = $p->get_frames($bin);
-//        is($second->error, Protocol::WebSocket::Fast::Error::fragment_no_continue, "fin does not matter");
-//    };
-//
-//    subtest 'unmasked frame in server parser'       => \&test_frame,  $p, {opcode => OPCODE_TEXT, mask => 0, fin => 1, data => "jopa"}, Protocol::WebSocket::Fast::Error::not_masked;
-//    subtest 'unmasked empty frame in server parser' => \&test_frame,  $p, {opcode => OPCODE_TEXT, mask => 0, fin => 1};
-//};
-//
-//subtest "client parser" => sub {
-//    my $p = MyTest::get_established_client();
-//    subtest 'masked frame in client parser'   => \&test_frame, $p, {opcode => OPCODE_TEXT, mask => 1, fin => 1, data => "jopa"};
-//    subtest 'unmasked frame in client parser' => \&test_frame, $p, {opcode => OPCODE_TEXT, mask => 0, fin => 1, data => "jopa"};
-//};
+TEST("basic") {
+    EstablishedServerParser p;
+
+    SECTION("small frame") {
+        test_frame(p, gen_frame().opcode(Opcode::BINARY).mask().final().payload("hello world"));
+    }
+    SECTION("medium frame") {
+        test_frame(p, gen_frame().opcode(Opcode::BINARY).mask().final().payload(repeat("1", 1024)));
+    }
+    SECTION("big frame") {
+        test_frame(p, gen_frame().opcode(Opcode::TEXT).mask().final().payload(repeat("1", 70000)));
+    }
+    SECTION("empty frame") {
+        test_frame(p, gen_frame().opcode(Opcode::TEXT).mask().final());
+    }
+}
+
+TEST("bad opcodes") {
+    EstablishedServerParser p;
+    for (int i = 3; i <= 7; ++i) { DYNAMIC_SECTION(i) {
+        test_frame(p, gen_frame().opcode((Opcode)i).mask().final().payload("hello world"), errc::invalid_opcode);
+    }}
+}
+
+TEST("max frame size") {
+    Parser::Config cfg;
+    cfg.max_frame_size = 1000;
+    EstablishedServerParser p(cfg);
+    SECTION("allowed") {
+        test_frame(p, gen_frame().opcode(Opcode::TEXT).mask().final().payload(repeat("1", 1000)));
+    }
+    SECTION("exceeds") {
+        test_frame(p, gen_frame().opcode(Opcode::TEXT).mask().final().payload(repeat("1", 1001)), errc::max_frame_size);
+    }
+}
+
+TEST("ping") {
+    EstablishedServerParser p;
+    SECTION("empty") {
+        test_frame(p, gen_frame().opcode(Opcode::PING).mask().final());
+    }
+    SECTION("payload") {
+        test_frame(p, gen_frame().opcode(Opcode::PING).mask().final().payload("pingdata"));
+    }
+    SECTION("fragmented") {
+        test_frame(p, gen_frame().opcode(Opcode::PING).mask(), errc::control_fragmented);
+    }
+    SECTION("long") {
+        test_frame(p, gen_frame().opcode(Opcode::PING).mask().final().payload(repeat("1", 1000)), errc::control_payload_too_big);
+    }
+}
+
+TEST("pong") {
+    EstablishedServerParser p;
+    SECTION("empty") {
+        test_frame(p, gen_frame().opcode(Opcode::PONG).mask().final());
+    }
+    SECTION("payload") {
+        test_frame(p, gen_frame().opcode(Opcode::PONG).mask().final().payload("pongdata"));
+    }
+    SECTION("fragmented") {
+        test_frame(p, gen_frame().opcode(Opcode::PONG).mask(), errc::control_fragmented);
+    }
+    SECTION("long") {
+        test_frame(p, gen_frame().opcode(Opcode::PONG).mask().final().payload(repeat("1", 1000)), errc::control_payload_too_big);
+    }
+}
+
+TEST("close") {
+    EstablishedServerParser p;
+    SECTION("empty") {
+        test_frame(p, gen_frame().opcode(Opcode::CLOSE).mask().final().close_code_check(CloseCode::UNKNOWN));
+        auto frames = get_frames(p, gen_frame().opcode(Opcode::TEXT).mask().final().str());
+        CHECK(frames.size() == 0); //no more frames available after close
+    }
+    SECTION("code") {
+        test_frame(p, gen_frame().opcode(Opcode::CLOSE).mask().final().close_code(CloseCode::DONE));
+    }
+    SECTION("message") {
+        test_frame(p, gen_frame().opcode(Opcode::CLOSE).mask().final().close_code(CloseCode::AWAY).payload("walk"));
+    }
+    SECTION("invalid payload") {
+        test_frame(p, gen_frame().opcode(Opcode::CLOSE).mask().final().payload("a"), errc::close_frame_invalid_data);
+    }
+    SECTION("fragmented") {
+        test_frame(p, gen_frame().opcode(Opcode::CLOSE).mask(), errc::control_fragmented);
+    }
+    SECTION("long") {
+        test_frame(p, gen_frame().opcode(Opcode::CLOSE).mask().final().close_code(CloseCode::AWAY).payload(repeat("1", 1000)), errc::control_payload_too_big);
+    }
+    SECTION("invalid close codes") {
+        for (auto code : {0, 999, 1004, (int)CloseCode::UNKNOWN, (int)CloseCode::ABNORMALLY, (int)CloseCode::TLS, 1100}) {
+            DYNAMIC_SECTION(string("code ") + panda::to_string(code)) {
+                test_frame(p, gen_frame().opcode(Opcode::CLOSE).mask().final().close_code(code).payload("a"), errc::close_frame_invalid_data);
+            }
+        }
+    }
+    SECTION("custom code") {
+        test_frame(p, gen_frame().opcode(Opcode::CLOSE).mask().final().close_code(3000));
+    }
+}
+
+TEST("2 frames") {
+    EstablishedServerParser p;
+    auto bin = gen_frame().opcode(Opcode::TEXT).mask().final().payload("jopa1").str() +
+               gen_frame().opcode(Opcode::TEXT).mask().final().payload("jopa2").str();
+    auto frames = get_frames(p, bin);
+    CHECK(frames.size() == 2);
+    CHECK_FRAME(frames[0]).final().payload("jopa1");
+    CHECK_FRAME(frames[1]).final().payload("jopa2");
+}
+
+TEST("3 frames") {
+    EstablishedServerParser p;
+    auto bin = gen_frame().opcode(Opcode::TEXT).mask().final().payload("jopa1").str() +
+               gen_frame().opcode(Opcode::TEXT).mask().final().payload("jopa2").str() +
+               gen_frame().opcode(Opcode::TEXT).mask().final().payload("jopa3").str();
+    auto frames = get_frames(p, bin);
+    CHECK(frames.size() == 3);
+    CHECK_FRAME(frames[0]).final().payload("jopa1");
+    CHECK_FRAME(frames[1]).final().payload("jopa2");
+    CHECK_FRAME(frames[2]).final().payload("jopa3");
+}
+
+TEST("2.5 frames + 1.5 frames") {
+    EstablishedServerParser p;
+    auto tmp = gen_frame().opcode(Opcode::TEXT).mask().final().payload("jopa3").str();
+    auto bin = gen_frame().opcode(Opcode::TEXT).mask().final().payload("jopa1").str() +
+               gen_frame().opcode(Opcode::TEXT).mask().final().payload("jopa2").str() +
+               tmp.substr(0, tmp.length()-1);
+    tmp.offset(tmp.length()-1);
+    auto frames = get_frames(p, bin);
+    CHECK(frames.size() == 2);
+    CHECK_FRAME(frames[0]).payload("jopa1");
+    CHECK_FRAME(frames[1]).payload("jopa2");
+    frames = get_frames(p, tmp + gen_frame().opcode(Opcode::TEXT).mask().final().payload("jopa4").str());
+    CHECK(frames.size() == 2);
+    CHECK_FRAME(frames[0]).payload("jopa3");
+    CHECK_FRAME(frames[1]).payload("jopa4");
+}
+
+TEST("initial frame in message with CONTINUE") {
+    EstablishedServerParser p;
+    test_frame(p, gen_frame().opcode(Opcode::CONTINUE).mask().final().payload("jopa"), errc::initial_continue);
+}
+
+TEST("fragment frame in message without CONTINUE") {
+    EstablishedServerParser p;
+    auto bin = gen_frame().opcode(Opcode::TEXT).mask().payload("p1").str() +
+               gen_frame().opcode(Opcode::TEXT).mask().payload("p2").str();
+    auto frames = get_frames(p, bin);
+    CHECK_FRAME(frames[0]).payload("p1");
+    CHECK(frames[1]->error() == ErrorCode(errc::fragment_no_continue));
+    bin = gen_frame().opcode(Opcode::BINARY).mask().payload("p1").str() +
+          gen_frame().opcode(Opcode::BINARY).mask().final().payload("p2").str();
+    frames = get_frames(p, bin);
+    CHECK(frames[1]->error() == ErrorCode(errc::fragment_no_continue)); // fin does not matter
+}
+
+TEST("mask") {
+    EstablishedServerParser sp;
+    EstablishedClientParser cp;
+    SECTION("unmasked frame in server parser") {
+        test_frame(sp, gen_frame().opcode(Opcode::TEXT).final().payload("jopa"), errc::not_masked);
+    }
+    SECTION("unmasked empty frame in server parser") {
+        test_frame(sp, gen_frame().opcode(Opcode::TEXT).final());
+    }
+    SECTION("masked frame in client parser") {
+        test_frame(cp, gen_frame().opcode(Opcode::TEXT).mask().final().payload("jopa"));
+    }
+    SECTION("unmasked frame in client parser") {
+        test_frame(cp, gen_frame().opcode(Opcode::TEXT).final().payload("jopa"));
+    }
+}
