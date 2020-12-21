@@ -24,7 +24,6 @@ struct MessageBuilder {
         return _parser.start_message(_opcode, apply_deflate).send(payload_begin, payload_end, IsFinal::YES);
     }
 
-    //template <class Begin, class End, typename = typename std::enable_if<std::is_same<decltype(*((*Begin()).begin())), string&>::value>::type>
     template <class It, class T = decltype(*((*std::declval<It>()).begin())), class = std::enable_if_t<std::is_convertible<T, string_view>::value>>
     std::vector<string> send (It&& cont_begin, It&& cont_end) {
         std::vector<string> ret;

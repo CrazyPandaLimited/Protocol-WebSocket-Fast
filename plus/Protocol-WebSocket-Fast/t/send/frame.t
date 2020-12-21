@@ -8,8 +8,6 @@ use Protocol::WebSocket::Fast;
 
 catch_run("[send-frame]");
 
-die "REMOVE ME";
-
 my $create_parser = sub {
     my ($server_or_client) = @_;
     my $req = {

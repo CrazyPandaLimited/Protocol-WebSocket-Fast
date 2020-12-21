@@ -15,7 +15,7 @@ struct ClientParser : Parser {
 
     string connect_request (const ConnectRequestSP& req);
 
-    ConnectResponseSP connect (string& buf);
+    ConnectResponseSP connect (const string& buf);
 
     virtual void reset ();
 

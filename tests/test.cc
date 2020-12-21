@@ -26,12 +26,6 @@ string join (const std::vector<string>& v) {
     return ret;
 }
 
-string join (const StringPair& pair) {
-    string ret;
-    for (auto& s : pair) ret += s;
-    return ret;
-}
-
 string repeat (string_view s, int times) {
     string ret;
     ret.reserve(s.length() * times);

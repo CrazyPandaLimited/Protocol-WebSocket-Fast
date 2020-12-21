@@ -1,6 +1,5 @@
 #include "inc.h"
 #include "utils.h"
-#include "iterator.h"
 #include <map>
 #include <iostream>
 
@@ -8,8 +7,6 @@ namespace panda { namespace protocol { namespace websocket {
 
 union _check_endianess { unsigned x; unsigned char c; };
 static const bool am_i_little = (_check_endianess{1}).c;
-
-string StringPairIterator::global_empty = "";
 
 // case-insensitive jenkins_one_at_a_time_hash
 uint32_t string_hash32_ci (const char *key, size_t len) {

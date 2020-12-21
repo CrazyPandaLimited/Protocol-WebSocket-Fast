@@ -36,7 +36,7 @@ sub accept_packet { #DONE
     return wantarray ? @data : join('', @data);
 }
 
-sub accept_parsed {
+sub accept_parsed { #DONE
     return methods(
         headers => {
             'pragma' => 'no-cache',

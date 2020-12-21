@@ -58,53 +58,69 @@ TEST("client -> server frame") {
     }
 }
 
+TEST("empty frame still masked") {
+    EstablishedClientParser p;
+    auto bin = p.start_message(Opcode::BINARY).send("", IsFinal::YES);
+    CHECK_BINFRAME(bin).mask(bin.substr(2, 4)).final().opcode(Opcode::BINARY).binlen(2 + 4);
+}
 
+TEST("opcode CONTINUE is forced for fragment frames of message (including final frame)") {
+    EstablishedServerParser p;
+    auto m1 = p.start_message(Opcode::BINARY);
+    auto bin = m1.send("frame1");
+    CHECK_BINFRAME(bin).opcode(Opcode::BINARY).payload("frame1");
+    bin = m1.send("frame2");
+    CHECK_BINFRAME(bin).opcode(Opcode::CONTINUE).payload("frame2");
+    bin = m1.send("frame3", IsFinal::YES);
+    CHECK_BINFRAME(bin).final().opcode(Opcode::CONTINUE).payload("frame3");
 
-//TEST("empty frame still masked") {
-//    my $builder = $create_builder->(1,{opcode(Opcode::BINARY});
-//    auto bin = $builder->send("", 1);
-//    CHECK(bin.length() == 6); // 2 header + 4 mask
-//    CHECK_BINFRAME(bin).mask => substr($bin, 2, 4), final().opcode(Opcode::BINARY});
-//}
-//
-//TEST("opcode CONTINUE is forced for fragment frames of message (including final frame)") {
-//    my $builder = $create_builder->(0,{opcode(Opcode::BINARY});
-//    auto bin = $builder->send("frame1");
-//    CHECK_BINFRAME(bin).opcode(Opcode::BINARY.payload("frame1"}), "initial frame ok");
-//    $bin = $builder->send("frame2");
-//    CHECK_BINFRAME(bin).opcode(Opcode::CONTINUE.payload("frame2"}), "fragment frame ok");
-//    $bin = $builder->send("frame3", 1);
-//    CHECK_BINFRAME(bin).final().opcode(Opcode::CONTINUE.payload("frame3"}), "final frame ok");
-//
-//    $builder = $create_builder->(0,{opcode(Opcode::TEXT});
-//    $bin = $builder->send("frame4");
-//    CHECK_BINFRAME(bin).opcode(Opcode::TEXT.payload("frame4"}), "first frame of next message ok");
-//    $bin = $builder->send("frame5", 1); // reset frame count
-//    CHECK_BINFRAME(bin).final().opcode(Opcode::CONTINUE.payload("frame5"}));
-//}
-//
-//TEST("control frame send") {
-//    my $p = $create_parser->(0);
-//    auto bin = $p->send_control(OPCODE_PING, "myping");
-//    CHECK_BINFRAME(bin).final().opcode(Opcode::PING.payload("myping"}), "ping ok");
-//    $bin = $p->send_control(OPCODE_PONG, "mypong");
-//    CHECK_BINFRAME(bin).final().opcode(Opcode::PONG.payload("mypong"}), "pong ok");
-//    $bin = $p->send_control(OPCODE_CLOSE, "myclose");
-//    CHECK_BINFRAME(bin).final().opcode(Opcode::CLOSE.payload("myclose"}), "close ok");
-//    MyTest::reset($p);
-//}
-//
-//TEST("frame count survives control message in the middle") {
-//    my $p = $create_parser->(0);
-//    my $builder = $p->start_message;
-//    auto bin = $builder->send("frame1");
-//    CHECK_BINFRAME(bin).opcode(Opcode::BINARY.payload("frame1"}), "initial frame ok");
-//    $bin = $p->send_control(OPCODE_PING, "");
-//    CHECK_BINFRAME(bin).final().opcode(Opcode::PING}), "control frame ok");
-//    $bin = $builder->send("frame2");
-//    CHECK_BINFRAME(bin).opcode(Opcode::CONTINUE.payload("frame2"}), "fragment frame ok");
-//    $bin = $p->send_control(OPCODE_PONG, "");
-//    CHECK_BINFRAME(bin).final().opcode(Opcode::PONG}), "control frame ok");
-//    $bin = $builder->send("frame3", 1);
-//    CHECK_BINFRAME(bin).final().opcode(Opcode::CONTINUE.payload("frame3"}), "final frame ok");
-//}
+    auto m2 = p.start_message(Opcode::TEXT);
+    bin = m2.send("frame4");
+    CHECK_BINFRAME(bin).opcode(Opcode::TEXT).payload("frame4");
+    bin = m2.send("frame5", IsFinal::YES); // reset frame count
+    CHECK_BINFRAME(bin).final().opcode(Opcode::CONTINUE).payload("frame5");
+}
+
+TEST("control frame send") {
+    EstablishedServerParser p;
+    auto bin = p.send_control(Opcode::PING, "myping");
+    CHECK_BINFRAME(bin).final().opcode(Opcode::PING).payload("myping");
+    bin = p.send_control(Opcode::PONG, "mypong");
+    CHECK_BINFRAME(bin).final().opcode(Opcode::PONG).payload("mypong");
+    bin = p.send_control(Opcode::CLOSE, "myclose");
+    CHECK_BINFRAME(bin).final().opcode(Opcode::CLOSE).payload("myclose");
+}
+
+TEST("frame count survives control message in the middle") {
+    EstablishedServerParser p;
+    auto m = p.start_message();
+    auto bin = m.send("frame1");
+    CHECK_BINFRAME(bin).opcode(Opcode::BINARY).payload("frame1");
+    bin = p.send_control(Opcode::PING, "");
+    CHECK_BINFRAME(bin).final().opcode(Opcode::PING);
+    bin = m.send("frame2");
+    CHECK_BINFRAME(bin).opcode(Opcode::CONTINUE).payload("frame2");
+    bin = p.send_control(Opcode::PONG, "");
+    CHECK_BINFRAME(bin).final().opcode(Opcode::PONG);
+    bin = m.send("frame3", IsFinal::YES);
+    CHECK_BINFRAME(bin).final().opcode(Opcode::CONTINUE).payload("frame3");
+}
+
+TEST("attempt to send frame after sending final frame") {
+    EstablishedServerParser p;
+    auto m = p.start_message();
+    auto bin = m.send("payload", IsFinal::YES);
+    CHECK(!bin.empty());
+    REQUIRE_THROWS_AS(m.send("beyond payload", IsFinal::YES), Error);
+    REQUIRE_THROWS_AS(m.send("beyond payload", IsFinal::NO), Error);
+}
+
+TEST("attempt to start another message, having unfinished one") {
+    EstablishedServerParser p;
+    auto m = p.start_message();
+    REQUIRE_THROWS_AS(p.start_message(), Error);
+    m.send("hello ");
+    REQUIRE_THROWS_AS(p.start_message(), Error);
+    m.send("world", IsFinal::YES);
+    REQUIRE_NOTHROW(p.start_message());
+};

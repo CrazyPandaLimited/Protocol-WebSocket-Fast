@@ -16,7 +16,7 @@ struct ServerParser : Parser {
     bool accept_parsed () const { return _flags[ACCEPT_PARSED]; }
     bool accepted      () const { return _flags[ACCEPTED]; }
 
-    ConnectRequestSP accept (string& buf);
+    ConnectRequestSP accept (const string& buf);
 
     string accept_error    ();
     string accept_error    (http::Response* res);

@@ -2,7 +2,6 @@
 #include "Error.h"
 #include "Frame.h"
 #include "Message.h"
-#include "iterator.h"
 #include "DeflateExt.h"
 #include "Utf8Checker.h"
 #include <deque>

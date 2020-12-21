@@ -16,7 +16,7 @@ ServerParser::ServerParser (const Parser::Config& cfg) : Parser(true, cfg), _con
     _connect_parser.max_body_size = 0;
 }
 
-ConnectRequestSP ServerParser::accept (string& buf) {
+ConnectRequestSP ServerParser::accept (const string& buf) {
     if (_flags[ACCEPT_PARSED]) throw Error("already parsed accept");
     _connect_parser.max_headers_size = _max_handshake_size;
 

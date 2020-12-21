@@ -4,7 +4,7 @@
 
 namespace panda { namespace protocol { namespace websocket {
 
-const char* DeflateExt::extension_name = "permessage-deflate";
+static const char extension_name[] = "permessage-deflate";
 
 static const int   UNCOMPRESS_PREALLOCATE_RATIO = 10;
 static const float GROW_RATIO                   = 1.5;
@@ -17,16 +17,14 @@ static const char PARAM_CLIENT_MAX_WINDOW_BITS[] = "client_max_window_bits";
 unsigned char _TRAILER[] = {0x00,  0x00, 0xFF, 0xFF};
 static const string TRAILER((char*)_TRAILER, 4);
 
-panda::optional<panda::string> DeflateExt::bootstrap() {
-    using result_t = panda::optional<panda::string>;
-    panda::string compiled_verison{ZLIB_VERSION};
-    panda::string loaded_version{zlibVersion()};
+panda::string DeflateExt::bootstrap() {
+    auto compiled_verison = string(ZLIB_VERSION);
+    auto loaded_version   = string(zlibVersion());
 
     if (compiled_verison != loaded_version) {
-        panda::string err = "zlib version mismatch, loaded: " + loaded_version + ", compiled" + compiled_verison;
-        return result_t{err};
+        return "zlib version mismatch, loaded: " + loaded_version + ", compiled" + compiled_verison;
     }
-    return  result_t{}; // all OK
+    return {};
 }
 
 void DeflateExt::request(HeaderValues& ws_extensions, const Config& cfg) {
@@ -37,15 +35,14 @@ void DeflateExt::request(HeaderValues& ws_extensions, const Config& cfg) {
         return;
     }
 
-    HeaderValueParams params;
-    params.emplace(PARAM_SERVER_MAX_WINDOW_BITS, panda::to_string(cfg.server_max_window_bits));
-    params.emplace(PARAM_CLIENT_MAX_WINDOW_BITS, panda::to_string(cfg.client_max_window_bits));
+    HeaderValueParams params = {
+        {PARAM_SERVER_MAX_WINDOW_BITS, panda::to_string(cfg.server_max_window_bits)},
+        {PARAM_CLIENT_MAX_WINDOW_BITS, panda::to_string(cfg.client_max_window_bits)},
+    };
     if(cfg.server_no_context_takeover) params.emplace(PARAM_SERVER_NO_CONTEXT_TAKEOVER, "");
     if(cfg.client_no_context_takeover) params.emplace(PARAM_CLIENT_NO_CONTEXT_TAKEOVER, "");
 
-    string name{extension_name};
-    HeaderValue hv {name, std::move(params)};
-    ws_extensions.emplace_back(std::move(hv));
+    ws_extensions.emplace_back(HeaderValue{extension_name, std::move(params)});
 }
 
 
@@ -56,61 +53,59 @@ static bool get_window_bits(const string& value, std::uint8_t& bits) {
 
 DeflateExt::EffectiveConfig DeflateExt::select(const HeaderValues& values, const Config& cfg, Role role) {
     for(auto& header: values) {
-        if (header.name == extension_name) {
-            EffectiveConfig ecfg(cfg, EffectiveConfig::NegotiationsResult::Error);
-            bool params_correct = true;
-            for(auto it = begin(header.params); params_correct && it != end(header.params); ++it) {
-                auto& param_name = it->first;
-                auto& param_value = it->second;
-                if (param_name == PARAM_SERVER_NO_CONTEXT_TAKEOVER) {
-                    ecfg.flags |= EffectiveConfig::HAS_SERVER_NO_CONTEXT_TAKEOVER;
-                    ecfg.cfg.server_no_context_takeover = true;
-                }
-                else if (param_name == PARAM_CLIENT_NO_CONTEXT_TAKEOVER) {
-                    ecfg.flags |= EffectiveConfig::HAS_CLIENT_NO_CONTEXT_TAKEOVER;
-                    ecfg.cfg.client_no_context_takeover = true;
-                }
-                else if (param_name == PARAM_SERVER_MAX_WINDOW_BITS) {
-                    ecfg.flags |= EffectiveConfig::HAS_SERVER_MAX_WINDOW_BITS;
-                    std::uint8_t bits;
-                    params_correct = get_window_bits(param_value, bits);
-                    if (params_correct) {
-                        ecfg.cfg.server_max_window_bits = bits;
-                        if (role == Role::CLIENT) {
-                            params_correct = bits == cfg.server_max_window_bits;
-                        } else {
-                            params_correct = bits <= cfg.server_max_window_bits;
-                        }
-                    }
-                }
-                else if (param_name == PARAM_CLIENT_MAX_WINDOW_BITS) {
-                    ecfg.flags |= EffectiveConfig::HAS_CLIENT_MAX_WINDOW_BITS;
-                    std::uint8_t bits;
-                    // value is optional
-                    if (param_value) {
-                        params_correct = get_window_bits(param_value, bits);
-                        ecfg.cfg.client_max_window_bits = bits;
-                        params_correct = params_correct && (
-                                (role == Role::CLIENT) ? bits == cfg.client_max_window_bits
-                                                       : bits <= cfg.client_max_window_bits
-                            );
+        if (header.name != extension_name) continue;
+        EffectiveConfig ecfg(cfg, EffectiveConfig::NegotiationsResult::Error);
+        bool params_correct = true;
+        for(auto it = begin(header.params); params_correct && it != end(header.params); ++it) {
+            auto& param_name = it->first;
+            auto& param_value = it->second;
+            if (param_name == PARAM_SERVER_NO_CONTEXT_TAKEOVER) {
+                ecfg.flags |= EffectiveConfig::HAS_SERVER_NO_CONTEXT_TAKEOVER;
+                ecfg.cfg.server_no_context_takeover = true;
+            }
+            else if (param_name == PARAM_CLIENT_NO_CONTEXT_TAKEOVER) {
+                ecfg.flags |= EffectiveConfig::HAS_CLIENT_NO_CONTEXT_TAKEOVER;
+                ecfg.cfg.client_no_context_takeover = true;
+            }
+            else if (param_name == PARAM_SERVER_MAX_WINDOW_BITS) {
+                ecfg.flags |= EffectiveConfig::HAS_SERVER_MAX_WINDOW_BITS;
+                std::uint8_t bits;
+                params_correct = get_window_bits(param_value, bits);
+                if (params_correct) {
+                    ecfg.cfg.server_max_window_bits = bits;
+                    if (role == Role::CLIENT) {
+                        params_correct = bits == cfg.server_max_window_bits;
                     } else {
-                        ecfg.cfg.client_max_window_bits = 15;
-                        // the value must be supplied in server response, otherwise (for client) it is invalid
-                        params_correct = role == Role::SERVER;
+                        params_correct = bits <= cfg.server_max_window_bits;
                     }
-                } else { params_correct = false; }  // unknown parameter
+                }
             }
-            if (params_correct) {
-                // first best match wins (for server & client)
-                ecfg.result = EffectiveConfig::NegotiationsResult::Success;
-                return ecfg;
-            }
-            else if (role == Role::CLIENT) {
-                // first fail (and terminate connection)
-                return ecfg;
-            }
-
+            else if (param_name == PARAM_CLIENT_MAX_WINDOW_BITS) {
+                ecfg.flags |= EffectiveConfig::HAS_CLIENT_MAX_WINDOW_BITS;
+                std::uint8_t bits;
+                // value is optional
+                if (param_value) {
+                    params_correct = get_window_bits(param_value, bits);
+                    ecfg.cfg.client_max_window_bits = bits;
+                    params_correct = params_correct && (
+                            (role == Role::CLIENT) ? bits == cfg.client_max_window_bits
+                                                   : bits <= cfg.client_max_window_bits
+                        );
+                } else {
+                    ecfg.cfg.client_max_window_bits = 15;
+                    // the value must be supplied in server response, otherwise (for client) it is invalid
+                    params_correct = role == Role::SERVER;
+                }
+            } else { params_correct = false; }  // unknown parameter
+        }
+        if (params_correct) {
+            // first best match wins (for server & client)
+            ecfg.result = EffectiveConfig::NegotiationsResult::Success;
+            return ecfg;
+        }
+        else if (role == Role::CLIENT) {
+            // first fail (and terminate connection)
+            return ecfg;
         }
     }
     return EffectiveConfig(EffectiveConfig::NegotiationsResult::NotFound);
@@ -130,7 +125,7 @@ DeflateExt* DeflateExt::uplift(const EffectiveConfig& ecfg, HeaderValues& extens
     if (ecfg.flags & EffectiveConfig::HAS_CLIENT_MAX_WINDOW_BITS) {
         params.emplace(PARAM_CLIENT_MAX_WINDOW_BITS, to_string(ecfg.cfg.client_max_window_bits));
     }
-    extensions.emplace_back(HeaderValue{string(extension_name), params});
+    extensions.emplace_back(HeaderValue{extension_name, params});
     return new DeflateExt(ecfg.cfg, role);
 }
 
@@ -175,34 +170,11 @@ DeflateExt::DeflateExt(const DeflateExt::Config& cfg, Role role): effective_cfg{
             || (role == Role::SERVER && cfg.client_no_context_takeover);
 }
 
-void DeflateExt::reset_tx() {
-    if (!tx_stream.next_in) return;
-    tx_stream.next_in = Z_NULL;
-
-    if (deflateReset(&tx_stream) != Z_OK) {
-        panda::string err = panda::string("zlib::deflateEnd error ");
-        if (tx_stream.msg) {
-            err += tx_stream.msg;
-        }
-        throw Error(err);
-    }
-}
-
 DeflateExt::~DeflateExt(){
-    if (deflateEnd(&tx_stream) != Z_OK) {
-        panda::string err = panda::string("zlib::deflateEnd error ");
-        if (tx_stream.msg) {
-            err += tx_stream.msg;
-        }
-        assert(err.c_str());
-    }
-    if (inflateEnd(&rx_stream) != Z_OK) {
-        panda::string err = panda::string("zlib::inflateEnd error ");
-        if(rx_stream.msg) {
-            err += rx_stream.msg;
-        }
-        assert(err.c_str());
-    }
+    auto zerr1 = deflateEnd(&tx_stream);
+    auto zerr2 = inflateEnd(&rx_stream);
+    if (zerr1 != Z_OK) panda_log_error("zlib::deflateEnd error msg='" << tx_stream.msg << "' code=" << zerr1);
+    if (zerr2 != Z_OK) panda_log_error("zlib::inflateEnd error msg='" << rx_stream.msg << "' code=" << zerr2);
 }
 
 static inline void grow (string& dest, z_stream& stream) {
@@ -234,15 +206,6 @@ void DeflateExt::_compress (string_view src, string& dest, int flush) {
     }
 
     dest.length(dest.capacity() - tx_stream.avail_out);
-}
-
-void DeflateExt::reset_rx() {
-    if (!rx_stream.next_in) return;
-    rx_stream.next_in = Z_NULL;
-    auto zerr = inflateReset(&rx_stream);
-    if (zerr != Z_OK) {
-        panda_log_error("zlib::inflateReset error msg='" << rx_stream.msg << "' code=" << zerr);
-    }
 }
 
 void DeflateExt::uncompress (Frame& frame) {
@@ -303,6 +266,20 @@ void DeflateExt::uncompress (Frame& frame) {
         frame.payload[0] = std::move(acc);
     }
     else frame.payload.clear(); // remove empty string from payload if no data
+}
+
+void DeflateExt::reset_tx() {
+    if (!tx_stream.next_in) return;
+    tx_stream.next_in = Z_NULL;
+    auto zerr = deflateReset(&tx_stream);
+    if (zerr != Z_OK) panda_log_error("zlib::deflateReset error msg='" << tx_stream.msg << "' code=" << zerr);
+}
+
+void DeflateExt::reset_rx() {
+    if (!rx_stream.next_in) return;
+    rx_stream.next_in = Z_NULL;
+    auto zerr = inflateReset(&rx_stream);
+    if (zerr != Z_OK) panda_log_error("zlib::inflateReset error msg='" << rx_stream.msg << "' code=" << zerr);
 }
 
 }}}

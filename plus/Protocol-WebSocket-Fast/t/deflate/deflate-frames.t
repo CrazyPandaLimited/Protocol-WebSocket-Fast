@@ -126,8 +126,7 @@ subtest 'big (1 mb) server2client frame' => sub {
 
     subtest "it mode" => sub {
         my $bin2 = $create_server->($default_compression)->start_message(deflate => 1)->send(\@payload, 1);
-        #is(length($bin2), length($bin), "frame length ok");
-        is length($bin2), 1043;
+        is length($bin2), length($bin);
     };
 };
 

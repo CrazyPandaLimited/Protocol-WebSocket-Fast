@@ -23,14 +23,6 @@ inline ReMatcher MatchesRe (const string& regex, bool case_sen = false) { return
 void regex_replace (string&, const std::string&, const std::string&);
 
 string join (const std::vector<string>& v);
-string join (const StringPair& pair);
-
-template <class T>
-string join (const StringChain<T>& range) {
-    string ret;
-    for (auto& s : range) ret += s;
-    return ret;
-}
 
 string repeat (string_view, int);
 

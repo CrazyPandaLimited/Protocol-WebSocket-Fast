@@ -21,7 +21,7 @@ string ClientParser::connect_request (const ConnectRequestSP& req) {
     return req->to_string();
 }
 
-ConnectResponseSP ClientParser::connect (string& buf) {
+ConnectResponseSP ClientParser::connect (const string& buf) {
     if (!_flags[CONNECTION_REQUESTED]) throw Error("has not requested connection");
     if (_flags[CONNECTION_RESPONSE_PARSED]) throw Error("already parsed connect response");
 
