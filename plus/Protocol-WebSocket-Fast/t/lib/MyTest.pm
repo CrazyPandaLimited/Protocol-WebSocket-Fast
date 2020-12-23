@@ -15,7 +15,7 @@ if ($ENV{LOGGER}) {
     XLog::set_level(XLog::VERBOSE_DEBUG());
 }
 
-sub accept_packet { #DONE
+sub accept_packet {
     my @data = (
         "GET /?encoding=text HTTP/1.1\r\n",
         "Host: dev.crazypanda.ru:4680\r\n",
@@ -36,7 +36,7 @@ sub accept_packet { #DONE
     return wantarray ? @data : join('', @data);
 }
 
-sub accept_parsed { #DONE
+sub accept_parsed {
     return methods(
         headers => {
             'pragma' => 'no-cache',
@@ -60,33 +60,33 @@ sub accept_parsed { #DONE
     );
 }
 
-sub get_established_server { #DONE
+sub get_established_server {
     my $p = Protocol::WebSocket::Fast::ServerParser->new(shift);
     _establish_server($p);
     return $p;
 }
 
-sub _establish_server { #DONE
+sub _establish_server {
     my $p = shift;
     $p->accept(scalar accept_packet()) or die "should not happen";
     $p->accept_response;
     die "should not happen" unless $p->established;
 }
 
-sub reset { #DONE
+sub reset {
     my $p = shift;
     $p->reset;
     die "should not happen" if $p->established;
     $p->isa("Protocol::WebSocket::Fast::ServerParser") ? _establish_server($p) : _establish_client($p);
 }
 
-sub get_established_client { #DONE
+sub get_established_client {
     my $p = Protocol::WebSocket::Fast::ClientParser->new(shift);
     _establish_client($p);
     return $p;
 }
 
-sub _establish_client { #DONE
+sub _establish_client {
     my $p = shift;
     $p->no_deflate;
     my $cstr = $p->connect_request({uri => "ws://jopa.ru"});
@@ -99,7 +99,7 @@ sub _establish_client { #DONE
     return $p;
 }
 
-sub gen_frame { #DONE
+sub gen_frame {
     my $params = shift;
 
     my $first  = 0;
@@ -151,7 +151,7 @@ sub gen_frame { #DONE
     return $frame;
 }
 
-sub gen_message { #DONE
+sub gen_message {
     my $params = shift;
 
     my $nframes = $params->{nframes} || 1;
@@ -183,7 +183,7 @@ sub is_bin {
     $has_binary ? is_binary($got, $expected, $name) : is($got, $expected, $name);
 }
 
-sub crypt_xor { #DONE
+sub crypt_xor {
     my ($data, $mask) = @_;
     my @key = unpack("C*", $mask);
 
@@ -191,7 +191,7 @@ sub crypt_xor { #DONE
     return $result;
 }
 
-sub test_frame { #DONE
+sub test_frame {
     my ($p, $frame_data, $error, $suggested_close_code) = @_;
     my $bin = gen_frame($frame_data);
     my $check_data = {};
@@ -235,7 +235,7 @@ sub test_frame { #DONE
     }
 }
 
-sub test_message { #DONE
+sub test_message {
     my ($p, $message_data, $error) = @_;
     my $opcode = $message_data->{opcode} // OPCODE_TEXT;
     my $nframes = $message_data->{nframes} //= 1;
