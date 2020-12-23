@@ -16,48 +16,80 @@ struct MessageBuilder {
         return _parser.start_message(_opcode, apply_deflate).send(payload, IsFinal::YES);
     }
 
-    template <typename It, class T = decltype(*std::declval<It>()), class = std::enable_if_t<std::is_convertible<T, string_view>::value>>
-    string send (It&& payload_begin, It&& payload_end) {
+    template <class B, class E, class T = decltype(*std::declval<B>()), class = std::enable_if_t<std::is_convertible<T, string_view>::value>>
+    string send (B&& payload_begin, E&& payload_end) {
         size_t payload_length = 0;
         for (auto it = payload_begin; it != payload_end; ++it) payload_length += (*it).length();
         auto apply_deflate = maybe_deflate(payload_length);
-        return _parser.start_message(_opcode, apply_deflate).send(payload_begin, payload_end, IsFinal::YES);
+        return _parser.start_message(_opcode, apply_deflate).send(std::forward<B>(payload_begin), std::forward<E>(payload_end), IsFinal::YES);
     }
 
-    template <class It, class T = decltype(*((*std::declval<It>()).begin())), class = std::enable_if_t<std::is_convertible<T, string_view>::value>>
-    std::vector<string> send (It&& cont_begin, It&& cont_end) {
+    template <class B, class E, class T = decltype(*std::declval<B>()), class = std::enable_if_t<std::is_convertible<T, string_view>::value>>
+    std::vector<string> send_multiframe (B&& cont_begin, E&& cont_end) {
         std::vector<string> ret;
+        size_t frame_count = 0, idx = 0, total_length = 0, last_nonempty = 0;
 
-        size_t sz = 0, idx = 0, payload_sz = 0, last_nonempty = 0;
-        auto cont_range = make_iterator_pair(cont_begin, cont_end);
-
-        for (const auto& range : cont_range) {
-            size_t piece_sz = 0;
-            for (const auto& it : range) {
-                auto length = it.length();
-                piece_sz += length;
-                if (length) ++sz;
+        for (auto it = cont_begin; it != cont_end; ++it) {
+            auto frame_length = it->length();
+            if (frame_length) {
+                ++frame_count;
+                last_nonempty = idx;
+                total_length += frame_length;
             }
-            if (piece_sz) { last_nonempty = idx; };
-            payload_sz += piece_sz;
             ++idx;
-        };
+        }
 
-        auto sender = _parser.start_message(_opcode, maybe_deflate(payload_sz));
+        auto sender = _parser.start_message(_opcode, maybe_deflate(total_length));
 
-        if (!payload_sz) {
+        if (!total_length) {
             ret.push_back(sender.send(IsFinal::YES));
             return ret;
         }
 
-        ret.reserve(sz);
+        ret.reserve(frame_count);
 
         idx = 0;
-        for (auto& range : cont_range) {
-            size_t piece_sz = 0;
-            for (const auto& it: range) piece_sz += it.length();
-            if (piece_sz) {
-                ret.push_back(sender.send(range.begin(), range.end(), idx == last_nonempty ? IsFinal::YES : IsFinal::NO));
+        for (auto it = cont_begin; it != cont_end; ++it) {
+            if (it->length()) ret.push_back(sender.send(*it, idx == last_nonempty ? IsFinal::YES : IsFinal::NO));
+            if (idx == last_nonempty) break;
+            ++idx;
+        }
+
+        return ret;
+    }
+
+    template <class B, class E, class T = decltype(*((*std::declval<B>()).begin()))>
+    std::enable_if_t<std::is_convertible<T, string_view>::value, std::vector<string>>
+    send_multiframe (B&& cont_begin, E&& cont_end) {
+        std::vector<string> ret;
+        size_t frame_count = 0, idx = 0, total_length = 0, last_nonempty = 0;
+
+        for (auto it = cont_begin; it != cont_end; ++it) {
+            size_t frame_length = 0;
+            for (const auto& s : *it) frame_length += s.length();
+            if (frame_length) {
+                ++frame_count;
+                last_nonempty = idx;
+                total_length += frame_length;
+            }
+            ++idx;
+        }
+
+        auto sender = _parser.start_message(_opcode, maybe_deflate(total_length));
+
+        if (!total_length) {
+            ret.push_back(sender.send(IsFinal::YES));
+            return ret;
+        }
+
+        ret.reserve(frame_count);
+
+        idx = 0;
+        for (auto it = cont_begin; it != cont_end; ++it) {
+            size_t frame_length = 0;
+            for (const auto& s : *it) frame_length += s.length();
+            if (frame_length) {
+                ret.push_back(sender.send(it->begin(), it->end(), idx == last_nonempty ? IsFinal::YES : IsFinal::NO));
             }
             if (idx == last_nonempty) break;
             ++idx;

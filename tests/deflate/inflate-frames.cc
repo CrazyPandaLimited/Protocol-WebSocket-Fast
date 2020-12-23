@@ -141,7 +141,7 @@ TEST("2 messages, 2 frames, server_context_takeover = false = client_context_tak
 TEST("multiframe message") {
     std::vector<std::array<string_view,1>> payloads = {{"first"}, {"second"}, {"third"}};
     Parsers p;
-    auto bin = p.client.message().deflate(true).send(payloads.begin(), payloads.end());
+    auto bin = p.client.message().deflate(true).send_multiframe(payloads.begin(), payloads.end());
     auto m = get_message(p.server, join(bin));
     CHECK(join(m->payload) == "firstsecondthird");
 }
@@ -149,7 +149,7 @@ TEST("multiframe message") {
 TEST("multiframe message (with empty pieces)") {
     std::vector<std::array<string_view,1>> payloads = {{""}, {"hello"}, {""}};
     Parsers p;
-    auto bin = p.client.message().deflate(true).send(payloads.begin(), payloads.end());
+    auto bin = p.client.message().deflate(true).send_multiframe(payloads.begin(), payloads.end());
     auto m = get_message(p.server, join(bin));
     CHECK(join(m->payload) == "hello");
 }
@@ -157,7 +157,7 @@ TEST("multiframe message (with empty pieces)") {
 TEST("multiframe message (empty)") {
     std::vector<std::array<string_view,1>> payloads = {{""}, {""}, {""}};
     Parsers p;
-    auto bin = p.client.message().deflate(true).send(payloads.begin(), payloads.end());
+    auto bin = p.client.message().deflate(true).send_multiframe(payloads.begin(), payloads.end());
     auto m = get_message(p.server, join(bin));
     CHECK_FALSE(m->payload_length());
 }

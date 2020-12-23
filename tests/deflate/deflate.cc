@@ -114,7 +114,7 @@ TEST("MessageBuilder::send (fragmented message iterator, empty)") {
     REQUIRE(messages_it.begin()->payload.size() == 0);
 }
 
-TEST("MessageBuilder::send (fragmented multi-frame iterator, 1 fragment)") {
+TEST("MessageBuilder::send_multiframe (fragmented multi-frame iterator, 1 fragment)") {
     Parsers p;
     std::vector<std::vector<string>> pieces;
 
@@ -125,7 +125,7 @@ TEST("MessageBuilder::send (fragmented multi-frame iterator, 1 fragment)") {
 
 
     auto builder = p.server.message();
-    auto data = join(builder.deflate(true).send(pieces.begin(), pieces.end()));
+    auto data = join(builder.deflate(true).send_multiframe(pieces.begin(), pieces.end()));
     auto messages_it = p.client.get_messages(data);
     REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
 
@@ -133,7 +133,7 @@ TEST("MessageBuilder::send (fragmented multi-frame iterator, 1 fragment)") {
     REQUIRE(it->payload[0] == "hello world!");
 }
 
-TEST("MessageBuilder::send (fragmented multi-frame iterator, 2 fragments)") {
+TEST("MessageBuilder::send_multiframe (fragmented multi-frame iterator, 2 fragments)") {
     Parsers p;
     std::vector<std::vector<string>> pieces;
 
@@ -148,7 +148,7 @@ TEST("MessageBuilder::send (fragmented multi-frame iterator, 2 fragments)") {
     pieces.push_back(fragments2);
 
     auto builder = p.server.message();
-    auto data = join(builder.deflate(true).send(pieces.begin(), pieces.end()));
+    auto data = join(builder.deflate(true).send_multiframe(pieces.begin(), pieces.end()));
     REQUIRE(data.find("hello") == std::string::npos);
     auto messages_it = p.client.get_messages(data);
     REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
@@ -159,7 +159,7 @@ TEST("MessageBuilder::send (fragmented multi-frame iterator, 2 fragments)") {
     REQUIRE(it->payload[1] == " Let's do some testing");
 }
 
-TEST("MessageBuilder::send (fragmented multi-frame iterator, 2 fragments, last empty)") {
+TEST("MessageBuilder::send_multiframe (fragmented multi-frame iterator, 2 fragments, last empty)") {
     Parsers p;
     std::vector<std::vector<string>> pieces;
 
@@ -172,7 +172,7 @@ TEST("MessageBuilder::send (fragmented multi-frame iterator, 2 fragments, last e
     pieces.push_back(fragments2);
 
     auto builder = p.server.message();
-    auto data = join(builder.deflate(true).send(pieces.begin(), pieces.end()));
+    auto data = join(builder.deflate(true).send_multiframe(pieces.begin(), pieces.end()));
     REQUIRE(data.find("hello") == std::string::npos);
     auto messages_it = p.client.get_messages(data);
     REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
@@ -182,7 +182,7 @@ TEST("MessageBuilder::send (fragmented multi-frame iterator, 2 fragments, last e
     REQUIRE(it->payload[0] == "hello world!");
 }
 
-TEST("MessageBuilder::send (fragmented multi-frame iterator, 4 fragments, empty middle)") {
+TEST("MessageBuilder::send_multiframe (fragmented multi-frame iterator, 4 fragments, empty middle)") {
     Parsers p;
     std::vector<std::vector<string>> pieces;
 
@@ -203,7 +203,7 @@ TEST("MessageBuilder::send (fragmented multi-frame iterator, 4 fragments, empty 
     pieces.push_back(fragments4);
 
     auto builder = p.server.message();
-    auto data = join(builder.deflate(true).send(pieces.begin(), pieces.end()));
+    auto data = join(builder.deflate(true).send_multiframe(pieces.begin(), pieces.end()));
     REQUIRE(data.find("hello") == std::string::npos);
     auto messages_it = p.client.get_messages(data);
     REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
@@ -214,7 +214,7 @@ TEST("MessageBuilder::send (fragmented multi-frame iterator, 4 fragments, empty 
     REQUIRE(it->payload[1] == "!");
 }
 
-TEST("MessageBuilder::send (fragmented multi-frame iterator, 2 fragments, both empty)") {
+TEST("MessageBuilder::send_multiframe (fragmented multi-frame iterator, 2 fragments, both empty)") {
     Parsers p;
     std::vector<std::vector<string>> pieces;
 
@@ -225,7 +225,7 @@ TEST("MessageBuilder::send (fragmented multi-frame iterator, 2 fragments, both e
     pieces.push_back(fragments2);
 
     auto builder = p.server.message();
-    auto data = join(builder.deflate(true).send(pieces.begin(), pieces.end()));
+    auto data = join(builder.deflate(true).send_multiframe(pieces.begin(), pieces.end()));
     REQUIRE(data.find("hello") == std::string::npos);
     auto messages_it = p.client.get_messages(data);
     REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
