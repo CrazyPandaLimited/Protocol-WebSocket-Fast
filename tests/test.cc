@@ -20,12 +20,6 @@ void regex_replace (string& str, const std::string& re, const std::string& fmt) 
     str = string(std::regex_replace((std::string)str, std::regex(re, std::regex::ECMAScript|std::regex::icase), fmt));
 }
 
-string join (const std::vector<string>& v) {
-    string ret;
-    for (auto& s : v) ret += s;
-    return ret;
-}
-
 string repeat (string_view s, int times) {
     string ret;
     ret.reserve(s.length() * times);
@@ -143,6 +137,7 @@ std::vector<string> accept_packet () {
         "Cookie: _ga=GA1.2.1700804447.1456741171\r\n",
         "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n",
         "Sec-WebSocket-Protocol: chat\r\n",
+        "Sec-WebSocket-Extensions: permessage-deflate; client_max_window_bits=15; server_max_window_bits=15\r\n",
         "\r\n",
     };
 }
@@ -165,11 +160,13 @@ static void _establish_client (ClientParser& p) {
     if (!p.established()) throw std::runtime_error("should not happen");
 }
 
-EstablishedServerParser::EstablishedServerParser (const Parser::Config& cfg) : ServerParser(cfg) {
+EstablishedServerParser::EstablishedServerParser (const Parser::Config& cfg, bool deflate) : ServerParser(cfg) {
+    if (!deflate) no_deflate();
     _establish_server(*this);
 }
 
-EstablishedClientParser::EstablishedClientParser (const Parser::Config& cfg) : ClientParser(cfg) {
+EstablishedClientParser::EstablishedClientParser (const Parser::Config& cfg, bool deflate) : ClientParser(cfg) {
+    if (!deflate) no_deflate();
     _establish_client(*this);
 }
 

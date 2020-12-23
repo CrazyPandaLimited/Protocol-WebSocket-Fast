@@ -18,6 +18,7 @@ void check_req (ConnectRequestSP req) {
         {"sec-websocket-version", "13"},
         {"user-agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36"},
         {"accept-language", "ru-RU,ru;q=0.8,en-US;q=0.6,en;q=0.4"},
+        {"sec-websocket-extensions", "permessage-deflate; client_max_window_bits=15; server_max_window_bits=15"},
     });
     CHECK(req->uri->to_string() == "/?encoding=text");
     CHECK(req->ws_key() == "dGhlIHNhbXBsZSBub25jZQ==");

@@ -25,15 +25,15 @@ struct Parser : virtual panda::Refcnt {
     #include "Parser-MessageBuilder.h"
     #include "Parser-MessageIterator.h"
 
-    using DeflateConfigOption = panda::optional<DeflateExt::Config>;
+    using DeflateConfig = DeflateExt::Config;
 
     struct Config {
         Config () {}
-        size_t max_frame_size       = 0;
-        size_t max_message_size     = 0;
-        size_t max_handshake_size   = http::SIZE_UNLIMITED;
-        bool   check_utf8           = false;
-        DeflateConfigOption deflate = DeflateExt::Config();
+        size_t max_frame_size           = 0;
+        size_t max_message_size         = 0;
+        size_t max_handshake_size       = http::SIZE_UNLIMITED;
+        bool   check_utf8               = false;
+        optional<DeflateConfig> deflate = DeflateConfig();
     };
 
     void configure (const Config& cfg);
@@ -143,15 +143,15 @@ struct Parser : virtual panda::Refcnt {
 
     bool is_deflate_active () const { return (bool)_deflate_ext; }
 
-    const DeflateConfigOption& deflate_config () const { return _deflate_cfg; }
+    const optional<DeflateConfig>& deflate_config () const { return _deflate_cfg; }
 
-    DeflateConfigOption effective_deflate_config () const {
+    optional<DeflateConfig> effective_deflate_config () const {
         if (!_deflate_ext) return {};
         return _deflate_ext->effective_config();
     }
 
     void no_deflate () {
-        if (!_flags[ESTABLISHED]) _deflate_cfg = DeflateConfigOption();
+        if (!_flags[ESTABLISHED]) _deflate_cfg.reset();
     }
 
     virtual ~Parser () {}
@@ -170,14 +170,14 @@ protected:
     static const int SEND_CLOSED  = 9; // no more messages from user (close packet sent)
     static const int LAST_FLAG    = SEND_CLOSED;
 
-    size_t              _max_frame_size;
-    size_t              _max_message_size;
-    size_t              _max_handshake_size;
-    DeflateConfigOption _deflate_cfg;
-    bool                _check_utf8;
-    std::bitset<32>     _flags = 0;
-    string              _buffer;
-    DeflateExtPtr       _deflate_ext;
+    size_t                  _max_frame_size;
+    size_t                  _max_message_size;
+    size_t                  _max_handshake_size;
+    bool                    _check_utf8;
+    std::bitset<32>         _flags = 0;
+    string                  _buffer;
+    optional<DeflateConfig> _deflate_cfg;
+    DeflateExtPtr           _deflate_ext;
 
     Parser (bool recv_mask_required, Config cfg = Config()) : _recv_mask_required(recv_mask_required), _message_frame(recv_mask_required, cfg.max_frame_size) {
         configure(cfg);

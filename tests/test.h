@@ -22,7 +22,12 @@ inline ReMatcher MatchesRe (const string& regex, bool case_sen = false) { return
 
 void regex_replace (string&, const std::string&, const std::string&);
 
-string join (const std::vector<string>& v);
+template <class T>
+string join (T&& v) {
+    string ret;
+    for (auto& s : v) ret += s;
+    return ret;
+}
 
 string repeat (string_view, int);
 
@@ -30,11 +35,13 @@ std::vector<string> accept_packet   ();
 inline string       accept_packet_s () { return join(accept_packet()); }
 
 struct EstablishedServerParser : ServerParser {
-    EstablishedServerParser (const Parser::Config& cfg = {});
+    EstablishedServerParser (bool deflate = false) : EstablishedServerParser({}, deflate) {}
+    EstablishedServerParser (const Parser::Config& cfg, bool deflate = false);
 };
 
 struct EstablishedClientParser : ClientParser {
-    EstablishedClientParser (const Parser::Config& cfg = {});
+    EstablishedClientParser (bool deflate = false) : EstablishedClientParser({}, deflate) {}
+    EstablishedClientParser (const Parser::Config& cfg, bool deflate = false);
 };
 
 struct FMChecker {
@@ -170,6 +177,7 @@ MessageSP test_message (Parser&, FrameGenerator, const ErrorCode& = {});
 }
 
 using namespace test;
+using namespace Catch::Matchers;
 
 namespace panda { namespace protocol { namespace websocket {
     inline bool operator== (const HeaderValue& lhs, const HeaderValue& rhs) {

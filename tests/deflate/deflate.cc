@@ -8,447 +8,389 @@ using namespace panda::protocol::websocket;
 
 #define TEST(name) TEST_CASE("deflate: " name, "[deflate]")
 
-template <typename T>
-string to_string(T range) {
-    string r;
-    for (const string& s : range) r += s;
-    return r;
-}
-
-TEST("FrameSender & Message builder") {
-    Parser::Config cfg;
-    cfg.deflate->compression_threshold = 0;
-
+struct Parsers {
     ServerParser server;
-    server.configure(cfg);
     ClientParser client;
 
-    ConnectRequestSP connect_request(new ConnectRequest());
-    connect_request->uri = new URI("ws://crazypanda.ru");
-    connect_request->ws_key("dGhlIHNhbXBsZSBub25jZQ==");
-    connect_request->ws_version(13);
-    connect_request->ws_protocol("ws");
-    auto client_request = client.connect_request(connect_request);
+    Parsers (Parser::Config cfg = {}) {
+        cfg.deflate->compression_threshold = 0;
+        server.configure(cfg);
+        client.configure(cfg);
 
-    REQUIRE((bool)server.accept(client_request));
-    auto server_reply = server.accept_response();
-    client.connect(server_reply);
+        auto con_str = client.connect_request(ConnectRequest::Builder()
+            .uri("ws://crazypanda.ru")
+            .ws_key("dGhlIHNhbXBsZSBub25jZQ==")
+            .ws_version(13)
+            .ws_protocol("ws")
+            .build()
+        );
 
-    REQUIRE(server.established());
-    REQUIRE(client.established());
-    REQUIRE(server.is_deflate_active());
-    REQUIRE(client.is_deflate_active());
+        server.accept(con_str);
+        auto res_str = server.accept_response();
+        client.connect(res_str);
 
-    SECTION("FrameBuffer") {
-
-        SECTION("send (iterator)") {
-            std::vector<string> fragments;
-            fragments.push_back("hello");
-            fragments.push_back(" world");
-            auto data = server.start_message(DeflateFlag::YES).send(fragments.begin(), fragments.end(), IsFinal::YES);
-            auto messages_it = client.get_messages(data);
-            REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
-            REQUIRE(messages_it.begin()->payload[0] == "hello world");
-        }
-
-        SECTION("send (iterator, empty)") {
-            std::vector<string> fragments;
-            auto data = server.start_message(DeflateFlag::YES).send(fragments.begin(), fragments.end(), IsFinal::YES);
-            auto messages_it = client.get_messages(data);
-            REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
-            REQUIRE(messages_it.begin()->payload.empty());
-        }
-
-        SECTION("send (iterator with holes)") {
-            std::vector<string> fragments;
-            fragments.push_back("");
-            fragments.push_back("hello");
-            fragments.push_back("");
-            fragments.push_back(" world");
-            fragments.push_back("");
-            auto data = server.start_message(DeflateFlag::YES).send(fragments.begin(), fragments.end(), IsFinal::YES);
-            auto messages_it = client.get_messages(data);
-            REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
-            auto it = messages_it.begin();
-            REQUIRE(it->payload.size() == 1);
-            REQUIRE(it->payload[0] == "hello world");
-        }
-
-        SECTION("send with zero shared-capacity last buff") {
-            // some png piece
-            unsigned const char buff[] = {
-                0x03, 0x6c, 0x01, 0x8b, 0xfe, 0xd6, 0xd7, 0x16,
-                0xb0, 0xe8, 0x7f, 0x1d, 0x6d, 0x01, 0x8b, 0x3e,
-                0xea, 0x65, 0x0b, 0x58, 0xf4, 0x5d, 0x17, 0x5b,
-                0xc0, 0xa2, 0x8d, 0xae, 0xdb, 0x02, 0x16, 0x6d,
-                0x77, 0xd1, 0x16, 0xb0, 0x68, 0xb7, 0x2b, 0xb6,
-                0x80, 0x45, 0x47, 0x35, 0xdb, 0x02, 0x16, 0x9d,
-                0xd4, 0x66, 0x0b, 0x58, 0x74, 0x5e, 0x83, 0x2d,
-                0x60, 0x51, 0x51, 0xb5, 0xb6, 0x80, 0x45, 0xa5,
-                0x55, 0xd9, 0x02, 0x16, 0x55, 0x54, 0x6e, 0x0b,
-                0x58, 0x54, 0x57, 0xa1, 0x2d, 0x60, 0x51, 0x75,
-                0x25, 0xb6, 0x80, 0x45, 0x2d, 0x9d, 0xda, 0x02,
-                0x16, 0x35, 0x76, 0x6c, 0x0b, 0x58, 0xd4, 0xde,
-                0x81, 0x2d, 0x60, 0xd1, 0xa5, 0xf6, 0x6c, 0x01,
-                0x8b, 0xae, 0xb6, 0x69, 0x0b, 0x58, 0xd4, 0xa1,
-                0x5f, 0x5b, 0xc0, 0xa2, 0x3e, 0x7d, 0xd9, 0x02,
-                0x16, 0x75, 0xeb, 0xdd, 0x16, 0xb0, 0xa8, 0x67,
-                0x2f, 0x5b, 0xc0, 0xa2, 0xce, 0x3d, 0x6d, 0xdd,
-                0x1e, 0xab, 0x5f, 0x07, 0x85, 0x8c, 0xdf, 0x58,
-                0x34, 0xa4, 0x3f, 0x0d, 0x82, 0x2c, 0x9c, 0x00,
-                0x25, 0xe0, 0x67, 0x00, 0x00, 0x00, 0x00, 0x49,
-                0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82, 0x00
-            };
-            std::vector<string> fragments;
-            fragments.emplace_back(reinterpret_cast<const char*>(buff), sizeof(buff));
-            const char* buff_23 = "12345678901234567890123";
-            string sso_23(buff_23);
-            fragments.emplace_back(sso_23.substr(23, 0));
-            REQUIRE(bool(fragments.back().shared_buf())); // bool to prevent Catch printing data
-            REQUIRE(fragments.back().shared_capacity() == 0);
-            auto data = server.start_message(DeflateFlag::YES).send(fragments.begin(), fragments.end(), IsFinal::YES);
-            auto messages_it = client.get_messages(data);
-            REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
-            auto it = messages_it.begin();
-            REQUIRE(it->payload.size() == 1);
-            REQUIRE(it->payload[0].size() >= sizeof(buff));
+        if (!server.established() || !client.established() || !server.is_deflate_active() || !client.is_deflate_active()) {
+            throw "should not happen";
         }
     }
+};
+
+TEST("FrameSender::send (iterator)") {
+    Parsers p;
+    std::vector<string> fragments;
+    fragments.push_back("hello");
+    fragments.push_back(" world");
+    auto data = p.server.start_message(DeflateFlag::YES).send(fragments.begin(), fragments.end(), IsFinal::YES);
+    auto messages_it = p.client.get_messages(data);
+    REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
+    REQUIRE(messages_it.begin()->payload[0] == "hello world");
+}
+
+TEST("FrameSender::send (iterator, empty)") {
+    Parsers p;
+    std::vector<string> fragments;
+    auto data = p.server.start_message(DeflateFlag::YES).send(fragments.begin(), fragments.end(), IsFinal::YES);
+    auto messages_it = p.client.get_messages(data);
+    REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
+    REQUIRE(messages_it.begin()->payload.empty());
+}
+
+TEST("FrameSender::send (iterator with holes)") {
+    Parsers p;
+    std::vector<string> fragments;
+    fragments.push_back("");
+    fragments.push_back("hello");
+    fragments.push_back("");
+    fragments.push_back(" world");
+    fragments.push_back("");
+    auto data = p.server.start_message(DeflateFlag::YES).send(fragments.begin(), fragments.end(), IsFinal::YES);
+    auto messages_it = p.client.get_messages(data);
+    REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
+    auto it = messages_it.begin();
+    REQUIRE(it->payload.size() == 1);
+    REQUIRE(it->payload[0] == "hello world");
+}
+
+TEST("MessageBuilder::send (fragmented message iterator)") {
+    Parsers p;
+    std::vector<string> fragments;
+    fragments.push_back("hello");
+    fragments.push_back(" world");
+    auto data = p.server.message().deflate(true).send(fragments.begin(), fragments.end());
+    auto messages_it = p.client.get_messages(data);
+    REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
+    REQUIRE(messages_it.begin()->payload[0] == "hello world");
+}
+
+TEST("MessageBuilder::send (fragmented message iterator, hole in the middle)") {
+    Parsers p;
+    std::vector<string> fragments;
+    fragments.push_back("hello");
+    fragments.push_back("");
+    fragments.push_back("");
+    fragments.push_back(" world");
+    auto data = p.server.message().deflate(true).send(fragments.begin(), fragments.end());
+    auto messages_it = p.client.get_messages(data);
+    REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
+    REQUIRE(messages_it.begin()->payload[0] == "hello world");
+}
+
+TEST("MessageBuilder::send (empty string)") {
+    Parsers p;
+    panda::string item = "";
+    auto data = p.server.message().deflate(true).send(item);
+    auto messages_it = p.client.get_messages(data);
+    REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
+    REQUIRE(messages_it.begin()->payload.size() == 0);
+}
+
+TEST("MessageBuilder::send (fragmented message iterator, empty)") {
+    Parsers p;
+    std::vector<string> fragments;
+    fragments.push_back("");
+    auto data = p.server.message().deflate(true).send(fragments.begin(), fragments.end());
+    auto messages_it = p.client.get_messages(data);
+    REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
+    REQUIRE(messages_it.begin()->payload.size() == 0);
+}
+
+TEST("MessageBuilder::send (fragmented multi-frame iterator, 1 fragment)") {
+    Parsers p;
+    std::vector<std::vector<string>> pieces;
+
+    std::vector<string> fragments1;
+    fragments1.push_back("hello");
+    fragments1.push_back(" world!");
+    pieces.push_back(fragments1);
 
 
-    SECTION("MessageBuilder") {
-        SECTION("MessageBuilder::send (fragmented message iterator)") {
-            std::vector<string> fragments;
-            fragments.push_back("hello");
-            fragments.push_back(" world");
-            auto data = server.message().send(fragments.begin(), fragments.end());
-            auto messages_it = client.get_messages(data);
-            REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
-            REQUIRE(messages_it.begin()->payload[0] == "hello world");
-        }
+    auto builder = p.server.message();
+    auto data = join(builder.deflate(true).send(pieces.begin(), pieces.end()));
+    auto messages_it = p.client.get_messages(data);
+    REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
 
-        SECTION("MessageBuilder::send (fragmented message iterator, hole in the middle)") {
-            std::vector<string> fragments;
-            fragments.push_back("hello");
-            fragments.push_back("");
-            fragments.push_back("");
-            fragments.push_back(" world");
-            auto data = server.message().send(fragments.begin(), fragments.end());
-            auto messages_it = client.get_messages(data);
-            REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
-            REQUIRE(messages_it.begin()->payload[0] == "hello world");
-        }
+    auto it = messages_it.begin();
+    REQUIRE(it->payload[0] == "hello world!");
+}
 
-        SECTION("MessageBuilder::send (empty string)") {
-            panda::string item = "";
-            auto data = server.message().send(item);
-            auto messages_it = client.get_messages(data);
-            REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
-            REQUIRE(messages_it.begin()->payload.size() == 0);
-        }
+TEST("MessageBuilder::send (fragmented multi-frame iterator, 2 fragments)") {
+    Parsers p;
+    std::vector<std::vector<string>> pieces;
 
-        SECTION("MessageBuilder::send (fragmented message iterator, empty)") {
-            std::vector<string> fragments;
-            fragments.push_back("");
-            auto data = server.message().send(fragments.begin(), fragments.end());
-            auto messages_it = client.get_messages(data);
-            REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
-            REQUIRE(messages_it.begin()->payload.size() == 0);
-        }
+    std::vector<string> fragments1;
+    fragments1.push_back("hello");
+    fragments1.push_back(" world!");
+    pieces.push_back(fragments1);
 
-        SECTION("MessageBuilder::send (fragmented multi-frame iterator, 1 fragment)") {
-            std::vector<std::vector<string>> pieces;
+    std::vector<string> fragments2;
+    fragments2.push_back(" Let's do ");
+    fragments2.push_back("some testing");
+    pieces.push_back(fragments2);
 
-            std::vector<string> fragments1;
-            fragments1.push_back("hello");
-            fragments1.push_back(" world!");
-            pieces.push_back(fragments1);
+    auto builder = p.server.message();
+    auto data = join(builder.deflate(true).send(pieces.begin(), pieces.end()));
+    REQUIRE(data.find("hello") == std::string::npos);
+    auto messages_it = p.client.get_messages(data);
+    REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
 
+    auto it = messages_it.begin();
+    REQUIRE(it->payload.size() == 2);
+    REQUIRE(it->payload[0] == "hello world!");
+    REQUIRE(it->payload[1] == " Let's do some testing");
+}
 
-            auto builder = server.message();
-            auto data = to_string(builder.deflate(true).send(pieces.begin(), pieces.end()));
-            auto messages_it = client.get_messages(data);
-            REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
+TEST("MessageBuilder::send (fragmented multi-frame iterator, 2 fragments, last empty)") {
+    Parsers p;
+    std::vector<std::vector<string>> pieces;
 
-            auto it = messages_it.begin();
-            REQUIRE(it->payload[0] == "hello world!");
-        }
+    std::vector<string> fragments1;
+    fragments1.push_back("hello");
+    fragments1.push_back(" world!");
+    pieces.push_back(fragments1);
 
-        SECTION("MessageBuilder::send (fragmented multi-frame iterator, 2 fragments)") {
-            std::vector<std::vector<string>> pieces;
+    std::vector<string> fragments2;
+    pieces.push_back(fragments2);
 
-            std::vector<string> fragments1;
-            fragments1.push_back("hello");
-            fragments1.push_back(" world!");
-            pieces.push_back(fragments1);
+    auto builder = p.server.message();
+    auto data = join(builder.deflate(true).send(pieces.begin(), pieces.end()));
+    REQUIRE(data.find("hello") == std::string::npos);
+    auto messages_it = p.client.get_messages(data);
+    REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
 
-            std::vector<string> fragments2;
-            fragments2.push_back(" Let's do ");
-            fragments2.push_back("some testing");
-            pieces.push_back(fragments2);
+    auto it = messages_it.begin();
+    REQUIRE(it->payload.size() == 1);
+    REQUIRE(it->payload[0] == "hello world!");
+}
 
-            auto builder = server.message();
-            auto data = to_string(builder.deflate(true).send(pieces.begin(), pieces.end()));
-            REQUIRE(data.find("hello") == std::string::npos);
-            auto messages_it = client.get_messages(data);
-            REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
+TEST("MessageBuilder::send (fragmented multi-frame iterator, 4 fragments, empty middle)") {
+    Parsers p;
+    std::vector<std::vector<string>> pieces;
 
-            auto it = messages_it.begin();
-            REQUIRE(it->payload.size() == 2);
-            REQUIRE(it->payload[0] == "hello world!");
-            REQUIRE(it->payload[1] == " Let's do some testing");
-        }
+    std::vector<string> fragments1;
+    fragments1.push_back("hello");
+    fragments1.push_back(" world");
+    pieces.push_back(fragments1);
 
-        SECTION("MessageBuilder::send (fragmented multi-frame iterator, 2 fragments, last empty)") {
-            std::vector<std::vector<string>> pieces;
+    std::vector<string> fragments2;
+    pieces.push_back(fragments2);
 
-            std::vector<string> fragments1;
-            fragments1.push_back("hello");
-            fragments1.push_back(" world!");
-            pieces.push_back(fragments1);
+    std::vector<string> fragments3;
+    fragments3.push_back("");
+    pieces.push_back(fragments3);
 
-            std::vector<string> fragments2;
-            pieces.push_back(fragments2);
+    std::vector<string> fragments4;
+    fragments4.push_back("!");
+    pieces.push_back(fragments4);
 
-            auto builder = server.message();
-            auto data = to_string(builder.deflate(true).send(pieces.begin(), pieces.end()));
-            REQUIRE(data.find("hello") == std::string::npos);
-            auto messages_it = client.get_messages(data);
-            REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
+    auto builder = p.server.message();
+    auto data = join(builder.deflate(true).send(pieces.begin(), pieces.end()));
+    REQUIRE(data.find("hello") == std::string::npos);
+    auto messages_it = p.client.get_messages(data);
+    REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
 
-            auto it = messages_it.begin();
-            REQUIRE(it->payload.size() == 1);
-            REQUIRE(it->payload[0] == "hello world!");
-        }
+    auto it = messages_it.begin();
+    REQUIRE(it->payload.size() == 2);
+    REQUIRE(it->payload[0] == "hello world");
+    REQUIRE(it->payload[1] == "!");
+}
 
-        SECTION("MessageBuilder::send (fragmented multi-frame iterator, 4 fragments, empty middle)") {
-            std::vector<std::vector<string>> pieces;
+TEST("MessageBuilder::send (fragmented multi-frame iterator, 2 fragments, both empty)") {
+    Parsers p;
+    std::vector<std::vector<string>> pieces;
 
-            std::vector<string> fragments1;
-            fragments1.push_back("hello");
-            fragments1.push_back(" world");
-            pieces.push_back(fragments1);
+    std::vector<string> fragments1;
+    pieces.push_back(fragments1);
 
-            std::vector<string> fragments2;
-            pieces.push_back(fragments2);
+    std::vector<string> fragments2;
+    pieces.push_back(fragments2);
 
-            std::vector<string> fragments3;
-            fragments3.push_back("");
-            pieces.push_back(fragments3);
+    auto builder = p.server.message();
+    auto data = join(builder.deflate(true).send(pieces.begin(), pieces.end()));
+    REQUIRE(data.find("hello") == std::string::npos);
+    auto messages_it = p.client.get_messages(data);
+    REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
 
-            std::vector<string> fragments4;
-            fragments4.push_back("!");
-            pieces.push_back(fragments4);
+    auto it = messages_it.begin();
+    REQUIRE(it->payload.empty());
+}
 
-            auto builder = server.message();
-            auto data = to_string(builder.deflate(true).send(pieces.begin(), pieces.end()));
-            REQUIRE(data.find("hello") == std::string::npos);
-            auto messages_it = client.get_messages(data);
-            REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
+TEST("empty compressed frame with zero payload") {
+    Parsers p;
+    string payload;
+    auto data = p.server.start_message(DeflateFlag::YES).send(payload, IsFinal::YES);
+    REQUIRE(data.capacity() >= data.length());
+    REQUIRE(data.length() == 3);
 
-            auto it = messages_it.begin();
-            REQUIRE(it->payload.size() == 2);
-            REQUIRE(it->payload[0] == "hello world");
-            REQUIRE(it->payload[1] == "!");
-        }
-
-        SECTION("MessageBuilder::send (fragmented multi-frame iterator, 2 fragments, both empty)") {
-            std::vector<std::vector<string>> pieces;
-
-            std::vector<string> fragments1;
-            pieces.push_back(fragments1);
-
-            std::vector<string> fragments2;
-            pieces.push_back(fragments2);
-
-            auto builder = server.message();
-            auto data = to_string(builder.deflate(true).send(pieces.begin(), pieces.end()));
-            REQUIRE(data.find("hello") == std::string::npos);
-            auto messages_it = client.get_messages(data);
-            REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
-
-            auto it = messages_it.begin();
-            REQUIRE(it->payload.empty());
-        }
-    }
-
-    SECTION("empty compressed frame with zero payload") {
-        string payload;
-        auto data = server.start_message(DeflateFlag::YES).send(payload, IsFinal::YES);
-        REQUIRE(data.capacity() >= data.length());
-        REQUIRE(data.length() == 3);
-
-        SECTION("zero uncompressed payload") {
-            auto messages_it = client.get_messages(data);
-            REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
-            REQUIRE(messages_it.begin()->payload_length() == 0);
-        }
-
-        SECTION("non-zero network payload") {
-            auto frames_it = client.get_frames(data);
-            REQUIRE(std::distance(frames_it.begin(), frames_it.end()) == 1);
-            REQUIRE(frames_it.begin()->payload_length() == 1);
-        }
-    }
-
-
-    SECTION("compressed frame with zero payload") {
-        string payload;
-        REQUIRE(payload.length() == 0);
-        FrameHeader fh(Opcode::TEXT, true, true, false, false, true, (uint32_t)std::rand());
-        auto data_string = Frame::compile(fh, payload);
-        auto messages_it = client.get_messages(data_string);
+    SECTION("zero uncompressed payload") {
+        auto messages_it = p.client.get_messages(data);
         REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
         REQUIRE(messages_it.begin()->payload_length() == 0);
     }
 
-    SECTION("Control compressed frame") {
-        string payload;
-        FrameHeader fh(Opcode::PING, true, true, false, false, true, (uint32_t)std::rand());
-        auto data_string = Frame::compile(fh, payload);
-        auto frames_it = client.get_frames(data_string);
-        REQUIRE(frames_it.begin()->error() & errc::control_frame_compression);
-    }
-
-    SECTION("send compressed frame bigger then original") {
-        string payload = encode::decode_base16("8e008f8f8f0090909000919191009292");
-
-        auto data = server.start_message(DeflateFlag::YES).send(payload, IsFinal::YES);
-        REQUIRE(data.length() == 2 + 24);
-        auto messages_it = client.get_messages(data);
-        REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
-        REQUIRE_FALSE(messages_it.begin()->error());
-        REQUIRE(messages_it.begin()->payload[0] == payload);
-    }
-
-    SECTION("SRV-1236") {
-        SECTION("buggy sample (does work)") {
-            string data_sample = "UlBQUDLWM1eyUqjmUoABpaTUjMSyzPwioLCSv7eSDhYp55z84lQs8imlRYklmfl5QCkjZPGi1Nz8klSwLuf8FJBOQwMDNBUF+UUlaZk5YGMTS0vykxIz8goqSzLy8+IN4s2AODmxODXeON5cL6sYaANUby3MECUTPUM9Q9K8AgAAAP//";
-            string payload = encode::decode_base64(data_sample);
-            FrameHeader fh(Opcode::TEXT, true, true, false, false, true, (uint32_t)std::rand());
-            auto data = Frame::compile(fh, payload);
-            auto messages_it = server.get_messages(data);
-            REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
-            REQUIRE(!messages_it.begin()->error());
-        }
-    }
-
-    SECTION("zlib test") {
-        string payload = encode::decode_base16("8e008f8f8f0090909000919191009292");
-        char buff1[50];
-        char buff2[50];
-        char buff1_out[50];
-        char buff2_out[50];
-
-        memset(buff1, 0, 50);
-        memset(buff2, 0, 50);
-        memset(buff1_out, 0, 50);
-        memset(buff2_out, 0, 50);
-
-        z_stream tx_stream1;
-        tx_stream1.avail_in = 0;
-        tx_stream1.zalloc = Z_NULL;
-        tx_stream1.zfree = Z_NULL;
-        tx_stream1.opaque = Z_NULL;
-        auto r = deflateInit2(&tx_stream1, -1, Z_DEFLATED, -1 * 15, 8, Z_DEFAULT_STRATEGY);
-        REQUIRE(r == Z_OK);
-
-        tx_stream1.next_in = reinterpret_cast<Bytef*>(payload.buf());
-        tx_stream1.avail_in = static_cast<uInt>(payload.length());
-        tx_stream1.avail_out = 50;
-        tx_stream1.next_out = reinterpret_cast<Bytef*>(buff1);
-        r = deflate(&tx_stream1, Z_SYNC_FLUSH);
-        REQUIRE(r == Z_OK);
-        REQUIRE(tx_stream1.total_out == 23);
-
-
-        z_stream tx_stream2;
-        tx_stream2.avail_in = 0;
-        tx_stream2.zalloc = Z_NULL;
-        tx_stream2.zfree = Z_NULL;
-        tx_stream2.opaque = Z_NULL;
-        r = deflateInit2(&tx_stream2, -1, Z_DEFLATED, -1 * 15, 8, Z_DEFAULT_STRATEGY);
-        REQUIRE(r == Z_OK);
-        REQUIRE(tx_stream1.avail_out !=0);
-
-        tx_stream2.next_in = reinterpret_cast<Bytef*>(payload.buf());
-        tx_stream2.avail_in = static_cast<uInt>(payload.length());
-        tx_stream2.avail_out = 23;
-        tx_stream2.next_out = reinterpret_cast<Bytef*>(buff2);
-        r = deflate(&tx_stream2, Z_SYNC_FLUSH);
-        REQUIRE(r == Z_OK);
-        REQUIRE(tx_stream2.total_out == 23);
-        REQUIRE(tx_stream2.avail_out == 0);  // !!! ???
-
-        tx_stream2.avail_out = 50 - 23;
-        r = deflate(&tx_stream2, Z_SYNC_FLUSH);
-        REQUIRE(r == Z_OK);
-        //REQUIRE(tx_stream2.total_out == tx_stream1.total_out); /// !!! ???
-
-        z_stream rx_stream1;
-        rx_stream1.avail_in = 0;
-        rx_stream1.next_in = Z_NULL;
-        rx_stream1.zalloc = Z_NULL;
-        rx_stream1.zfree = Z_NULL;
-        rx_stream1.opaque = Z_NULL;
-
-        r = inflateInit2(&rx_stream1, -1 * 15);
-        REQUIRE(r == Z_OK);
-
-        rx_stream1.next_in = reinterpret_cast<Bytef*>(buff1);
-        rx_stream1.avail_in = static_cast<uInt>(tx_stream1.avail_out);
-        rx_stream1.next_out = reinterpret_cast<Bytef*>(buff1_out);
-        rx_stream1.avail_out = 50;
-        r = inflate(&rx_stream1, Z_SYNC_FLUSH);
-        REQUIRE(r == Z_OK);
-
-        z_stream rx_stream2;
-        rx_stream2.avail_in = 0;
-        rx_stream2.zalloc = Z_NULL;
-        rx_stream2.zfree = Z_NULL;
-        rx_stream2.opaque = Z_NULL;
-
-        r = inflateInit2(&rx_stream2, -1 * 15);
-        REQUIRE(r == Z_OK);
-
-        rx_stream2.next_in = reinterpret_cast<Bytef*>(buff2);
-        rx_stream2.avail_in = static_cast<uInt>(tx_stream2.avail_out);
-        rx_stream2.next_out = reinterpret_cast<Bytef*>(buff2_out);
-        rx_stream2.avail_out = 50;
-        r = inflate(&rx_stream2, Z_SYNC_FLUSH);
-        REQUIRE(r == Z_OK);
-
-        deflateEnd(&tx_stream1);
-        deflateEnd(&tx_stream2);
-        inflateEnd(&rx_stream1);
-        inflateEnd(&rx_stream2);
+    SECTION("non-zero network payload") {
+        auto frames_it = p.client.get_frames(data);
+        REQUIRE(std::distance(frames_it.begin(), frames_it.end()) == 1);
+        REQUIRE(frames_it.begin()->payload_length() == 1);
     }
 }
 
+TEST("compressed frame with zero payload") {
+    Parsers p;
+    string payload;
+    REQUIRE(payload.length() == 0);
+    FrameHeader fh(Opcode::TEXT, true, true, false, false, true, (uint32_t)std::rand());
+    auto data_string = Frame::compile(fh, payload);
+    auto messages_it = p.client.get_messages(data_string);
+    REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
+    REQUIRE(messages_it.begin()->payload_length() == 0);
+}
+
+TEST("Control compressed frame") {
+    Parsers p;
+    string payload;
+    FrameHeader fh(Opcode::PING, true, true, false, false, true, (uint32_t)std::rand());
+    auto data_string = Frame::compile(fh, payload);
+    auto frames_it = p.client.get_frames(data_string);
+    REQUIRE(frames_it.begin()->error() & errc::control_frame_compression);
+}
+
+TEST("send compressed frame bigger then original") {
+    Parsers p;
+    string payload = encode::decode_base16("8e008f8f8f0090909000919191009292");
+
+    auto data = p.server.start_message(DeflateFlag::YES).send(payload, IsFinal::YES);
+    REQUIRE(data.length() == 2 + 24);
+    auto messages_it = p.client.get_messages(data);
+    REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
+    REQUIRE_FALSE(messages_it.begin()->error());
+    REQUIRE(messages_it.begin()->payload[0] == payload);
+}
+
+TEST("zlib test") {
+    string payload = encode::decode_base16("8e008f8f8f0090909000919191009292");
+    char buff1[50];
+    char buff2[50];
+    char buff1_out[50];
+    char buff2_out[50];
+
+    memset(buff1, 0, 50);
+    memset(buff2, 0, 50);
+    memset(buff1_out, 0, 50);
+    memset(buff2_out, 0, 50);
+
+    z_stream tx_stream1;
+    tx_stream1.avail_in = 0;
+    tx_stream1.zalloc = Z_NULL;
+    tx_stream1.zfree = Z_NULL;
+    tx_stream1.opaque = Z_NULL;
+    auto r = deflateInit2(&tx_stream1, -1, Z_DEFLATED, -1 * 15, 8, Z_DEFAULT_STRATEGY);
+    REQUIRE(r == Z_OK);
+
+    tx_stream1.next_in = reinterpret_cast<Bytef*>(payload.buf());
+    tx_stream1.avail_in = static_cast<uInt>(payload.length());
+    tx_stream1.avail_out = 50;
+    tx_stream1.next_out = reinterpret_cast<Bytef*>(buff1);
+    r = deflate(&tx_stream1, Z_SYNC_FLUSH);
+    REQUIRE(r == Z_OK);
+    REQUIRE(tx_stream1.total_out == 23);
+
+
+    z_stream tx_stream2;
+    tx_stream2.avail_in = 0;
+    tx_stream2.zalloc = Z_NULL;
+    tx_stream2.zfree = Z_NULL;
+    tx_stream2.opaque = Z_NULL;
+    r = deflateInit2(&tx_stream2, -1, Z_DEFLATED, -1 * 15, 8, Z_DEFAULT_STRATEGY);
+    REQUIRE(r == Z_OK);
+    REQUIRE(tx_stream1.avail_out !=0);
+
+    tx_stream2.next_in = reinterpret_cast<Bytef*>(payload.buf());
+    tx_stream2.avail_in = static_cast<uInt>(payload.length());
+    tx_stream2.avail_out = 23;
+    tx_stream2.next_out = reinterpret_cast<Bytef*>(buff2);
+    r = deflate(&tx_stream2, Z_SYNC_FLUSH);
+    REQUIRE(r == Z_OK);
+    REQUIRE(tx_stream2.total_out == 23);
+    REQUIRE(tx_stream2.avail_out == 0);  // !!! ???
+
+    tx_stream2.avail_out = 50 - 23;
+    r = deflate(&tx_stream2, Z_SYNC_FLUSH);
+    REQUIRE(r == Z_OK);
+    //REQUIRE(tx_stream2.total_out == tx_stream1.total_out); /// !!! ???
+
+    z_stream rx_stream1;
+    rx_stream1.avail_in = 0;
+    rx_stream1.next_in = Z_NULL;
+    rx_stream1.zalloc = Z_NULL;
+    rx_stream1.zfree = Z_NULL;
+    rx_stream1.opaque = Z_NULL;
+
+    r = inflateInit2(&rx_stream1, -1 * 15);
+    REQUIRE(r == Z_OK);
+
+    rx_stream1.next_in = reinterpret_cast<Bytef*>(buff1);
+    rx_stream1.avail_in = static_cast<uInt>(tx_stream1.avail_out);
+    rx_stream1.next_out = reinterpret_cast<Bytef*>(buff1_out);
+    rx_stream1.avail_out = 50;
+    r = inflate(&rx_stream1, Z_SYNC_FLUSH);
+    REQUIRE(r == Z_OK);
+
+    z_stream rx_stream2;
+    rx_stream2.avail_in = 0;
+    rx_stream2.zalloc = Z_NULL;
+    rx_stream2.zfree = Z_NULL;
+    rx_stream2.opaque = Z_NULL;
+
+    r = inflateInit2(&rx_stream2, -1 * 15);
+    REQUIRE(r == Z_OK);
+
+    rx_stream2.next_in = reinterpret_cast<Bytef*>(buff2);
+    rx_stream2.avail_in = static_cast<uInt>(tx_stream2.avail_out);
+    rx_stream2.next_out = reinterpret_cast<Bytef*>(buff2_out);
+    rx_stream2.avail_out = 50;
+    r = inflate(&rx_stream2, Z_SYNC_FLUSH);
+    REQUIRE(r == Z_OK);
+
+    deflateEnd(&tx_stream1);
+    deflateEnd(&tx_stream2);
+    inflateEnd(&rx_stream1);
+    inflateEnd(&rx_stream2);
+}
 
 TEST("SRV-1236") {
     Parser::Config cfg;
     cfg.deflate->client_no_context_takeover = true;
+    Parsers p(cfg);
 
-    ServerParser server;
-    server.configure(cfg);
-    ClientParser client;
-
-    ConnectRequestSP connect_request(new ConnectRequest());
-    connect_request->uri = new URI("ws://crazypanda.ru");
-    connect_request->ws_key("dGhlIHNhbXBsZSBub25jZQ==");
-    connect_request->ws_version(13);
-    connect_request->ws_protocol("ws");
-    auto client_request = client.connect_request(connect_request);
-
-    REQUIRE((bool)server.accept(client_request));
-    auto server_reply = server.accept_response();
-    client.connect(server_reply);
-
-    REQUIRE(server.established());
-    REQUIRE(client.established());
-    REQUIRE(server.is_deflate_active());
-    REQUIRE(client.is_deflate_active());
+    SECTION("buggy sample (does work)") {
+        string data_sample = "UlBQUDLWM1eyUqjmUoABpaTUjMSyzPwioLCSv7eSDhYp55z84lQs8imlRYklmfl5QCkjZPGi1Nz8klSwLuf8FJBOQwMDNBUF+UUlaZk5YGMTS0vykxIz8goqSzLy8+IN4s2AODmxODXeON5cL6sYaANUby3MECUTPUM9Q9K8AgAAAP//";
+        string payload = encode::decode_base64(data_sample);
+        FrameHeader fh(Opcode::TEXT, true, true, false, false, true, (uint32_t)std::rand());
+        auto data = Frame::compile(fh, payload);
+        auto messages_it = p.server.get_messages(data);
+        REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
+        REQUIRE(!messages_it.begin()->error());
+    }
 
     SECTION("12.1.3 :: false inflate error caused by incorrectly handling Z_BUF_ERROR") {
         string data_samples[] = {
@@ -461,7 +403,7 @@ TEST("SRV-1236") {
             string payload = encode::decode_base64(*it);
             FrameHeader fh(Opcode::TEXT, true, true, false, false, true, (uint32_t)std::rand());
             auto data = Frame::compile(fh, payload);
-            auto messages_it = server.get_messages(data);
+            auto messages_it = p.server.get_messages(data);
             REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
             REQUIRE_FALSE(messages_it.begin()->error());
         }
@@ -478,12 +420,11 @@ TEST("SRV-1236") {
         auto data2 = Frame::compile(fh2, payload2);
         auto data = data1 + data2;
 
-        auto messages_it = server.get_messages(data);
+        auto messages_it = p.server.get_messages(data);
         REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
         REQUIRE_FALSE(messages_it.begin()->error());
         REQUIRE(messages_it.begin()->payload.size() == 2);
         REQUIRE(messages_it.begin()->payload[0] == "00000000000000000000000000000000000000000000000000");
         REQUIRE(messages_it.begin()->payload[1] == "00000000000000000000000000000000000000000000000000");
     }
-
 }

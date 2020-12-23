@@ -60,27 +60,6 @@ sub accept_parsed { #DONE
     );
 }
 
-sub connect_request {
-    return {
-        uri           => URI::XS->new("ws://crazypanda.ru:4321/path?a=b"),
-        ws_protocol   => 'fuck',
-        ws_extensions => [ [ 'permessage-deflate', { 'client_max_window_bits' => '' } ] ],
-        ws_version    => 13,
-        headers       => {
-            'Accept-Encoding' => 'gzip, deflate, sdch',
-            'Origin'          => 'http://www.crazypanda.ru',
-            'Cache-Control'   => 'no-cache',
-            'User-Agent'      => 'PWS-Test',
-        },
-    };
-}
-
-sub connect_response {
-    return all(
-       qr/^GET \/path?a=b HTTP\/1.1$/,
-    );
-}
-
 sub get_established_server { #DONE
     my $p = Protocol::WebSocket::Fast::ServerParser->new(shift);
     _establish_server($p);

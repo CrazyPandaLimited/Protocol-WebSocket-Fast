@@ -7,6 +7,8 @@ use Test::Catch;
 use Encode::Base2N 'encode_base64pad';
 use Protocol::WebSocket::Fast;
 
+catch_run("[deflate-frames]");
+
 my $default_compression =<<END;
 GET /?encoding=text HTTP/1.1\r
 Host: dev.crazypanda.ru:4680\r
