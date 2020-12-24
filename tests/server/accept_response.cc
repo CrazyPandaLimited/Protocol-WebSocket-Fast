@@ -12,7 +12,7 @@ TEST("successful response") {
     CHECK_THAT(ans, Contains("Upgrade: websocket\r\n"));
     CHECK_THAT(ans, Contains("Connection: Upgrade\r\n"));
     CHECK_THAT(ans, Contains("Sec-WebSocket-Protocol: chat\r\n"));
-    CHECK_THAT(ans, Contains("Sec-WebSocket-Extensions: permessage-deflate; client_max_window_bits=15; server_max_window_bits=15\r\n"));
+    CHECK_THAT(ans, Contains("Sec-WebSocket-Extensions: permessage-deflate;"));
     CHECK_THAT(ans, Contains("Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=\r\n"));
     CHECK(p.established());
 }
