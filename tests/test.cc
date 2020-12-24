@@ -1,9 +1,19 @@
 #include "test.h"
 #include <regex>
 #include <ctype.h>
+#include <panda/log.h>
 #include <panda/endian.h>
 
 namespace test {
+
+//static bool _init () {
+//    panda::log::set_level(panda::log::Level::Warning);
+//    panda::log::set_logger([](auto& msg, auto&) {
+//        fprintf(stderr, "%s\n", msg.c_str());
+//    });
+//    return true;
+//}
+//static bool __init = _init();
 
 bool ReMatcher::match (const string& matchee) const {
     auto flags = std::regex::ECMAScript;

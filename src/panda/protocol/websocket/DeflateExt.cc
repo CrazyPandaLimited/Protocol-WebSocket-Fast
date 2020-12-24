@@ -155,7 +155,7 @@ DeflateExt::DeflateExt(const DeflateExt::Config& cfg, Role role): effective_cfg{
     tx_stream.opaque = Z_NULL;
 
     // -1 is used as "raw deflate", i.e. do not emit header/trailers
-    r = deflateInit2(&tx_stream, cfg.compression_level, Z_DEFLATED, -1 * tx_window , cfg.mem_level, cfg.strategy);
+    r = deflateInit2(&tx_stream, cfg.compression_level, Z_DEFLATED, -1 * tx_window, cfg.mem_level, cfg.strategy);
     if (r != Z_OK) {
         panda::string err = "zlib::deflateInit2 error";
         if (rx_stream.msg) err.append(panda::string(" : ") + rx_stream.msg);
@@ -173,8 +173,8 @@ DeflateExt::DeflateExt(const DeflateExt::Config& cfg, Role role): effective_cfg{
 DeflateExt::~DeflateExt(){
     auto zerr1 = deflateEnd(&tx_stream);
     auto zerr2 = inflateEnd(&rx_stream);
-    if (zerr1 != Z_OK) panda_log_error("zlib::deflateEnd error msg='" << tx_stream.msg << "' code=" << zerr1);
-    if (zerr2 != Z_OK) panda_log_error("zlib::inflateEnd error msg='" << rx_stream.msg << "' code=" << zerr2);
+    if (zerr1 != Z_OK && zerr1 != Z_DATA_ERROR) panda_log_error("zlib::deflateEnd error msg='" << (tx_stream.msg ? tx_stream.msg : "<null>") << "' code=" << zerr1);
+    if (zerr2 != Z_OK && zerr2 != Z_DATA_ERROR) panda_log_error("zlib::inflateEnd error msg='" << (rx_stream.msg ? rx_stream.msg : "<null>") << "' code=" << zerr2);
 }
 
 static inline void grow (string& dest, z_stream& stream) {
@@ -227,7 +227,7 @@ void DeflateExt::uncompress (Frame& frame) {
         while (1) {
             auto r = inflate(&rx_stream, flush);
             if (r != Z_OK) {
-                panda_log_error("zlib::inflate error msg='" << rx_stream.msg << "' code=" << r);
+                panda_log_warning("zlib::inflate error msg='" << rx_stream.msg << "' code=" << r);
                 frame.error(errc::inflate_error);
                 return false;
             }

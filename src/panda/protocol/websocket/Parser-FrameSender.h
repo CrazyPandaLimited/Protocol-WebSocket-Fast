@@ -8,9 +8,9 @@ struct FrameSender {
     string send (IsFinal final = IsFinal::NO)                      { return _parser.send_frame(final); }
     string send (string_view payload, IsFinal final = IsFinal::NO) { return _parser.send_frame(payload, final); }
 
-    template <typename It, class T = decltype(*std::declval<It>()), class = std::enable_if_t<std::is_convertible<T, string_view>::value>>
-    string send (It&& payload_begin, It&& payload_end, IsFinal final = IsFinal::NO) {
-        return _parser.send_frame(std::forward<It>(payload_begin), std::forward<It>(payload_end), final);
+    template <class B, class E, class T = decltype(*std::declval<B>()), class = std::enable_if_t<std::is_convertible<T, string_view>::value>>
+    string send (B&& payload_begin, E&& payload_end, IsFinal final = IsFinal::NO) {
+        return _parser.send_frame(std::forward<B>(payload_begin), std::forward<E>(payload_end), final);
     }
 
 protected:

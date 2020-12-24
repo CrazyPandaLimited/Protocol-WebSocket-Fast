@@ -69,10 +69,10 @@ bool register_close_codes(std::initializer_list<std::pair<uint16_t, string>>);
 
 /// close clode formatter
 struct ccfmt {
-    uint16_t code;
-    const string& msg;
+    uint16_t    code;
+    string_view msg;
 
-    ccfmt(uint16_t code, const string& msg) : code(code), msg(msg) {}
+    ccfmt (uint16_t code, string_view msg) : code(code), msg(msg) {}
 };
 
 std::ostream& operator<< (std::ostream&, const ccfmt&); 
