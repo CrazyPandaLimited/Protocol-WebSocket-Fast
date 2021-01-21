@@ -202,10 +202,9 @@ void DeflateExt::_compress (string_view src, string& dest, int flush) {
         if (!tx_stream.avail_out) grow(dest, tx_stream);
         auto r = deflate(&tx_stream, flush);
         assert(r >= 0); (void)r;
+        dest.length(dest.capacity() - tx_stream.avail_out);
         if (tx_stream.avail_out || has_trailer(dest)) break;
     }
-
-    dest.length(dest.capacity() - tx_stream.avail_out);
 }
 
 void DeflateExt::uncompress (Frame& frame) {
