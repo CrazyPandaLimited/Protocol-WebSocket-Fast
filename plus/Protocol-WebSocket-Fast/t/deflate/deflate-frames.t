@@ -46,20 +46,20 @@ subtest 'empty payload frame' => sub {
     is($bin, gen_frame({mask => 0, fin => 1, rsv1 => 1, opcode => OPCODE_BINARY, data => $deflate_payload}), "frame ok");
 };
 
-subtest 'small server2client frame (rfc7692 "Hello" sample), depends on platform bitness' => sub {
+subtest 'small server2client frame (rfc7692 "Hello" sample)' => sub {
     my $payload = "Hello"; # must be <= 125
     my $bin = $create_server->($default_compression)->start_message(deflate => 1, opcode => OPCODE_TEXT)->send($payload, 1);
-    ok(length($bin) >= 9, "frame length ok"); # 2 header + 10 payload
+    is(length($bin), 9, "frame length ok"); # 2 header + 10 payload
     my $deflate_payload = substr($bin, 2);
     note "frame = ", encode_base64pad($bin);
     my $encoded = encode_base64pad($deflate_payload);
     note $encoded;
-    like $encoded, qr/^8kjNyckHAA/;
+    is $encoded, '8kjNyckHAA==';
     is($bin, gen_frame({mask => 0, fin => 1, rsv1 => 1, opcode => OPCODE_TEXT, data => $deflate_payload}), "frame ok");
 
     subtest "it mode" => sub {
         my $bin2 = $create_server->($default_compression)->start_message(deflate => 1, opcode => OPCODE_TEXT)->send([qw/Hel lo/], 1);
-        ok(length($bin2) >= 9, "frame length ok");
+        is(length($bin2), 9, "frame length ok");
         my $deflate_payload2 = substr($bin2, 2);
         is($deflate_payload2, $deflate_payload, "it mode ok");
         is($bin2, $bin, "it mode ok");
@@ -84,14 +84,13 @@ subtest 'big (1923 b) server2client frame' => sub {
 
     subtest "it mode" => sub {
         my $bin2 = $create_server->($default_compression)->start_message(deflate => 1)->send(\@payload, 1);
-        ok(length($bin2) >= length($bin), "frame length ok");
+        is(length($bin2), length($bin), "frame length ok");
         my $deflate_payload2 = substr($bin2, 2);
         my $encoded2 = encode_base64pad($deflate_payload2);
-        like $encoded2, qr/^${encoded}/;
+        is $encoded2, $encoded;
         note $encoded2;
-        # might mismatch due to platform bitness
-        #is($deflate_payload2, $deflate_payload, "it mode ok");
-        #is($bin2, $bin, "it mode ok");
+        is($deflate_payload2, $deflate_payload, "it mode ok");
+        is($bin2, $bin, "it mode ok");
     };
 };
 
