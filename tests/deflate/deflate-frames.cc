@@ -46,25 +46,8 @@ TEST("small server2client frame (rfc7692 'Hello' sample)") {
     }
 
     auto deflate_payload = bin.substr(2);
-    // relaxed checks as it is platform bitness-dependent
-    CHECK_THAT(encode::encode_base64(deflate_payload), StartsWith("8kjNyckHAA"));
-    //CHECK_BINFRAME(bin).final().rsv1().opcode(Opcode::TEXT).payload(deflate_payload).binlen(9);
-}
-
-TEST("small server2client frame ('Hell' sample)") {
-    std::vector<string_view> payload = {"H", "e", "l", "l"}; // must be <= 125
-    string bin;
-
-    SECTION("single mode") {
-        bin = MyParser().start_message(Opcode::TEXT, DeflateFlag::YES).send(join(payload), IsFinal::YES);
-    }
-    SECTION("it mode") {
-        bin = MyParser().start_message(Opcode::TEXT, DeflateFlag::YES).send(payload.begin(), payload.end(), IsFinal::YES);
-    }
-
-    auto deflate_payload = bin.substr(2);
-    CHECK(encode::encode_base64(deflate_payload) == "8kjNyQEA");
-    CHECK_BINFRAME(bin).final().rsv1().opcode(Opcode::TEXT).payload(deflate_payload).binlen(8);
+    CHECK(encode::encode_base64(deflate_payload) == "8kjNyckHAA");
+    CHECK_BINFRAME(bin).final().rsv1().opcode(Opcode::TEXT).payload(deflate_payload).binlen(9);
 }
 
 TEST("big (1923 b) server2client frame") {

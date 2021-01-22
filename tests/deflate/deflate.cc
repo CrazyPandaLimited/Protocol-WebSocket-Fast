@@ -279,7 +279,7 @@ TEST("send compressed frame bigger then original") {
     string payload = encode::decode_base16("8e008f8f8f0090909000919191009292");
 
     auto data = p.server.start_message(DeflateFlag::YES).send(payload, IsFinal::YES);
-    REQUIRE(data.length() == 2 + 24);
+    REQUIRE(data.length() >= 2 + 19);
     auto messages_it = p.client.get_messages(data);
     REQUIRE(std::distance(messages_it.begin(), messages_it.end()) == 1);
     REQUIRE_FALSE(messages_it.begin()->error());
