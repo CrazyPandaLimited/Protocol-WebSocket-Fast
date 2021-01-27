@@ -86,7 +86,7 @@ bool register_close_codes(std::initializer_list<std::pair<uint16_t, string> > pa
 }
 
 std::ostream& operator<< (std::ostream& s, const ccfmt& cc) {
-    s << cc.code << ": " << cc.msg ? cc.msg : close_message(cc.code);
+    s << cc.code << ": " << (cc.msg.empty() ? close_message(cc.code) : cc.msg);
     return s;
 }
 
