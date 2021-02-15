@@ -54,6 +54,7 @@ ConnectRequestSP  make_request  (const Hash& params, const ConnectRequestSP& = {
 ConnectResponseSP make_response (const Hash& params, const ConnectResponseSP& = {});
 
 void parser_config_in   (Parser::Config&, const Hash&);
+Hash parser_config_out  (Parser::Config& cfg);
 void deflate_config_in  (DeflateExt::Config&, const Hash&);
 Sv   deflate_config_out (const DeflateExt::Config&);
 
@@ -143,6 +144,8 @@ namespace xs {
             xs::protocol::websocket::parser_config_in(cfg, arg);
             return cfg;
         }
+
+        static Sv out (TYPE var, const Sv& = Sv()) { return Ref::create(xs::protocol::websocket::parser_config_out(var)); }
     };
 
     template <> struct Typemap<panda::protocol::websocket::IsFinal> : TypemapBase<panda::protocol::websocket::IsFinal> {

@@ -87,6 +87,19 @@ void parser_config_in (Parser::Config& cfg, const Hash& h) {
     }
 }
 
+Hash parser_config_out (Parser::Config& cfg) {
+    auto ret = Hash {
+        {"max_frame_size", xs::out(cfg.max_frame_size)},
+        {"max_message_size", xs::out(cfg.max_message_size)},
+        {"max_handshake_size", xs::out(cfg.max_handshake_size)},
+        {"check_utf8", xs::out(cfg.check_utf8)},
+    };
+    if (cfg.deflate) {
+        ret.store("deflate", deflate_config_out(cfg.deflate.value()));
+    }
+    return  ret;
+}
+
 void deflate_config_in (DeflateExt::Config& cfg, const Hash& h) {
     Scalar val;
     if ((val = h.fetch("server_max_window_bits")))     cfg.server_max_window_bits     = static_cast<std::uint8_t>(Simple(val));
