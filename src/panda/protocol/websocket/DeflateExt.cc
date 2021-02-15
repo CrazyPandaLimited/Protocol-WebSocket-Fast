@@ -22,7 +22,7 @@ panda::string DeflateExt::bootstrap() {
     auto loaded_version   = string(zlibVersion());
 
     if (compiled_verison != loaded_version) {
-        return "zlib version mismatch, loaded: " + loaded_version + ", compiled" + compiled_verison;
+        return string("zlib version mismatch, loaded: ") + loaded_version + string(", compiled") + compiled_verison;
     }
     return {};
 }
