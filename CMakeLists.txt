@@ -40,7 +40,7 @@ target_link_libraries(tests PUBLIC Catch2::Catch2)
 
 ########################ctests######################################
 enable_testing()
-add_executable(runtests ${testSource} "tests/main.cc")
+add_executable(runtests EXCLUDE_FROM_ALL ${testSource} "tests/main.cc")
 target_link_libraries(runtests tests)
 add_test(NAME test-all COMMAND runtests WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
