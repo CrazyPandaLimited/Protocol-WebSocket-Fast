@@ -227,7 +227,7 @@ void DeflateExt::uncompress (Frame& frame) {
         while (1) {
             auto r = inflate(&rx_stream, flush);
             if (r != Z_OK) {
-                panda_log_warning("zlib::inflate error msg='" << rx_stream.msg << "' code=" << r);
+                panda_log_warning("zlib::inflate error: " << r << ", " << (rx_stream.msg ? rx_stream.msg : "<no error message>"));
                 frame.error(errc::inflate_error);
                 return false;
             }
@@ -277,14 +277,14 @@ void DeflateExt::reset_tx() {
     if (!tx_stream.next_in) return;
     tx_stream.next_in = Z_NULL;
     auto zerr = deflateReset(&tx_stream);
-    if (zerr != Z_OK) panda_log_error("zlib::deflateReset error msg='" << tx_stream.msg << "' code=" << zerr);
+    if (zerr != Z_OK) panda_log_error("zlib::deflateReset error msg='" << (tx_stream.msg ? tx_stream.msg : "<no error message>") << "' code=" << zerr);
 }
 
 void DeflateExt::reset_rx() {
     if (!rx_stream.next_in) return;
     rx_stream.next_in = Z_NULL;
     auto zerr = inflateReset(&rx_stream);
-    if (zerr != Z_OK) panda_log_error("zlib::inflateReset error msg='" << rx_stream.msg << "' code=" << zerr);
+    if (zerr != Z_OK) panda_log_error("zlib::inflateReset error msg='" << (rx_stream.msg ? rx_stream.msg : "<no error message>") << "' code=" << zerr);
 }
 
 }}}
