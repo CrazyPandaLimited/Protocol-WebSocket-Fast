@@ -252,6 +252,11 @@ void DeflateExt::uncompress (Frame& frame) {
     }
 
     if (final) {
+        if (rx_stream.avail_out == 0) {
+            // actually no memory needed, grow just to prevent Z_BUF_ERROR when output buffer ends on the last byte of input
+            // it is very rare situation so no perfomance penalty, happend in MEIACORE-1738
+            grow(acc, rx_stream);
+        }
         auto res = inflate_impl(acc, TRAILER, Z_SYNC_FLUSH);
         if (!res) return reset_rx();
         message_size = 0;
