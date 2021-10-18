@@ -6,7 +6,6 @@ namespace panda { namespace protocol { namespace websocket {
 
 static const char extension_name[] = "permessage-deflate";
 
-static const int   UNCOMPRESS_PREALLOCATE_RATIO = 10;
 static const float GROW_RATIO                   = 1.5;
 
 static const char PARAM_SERVER_NO_CONTEXT_TAKEOVER[] = "server_no_context_takeover";
