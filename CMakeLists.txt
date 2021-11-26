@@ -27,7 +27,7 @@ find_package(panda-uri REQUIRED)
 find_package(panda-encode-base2n REQUIRED)
 find_package(panda-protocol-http REQUIRED)
 find_package(OpenSSL REQUIRED)
-target_link_libraries(${PROJECT_NAME} panda-uri panda-encode-base2n panda-protocol-http OpenSSL::SSL)
+target_link_libraries(${PROJECT_NAME} PUBLIC panda-uri panda-encode-base2n panda-protocol-http OpenSSL::SSL)
 
 ########################tests#######################################
 file(GLOB_RECURSE testSource RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "tests/*.cc")
