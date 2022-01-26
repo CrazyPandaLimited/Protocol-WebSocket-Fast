@@ -32,11 +32,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC panda-uri panda-encode-base2n panda
 ########################tests#######################################
 file(GLOB_RECURSE testSource RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "tests/*.cc")
 
-if ($ENV{BENCH})
-    set_source_files_properties(tests/bench.cc PROPERTIES COMPILE_FLAGS -O2)
-else()
-    list(FILTER testSource EXCLUDE REGEX "tests/bench.cc")
-endif()
+set_source_files_properties(tests/bench.cc PROPERTIES COMPILE_FLAGS -O2)
 
 add_library(${PROJECT_NAME}-tests STATIC EXCLUDE_FROM_ALL ${testSource})
 target_link_libraries(${PROJECT_NAME}-tests PUBLIC ${PROJECT_NAME})
