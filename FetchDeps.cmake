@@ -2,14 +2,14 @@ include(FetchContent)
 include(CMakeDependentOption)
 
 set(panda-lib_repository https://github.com/CrazyPandaLimited/panda-lib.git)
-set(protocol-http_repository https://github.com/CrazyPandaLimited/Protocol-HTTP.git)
+set(panda-protocol-http_repository https://github.com/CrazyPandaLimited/Protocol-HTTP.git)
 set(panda-uri_repository https://github.com/CrazyPandaLimited/Panda-URI)
-set(encode-base2n_repository https://github.com/CrazyPandaLimited/Encode-Base2N.git)
+set(panda-encode-base2n_repository https://github.com/CrazyPandaLimited/Encode-Base2N.git)
 
 set(Catch2_repository https://github.com/catchorg/Catch2.git)
 set(Catch2_repository_tag devel)
 
-set(deps panda-lib protocol-http panda-uri encode-base2n)
+set(deps panda-lib panda-protocol-http panda-uri panda-encode-base2n)
 
 set(PROTOCOL_HTTP_FETCH_DEPS ON)
 set(PANDA_URI_FETCH_DEPS ON)
