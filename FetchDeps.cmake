@@ -14,7 +14,7 @@ set(deps panda-lib protocol-http panda-uri encode-base2n)
 set(PROTOCOL_HTTP_FETCH_DEPS ON)
 set(PANDA_URI_FETCH_DEPS ON)
 
-if (${PROTOCOL_HTTP_TESTS})
+if (${PROTOCOL_WEBSOCKET_TESTS})
     list(APPEND deps Catch2)
 endif()
 
